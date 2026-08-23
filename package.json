@@ -1,0 +1,29 @@
+{
+  "name": "@mihaibojin/agent-plugins",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Mihai Bojin's personal plugin marketplace for Claude Code and Codex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MihaiBojin/agent-plugins.git"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "lint": "prettier --ignore-unknown --write '**/*.{ts,js,mjs,json,md,yml,yaml}'",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:shell": "bats plugins/*/tests",
+    "lint:shell": "shellcheck -x plugins/*/bin/* plugins/*/install.sh plugins/*/tests/stubs/*",
+    "validate": "node scripts/validate-plugin.mjs && node scripts/validate-marketplaces.mjs",
+    "sync": "node scripts/sync-catalogs.mjs",
+    "check": "npm run lint && npm run lint:shell && npm test && npm run test:shell && npm run validate"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "devDependencies": {
+    "bats": "^1.13.0",
+    "jest": "^30.0.0",
+    "prettier": "^3.6.2"
+  }
+}

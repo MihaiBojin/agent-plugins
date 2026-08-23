@@ -1,0 +1,43 @@
+{
+  "name": "docket",
+  "version": "0.1.1",
+  "description": "Take documents through numbered collections and collaborative review to a frozen, immutable archive",
+  "author": {
+    "name": "Mihai Bojin",
+    "url": "https://github.com/MihaiBojin"
+  },
+  "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/docket#readme",
+  "repository": "https://github.com/MihaiBojin/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "docket",
+    "rfc",
+    "document-lifecycle",
+    "decision-records",
+    "adr",
+    "immutability",
+    "archive",
+    "notion"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "interface": {
+    "displayName": "docket",
+    "shortDescription": "Numbered documents, argued, then frozen",
+    "longDescription": "Organize documents into numbered collections and take each through collaborative review to an immutable form: drafted where people comment (Notion, Google Docs, or a plain pull request), moved through named stages, and frozen into a hashed markdown snapshot in the collection's archive repo. After that the text never changes - corrections are dated errata lines, and substantive change is a new document that marks the old one superseded.",
+    "developerName": "Mihai Bojin",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Allocate the next number in a collection and open the draft",
+      "Report a document's stage, backend and open threads",
+      "Freeze a document into a hashed, immutable archive snapshot",
+      "Supersede a frozen document and record errata without editing it"
+    ],
+    "websiteURL": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/docket#readme",
+    "defaultPrompt": [
+      "Start a new RFC in the rfc collection about connection pooling.",
+      "Where does rfc 4 stand - any open threads?",
+      "Freeze rfc 4; the discussion is resolved."
+    ]
+  }
+}

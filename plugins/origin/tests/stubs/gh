@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+#
+# A fake `gh`, which answers from files a test wrote and records what it was
+# asked. No network, and no dependence on a real GitHub being in a given state.
+
+set -euo pipefail
+printf 'gh %s\n' "$*" >>"${ORIGIN_STUB_LOG:-/dev/null}"
+
+canned() {
+  local file="${ORIGIN_STUB_DIR}/${1}"
+  [ -r "$file" ] || {
+    printf 'no such %s\n' "$1" >&2
+    exit 1
+  }
+  cat "$file"
+}
+
+# `--jq <expr>` anywhere in the arguments, applied to what we print.
+jq_filter() {
+  local previous='' argument
+  for argument in "$@"; do
+    if [ "$previous" = "--jq" ]; then
+      printf '%s' "$argument"
+      return 0
+    fi
+    previous="$argument"
+  done
+  printf ''
+}
+
+# The value after `--hostname`, if any. Not `${*##*--hostname }`: with $* the
+# pattern is applied to each positional parameter, not to the joined string.
+hostname_arg() {
+  local previous='' argument
+  for argument in "$@"; do
+    if [ "$previous" = "--hostname" ]; then
+      printf '%s' "$argument"
+      return 0
+    fi
+    previous="$argument"
+  done
+  printf ''
+}
+
+emit() {
+  local filter
+  filter="$(jq_filter "$@")"
+  if [ -n "$filter" ]; then
+    jq -r "$filter"
+  else
+    cat
+  fi
+}
+
+[ "${ORIGIN_STUB_GH_UNAUTHENTICATED:-0}" = 1 ] && {
+  printf 'You are not logged into any GitHub hosts.\n' >&2
+  exit 1
+}
+
+case "${1:-}" in
+  auth)
+    # `auth status [--hostname H]` succeeds for this CLI's own public host and
+    # for whatever host a test says it is signed in to.
+    case " $* " in
+      *" --hostname "*)
+        want="$(hostname_arg "$@")"
+        case "$want" in
+          github.com) exit 0 ;;
+        esac
+        [ "$want" = "${ORIGIN_STUB_HOST:-}" ] && exit 0
+        exit 1
+        ;;
+      *) exit 0 ;;
+    esac
+    ;;
+  repo) canned repo.json | emit "$@" ;;
+  pr)
+    case "${2:-}" in
+      view) canned pr.json | emit "$@" ;;
+      list) canned pr-list.json | emit "$@" ;;
+      merge)
+        [ "${ORIGIN_STUB_GH_MERGE_FAILS:-0}" = 1 ] && {
+          printf 'Pull request is not mergeable\n' >&2
+          exit 1
+        }
+        printf 'Merged\n'
+        exit 0
+        ;;
+      *) exit 1 ;;
+    esac
+    ;;
+  *) exit 1 ;;
+esac

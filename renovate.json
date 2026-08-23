@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>MihaiBojin/renovate",
+    "github>MihaiBojin/renovate:group-github-actions",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "customManagers": [
+    {
+      "description": "The Claude Code and Codex CLI versions the validation installs with. They are not dependencies of anything, so no manager sees them without being told.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+\\w+: \"(?<currentValue>[^\"]+)\""
+      ],
+      "versioningTemplate": "npm"
+    }
+  ]
+}

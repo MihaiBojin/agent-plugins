@@ -1,0 +1,17 @@
+{
+  "name": "origin",
+  "version": "0.5.1",
+  "description": "Git worktrees, pull request merges, and keeping a branch on top of the head branch, from one tested CLI.",
+  "author": {
+    "name": "Mihai Bojin"
+  },
+  "license": "Apache-2.0",
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "interface": {
+    "displayName": "origin",
+    "shortDescription": "Create, list and remove git worktrees; merge pull requests; rebase onto the head branch.",
+    "longDescription": "Wraps the git, GitHub and GitLab operations that are easy to get wrong. Creates a worktree for a branch and refuses destinations that belong to another repository. Removes a worktree only when its branch is finished, deleting the branch when it is provably merged and printing the command that restores it. Merges a pull request with a written body instead of a commit list. Rebases the current branch onto a freshly fetched head branch. GitHub through gh, GitLab through glab; the worktree commands need neither.",
+    "category": "Developer Tools"
+  }
+}

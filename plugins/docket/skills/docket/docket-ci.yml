@@ -1,0 +1,32 @@
+# Installed by /docket:scaffold, next to a copy of the helper at
+# .github/scripts/docket.mjs. It enforces the archive's immutability rule on
+# every pull request: a frozen document's body never changes, and only the
+# frontmatter keys status, superseded_by and errata stay writable.
+name: docket
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  immutability:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The check compares against the pull request's base commit, so it
+          # needs more history than the merge commit.
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+
+      - name: Enforce frozen documents
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: node .github/scripts/docket.mjs ci-check "$BASE"

@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+#
+# origin - git worktrees, pull request merges, and keeping a branch on top of
+# the head branch, from one CLI that both a person and an agent can run.
+
+set -euo pipefail
+
+# shellcheck source-path=SCRIPTDIR/..
+
+# This file's directory, through however many symlinks an install put in the
+# way. `readlink -f` is not on every mac.
+origin_self() {
+  local source="${BASH_SOURCE[0]}" directory
+  while [ -L "$source" ]; do
+    directory="$(cd -P "$(dirname "$source")" && pwd)"
+    source="$(readlink "$source")"
+    case "$source" in
+      /*) ;;
+      *) source="${directory}/${source}" ;;
+    esac
+  done
+  cd -P "$(dirname "$source")" && pwd
+}
+
+ORIGIN_ROOT="$(dirname "$(origin_self)")"
+export ORIGIN_ROOT
+
+# shellcheck source=SCRIPTDIR/../lib/common.sh
+. "${ORIGIN_ROOT}/lib/common.sh"
+# shellcheck source=SCRIPTDIR/../lib/repo.sh
+. "${ORIGIN_ROOT}/lib/repo.sh"
+# shellcheck source=SCRIPTDIR/../lib/forge.sh
+. "${ORIGIN_ROOT}/lib/forge.sh"
+# shellcheck source=SCRIPTDIR/../lib/merged.sh
+. "${ORIGIN_ROOT}/lib/merged.sh"
+# shellcheck source=SCRIPTDIR/../lib/worktree.sh
+. "${ORIGIN_ROOT}/lib/worktree.sh"
+# shellcheck source=SCRIPTDIR/../lib/merge.sh
+. "${ORIGIN_ROOT}/lib/merge.sh"
+# shellcheck source=SCRIPTDIR/../lib/renew.sh
+. "${ORIGIN_ROOT}/lib/renew.sh"
+# shellcheck source=SCRIPTDIR/../lib/doctor.sh
+. "${ORIGIN_ROOT}/lib/doctor.sh"
+
+usage() {
+  cat >&2 <<'HELP'
+origin - git worktrees, pull requests, and staying on top of the head branch
+
+USAGE
+  origin <command> [flags]
+
+WORKTREES
+  git-worktree add <branch>      Create a worktree and print its path
+  git-worktree remove <what>     Remove a finished worktree, delete a merged branch
+  git-worktree list [--json]     Every worktree: branch, drift, state, pull request
+
+  Each takes `gw <sub>` and a two-letter form: gwa, gwr, gwl.
+
+EVERYTHING ELSE
+  merge [<number>]               Merge a pull request with a written body
+  renew                          Put this branch back on top of the head branch
+  doctor                         Check git, jq, the remote, the forge, permissions
+  help                           This
+
+EVERYWHERE
+  --dry-run    Say what would happen, and do none of it
+  --yes        Do not ask; nothing reads from a terminal
+  --quiet      No commentary; data and errors only
+  --verbose    Print each command before running it
+  --no-color   Plain text
+
+  `git-worktree list` also takes --json; it is the only output anything parses.
+
+WHAT GOES
+  Anything about to be deleted is printed first, with the command that puts it
+  back, whatever --quiet and --yes say. --yes answers for what git can restore.
+  It does not answer for what git never tracked: that stops and asks, or takes
+  a flag typed on purpose.
+
+LAYOUT
+  Worktrees live at <PARENT>/.worktrees/<branch>/<repo>, where PARENT holds the
+  main checkout. A slash in a branch name nests.
+
+CONFIGURATION
+  git config git-worktree-plugin.remote <name>       Which remote this repo belongs to
+  git config git-worktree-plugin.headBranch <name>   Which branch is the default
+HELP
+}
+
+worktree_dispatch() {
+  local subcommand="${1:-}"
+  [ "$#" -gt 0 ] && shift
+  case "$subcommand" in
+    add) worktree_add "$@" ;;
+    remove | rm) worktree_remove "$@" ;;
+    list | ls) worktree_list "$@" ;;
+    '' | -h | --help) usage ;;
+    *) die "git-worktree ${subcommand} is not a thing; try add, remove or list" ;;
+  esac
+}
+
+main() {
+  [ "$#" -gt 0 ] || {
+    usage
+    exit 1
+  }
+
+  local command="$1"
+  shift
+
+  case "$command" in
+    git-worktree | worktree | gw) worktree_dispatch "$@" ;;
+    gwa) worktree_add "$@" ;;
+    gwr) worktree_remove "$@" ;;
+    gwl) worktree_list "$@" ;;
+    merge) merge_main "$@" ;;
+    renew) renew_main "$@" ;;
+    doctor) doctor "$@" ;;
+    help | -h | --help) usage ;;
+    version | -V | --version) printf 'origin %s\n' "$(origin_version)" ;;
+    *) die "there is no '${command}' command; run 'origin --help'" ;;
+  esac
+}
+
+main "$@"

@@ -1,0 +1,277 @@
+name: Validate
+
+# The plugins here are the source, not a copy of one, so this is the only thing
+# standing between an edit and every agent that installs it. It checks the
+# plugin itself, the two catalogs that describe it, and then installs it with
+# both clients - which is the only check that covers the path a user takes.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Deny by default; each job grants only what it needs.
+permissions: {}
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned, so what validates a marketplace is the client this repository was
+  # tested against rather than whatever `latest` happens to be that morning.
+  # Bump through a reviewed change.
+  # renovate: datasource=npm depName=@anthropic-ai/claude-code
+  CLAUDE_CODE_VERSION: "2.1.235"
+  # renovate: datasource=npm depName=@openai/codex
+  CODEX_VERSION: "0.147.0"
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      plugins: ${{ steps.inventory.outputs.plugins }}
+      any: ${{ steps.inventory.outputs.any }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The version check compares this plugin against the one on the base
+          # branch, so it needs both.
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: 📦 Install
+        run: npm ci
+
+      - name: ✅ Tests
+        run: npm test
+
+      - name: 🎨 Formatting
+        run: |
+          npm run lint
+          git diff --exit-code || {
+            echo "::error::Run \`npm run lint\` and commit the result."
+            exit 1
+          }
+
+      # Every JSON file, not only the catalogs: a plugin manifest that does not
+      # parse installs as a plugin that does not exist.
+      - name: ✅ Parse every JSON file
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' file; do
+            node -e 'JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8"))' "$file"
+            count=$((count + 1))
+          done < <(find . -path ./.git -prune -o -path ./node_modules -prune -o -name '*.json' -print0)
+          echo "Parsed ${count} JSON files"
+
+      - name: ✅ Every plugin, and both catalogs
+        run: npm run validate
+
+      # The catalogs are generated. If they do not already match the plugins,
+      # somebody edited one by hand or forgot to run the sync.
+      - name: ✅ The catalogs match the plugins
+        run: npm run sync -- --check
+
+      # A plugin that changed without saying so in its version is a fix nobody
+      # receives, so the rule is read out of the diff.
+      - name: ✅ A changed plugin says so in its version
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/check-version-bump.mjs --base "$BASE"
+
+      - name: 📦 Install the pinned Claude Code CLI
+        run: npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      # `--strict` promotes warnings to errors, and an empty catalog warns by
+      # definition ("Marketplace has no plugins defined") - so strictness
+      # arrives with the first plugin.
+      - name: ✅ Validate the marketplace with Claude Code
+        run: |
+          if [ "$(node -p "require('./.claude-plugin/marketplace.json').plugins.length")" = "0" ]; then
+            claude plugin validate .
+          else
+            claude plugin validate --strict .
+          fi
+
+      - name: 📋 List what is published
+        id: inventory
+        run: |
+          set -euo pipefail
+          plugins="$(node -e '
+            const catalog = JSON.parse(require("node:fs").readFileSync(".claude-plugin/marketplace.json", "utf8"));
+            process.stdout.write(JSON.stringify(catalog.plugins.map((entry) => entry.name)));
+          ')"
+          echo "plugins=${plugins}" >> "$GITHUB_OUTPUT"
+          [ "$plugins" = "[]" ] && echo "any=false" >> "$GITHUB_OUTPUT" || echo "any=true" >> "$GITHUB_OUTPUT"
+          echo "Published: ${plugins}"
+
+  # A plugin can be shell, and shell fails in ways no manifest validator sees:
+  # an unquoted expansion, an assignment made inside a subshell that is thrown
+  # away when it exits, a `read` that collapses two empty fields into one.
+  #
+  # macOS is in the matrix because it ships bash 3.2 and the plugins here are
+  # written for it. Everything below passes on 5.x and quietly does the wrong
+  # thing on 3.2 otherwise, on the one machine the author uses.
+  shell:
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: package.json
+          cache: npm
+
+      - name: 📦 Install
+        run: npm ci
+
+      - name: 📦 Install shellcheck
+        run: |
+          set -euo pipefail
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            if command -v brew >/dev/null 2>&1; then
+              brew install --quiet shellcheck
+            else
+              sudo apt-get update -qq
+              sudo apt-get install -y -qq shellcheck
+            fi
+          fi
+          shellcheck --version
+
+      - name: ✅ Shell lint
+        run: npm run lint:shell
+
+      # Against throwaway repositories with a local bare `origin`, and stubbed
+      # forge CLIs on PATH. No network, and no GitHub account.
+      - name: ✅ Shell tests
+        run: |
+          set -euo pipefail
+          bash --version | head -1
+          npm run test:shell
+
+  # A catalog can be valid, a manifest can be valid, and the plugin can still
+  # fail to install because a source resolves somewhere that is not there.
+  install:
+    needs: checks
+    if: needs.checks.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJson(needs.checks.outputs.plugins) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: package.json
+          package-manager-cache: false
+
+      - name: 📦 Install the pinned client CLIs
+        run: |
+          npm install --global \
+            "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
+            "@openai/codex@${CODEX_VERSION}"
+
+      - name: ✅ Install ${{ matrix.plugin }} with Claude Code
+        env:
+          PLUGIN: ${{ matrix.plugin }}
+          # A throwaway configuration, so nothing carries over between plugins.
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude-${{ matrix.plugin }}
+        run: |
+          set -euo pipefail
+
+          expected="$(node -p "require('./plugins/${PLUGIN}/.claude-plugin/plugin.json').version")"
+          claude plugin marketplace add "$PWD"
+          claude plugin install "${PLUGIN}@MihaiBojin"
+
+          installed="$(claude plugin list --json | node -e '
+            const rows = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            const found = rows.find((row) => row.id === `${process.env.PLUGIN}@MihaiBojin`);
+            process.stdout.write(found ? found.version : "");
+          ')"
+          if [ "$installed" != "$expected" ]; then
+            echo "::error::Claude Code installed ${PLUGIN} '${installed}', but the plugin is ${expected}"
+            exit 1
+          fi
+          echo "Claude Code installed ${PLUGIN} ${installed}"
+
+      - name: ✅ Install ${{ matrix.plugin }} with Codex
+        env:
+          PLUGIN: ${{ matrix.plugin }}
+          CODEX_HOME: ${{ runner.temp }}/codex-${{ matrix.plugin }}
+        run: |
+          set -euo pipefail
+
+          expected="$(node -p "require('./plugins/${PLUGIN}/.codex-plugin/plugin.json').version")"
+          mkdir -p "$CODEX_HOME"
+          codex plugin marketplace add "$PWD"
+          codex plugin add "${PLUGIN}@MihaiBojin"
+
+          installed="$(codex plugin list --json | node -e '
+            const { installed } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+            const found = installed.find((row) => row.name === process.env.PLUGIN);
+            process.stdout.write(found ? found.version : "");
+          ')"
+          if [ "$installed" != "$expected" ]; then
+            echo "::error::Codex installed ${PLUGIN} '${installed}', but the plugin is ${expected}"
+            exit 1
+          fi
+          echo "Codex installed ${PLUGIN} ${installed}"
+
+  # One check name that stays true as the catalog grows.
+  #
+  # `install` is a matrix, so its checks are named after the plugins in it.
+  # Requiring those by name means a plugin added later is covered by nothing
+  # that is required, and a plugin withdrawn leaves a required check that never
+  # reports again, which blocks every pull request until somebody edits a
+  # repository setting. This is the one to require.
+  validated:
+    if: always()
+    needs: [checks, shell, install]
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: ✅ Every validation job passed
+        env:
+          CHECKS: ${{ needs.checks.result }}
+          SHELL_JOB: ${{ needs.shell.result }}
+          INSTALL: ${{ needs.install.result }}
+        run: |
+          set -euo pipefail
+
+          echo "checks: ${CHECKS}, shell: ${SHELL_JOB}, install: ${INSTALL}"
+
+          # `install` is skipped, legitimately, while no plugin is published.
+          for result in "$CHECKS" "$SHELL_JOB" "$INSTALL"; do
+            case "$result" in
+              success | skipped) ;;
+              *)
+                echo "::error::A validation job reported ${result}"
+                exit 1
+                ;;
+            esac
+          done
