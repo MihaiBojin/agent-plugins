@@ -123,8 +123,12 @@ advance: write them out just the same, then merge without asking.
 
 If `refusals` is non-empty — a draft, a conflict, a failing check, a check
 still running, a protection rule — say so and stop. `--force` is the user's to
-ask for. Nothing in `origin` waits for a check to finish, so a run in flight
-means come back later rather than poll.
+ask for.
+
+An unfinished check is the one refusal worth offering to wait out. `origin`
+never waits: re-run `--gather` every 30 seconds until `refusals` empties, then
+merge the body they already approved. Stop the moment a check fails. Poll only
+when the user asked for it.
 
 ## Renewing a branch
 

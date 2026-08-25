@@ -109,6 +109,7 @@ rule is refused by name, and `--force` is what merges past one. The checks are
 read once, at the moment of the merge; nothing sleeps or polls, so a pull
 request whose CI is still running is a "come back in a minute" rather than a
 wait. `gh pr merge --auto` is the queue for that, and it is the forge's to run.
+The slash command offers to sit and watch instead, when the user asks it to.
 
 ## renew
 

@@ -25,9 +25,10 @@ If it fails, report what it said and stop.
 If `refusals` is non-empty, print each reason and stop — unless the user asked
 for `--force`, in which case say what you are overriding and carry on.
 
-A check that has not finished is one of those reasons. Nothing here waits for
-one: say which check is still running and let the user come back, or merge on
-their `--force`. Do not loop, sleep or poll for it.
+One reason is not a full stop: a check that has not finished. Say which check
+is still running, carry on to the body, and offer **Merge on green** at step 4.
+Anything else in `refusals` beside it — a draft, a conflict, a failing check —
+stops as usual.
 
 ## 3. Write the body
 
@@ -71,10 +72,29 @@ Otherwise, having written them out, ask the user to choose:
 - **Edit title** — take their instruction, rewrite the title, show it again
 - **Edit body** — take their instruction, rewrite the body, show it again
 - **Merge** — go
+- **Merge on green** — only when a check that has not finished is the one
+  thing standing in the way. Wait for it, then merge
 
-Loop until they pick Merge. The script's own prompt cannot help here: an agent
-session has no terminal, so `origin merge` without `--yes` would refuse rather
-than ask.
+Loop until they pick one of the two merges. The script's own prompt cannot help
+here: an agent session has no terminal, so `origin merge` without `--yes` would
+refuse rather than ask.
+
+## 4a. Merge on green
+
+The waiting is yours, not the script's. Re-run the gather every 30 seconds, in
+the background, and read `refusals` each time:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/bin/origin merge $ARGUMENTS --gather
+```
+
+- Empty — merge, with the body they already approved. Do not ask again.
+- Still only the unfinished check — keep waiting. Say nothing each round.
+- A failing check, or anything else — stop and say which. A failure is not
+  something to wait through, and it is not a `--force` you can assume.
+
+Give up after thirty minutes and report where the checks stood. Never poll
+unless the user picked this; the default is to say what is running and stop.
 
 ## 5. Merge
 
