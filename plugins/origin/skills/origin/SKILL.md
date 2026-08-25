@@ -118,11 +118,17 @@ pull request beside it.
 Write the title and body out in your reply, in full, and let the user edit
 either before merging. An agent session has no terminal, so run the merge with
 `--yes` once they approve — without it the script refuses rather than asking a
-question nobody can answer. `--auto` means the user has approved in advance:
-write them out just the same, then merge without asking.
+question nobody can answer. A `--yes` the user typed themselves is approval in
+advance: write them out just the same, then merge without asking.
 
-If `refusals` is non-empty — a draft, a conflict, a failing check, a protection
-rule — say so and stop. `--force` is the user's to ask for.
+If `refusals` is non-empty — a draft, a conflict, a failing check, a check
+still running, a protection rule — say so and stop. `--force` is the user's to
+ask for.
+
+An unfinished check is the one refusal worth offering to wait out. `origin`
+never waits: re-run `--gather` every 30 seconds until `refusals` empties, then
+merge the body they already approved. Stop the moment a check fails. Poll only
+when the user asked for it.
 
 ## Renewing a branch
 
