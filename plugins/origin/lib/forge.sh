@@ -161,7 +161,8 @@ forge_merge_policy() {
 # One pull request, in this plugin's shape rather than either forge's.
 #
 #   { number, title, body, state, url, author, draft, baseRef, headRef,
-#     crossRepository, mergeable, mergeStateStatus, failingChecks: [name...] }
+#     crossRepository, mergeable, mergeStateStatus,
+#     failingChecks: [name...], pendingChecks: [name...] }
 #
 # The selector is whatever the CLI resolves: a number, or a branch. Both forges
 # take either.
@@ -180,6 +181,23 @@ forge_pr_view() {
         2>/dev/null || printf '')"
       [ -n "$raw" ] || return 1
       printf '%s' "$raw" | jq -c '
+        # A check run reports .status and .conclusion; a commit status reports
+        # only .state. Both arrive in the same list, so both are read. The
+        # fields are bound before the lists, because inside index() the input
+        # is the list rather than the check.
+        def failed:
+          ((.conclusion // "") | ascii_upcase) as $conclusion
+          | ((.state // "") | ascii_upcase) as $state
+          | (["FAILURE","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"]
+               | index($conclusion)) != null
+            or (["FAILURE","ERROR"] | index($state)) != null;
+        def unfinished:
+          ((.status // "") | ascii_upcase) as $status
+          | ((.state // "") | ascii_upcase) as $state
+          | (["QUEUED","IN_PROGRESS","WAITING","PENDING","REQUESTED"]
+               | index($status)) != null
+            or (["PENDING","EXPECTED"] | index($state)) != null;
+        def check_name: (.name // .context // "check");
         {
           number: .number,
           title: .title,
@@ -193,15 +211,9 @@ forge_pr_view() {
           crossRepository: (.isCrossRepository // false),
           mergeable: (.mergeable // "UNKNOWN"),
           mergeStateStatus: (.mergeStateStatus // "UNKNOWN"),
-          failingChecks: [
-            (.statusCheckRollup // [])[]
-            | select(
-                (((.conclusion // "") | ascii_upcase) as $c
-                 | ((.state // "") | ascii_upcase) as $s
-                 | (["FAILURE","TIMED_OUT","CANCELLED","ACTION_REQUIRED","STARTUP_FAILURE"] | index($c)) != null
-                   or (["FAILURE","ERROR"] | index($s)) != null)
-              )
-            | (.name // .context // "check")
+          failingChecks: [ (.statusCheckRollup // [])[] | select(failed) | check_name ],
+          pendingChecks: [
+            (.statusCheckRollup // [])[] | select(failed | not) | select(unfinished) | check_name
           ]
         }'
       ;;
@@ -245,6 +257,12 @@ forge_pr_view() {
           failingChecks: (
             if ((.head_pipeline.status // "") | ascii_downcase) == "failed"
             then ["pipeline"] else [] end
+          ),
+          pendingChecks: (
+            ((.head_pipeline.status // "") | ascii_downcase) as $pipeline
+            | if (["created","waiting_for_resource","preparing","pending","running","scheduled"]
+                  | index($pipeline)) != null
+              then ["pipeline"] else [] end
           )
         }'
       ;;

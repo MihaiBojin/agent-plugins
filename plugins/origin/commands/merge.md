@@ -1,7 +1,7 @@
 ---
 name: merge
 description: Merge a pull request, writing the body from the change rather than the commit list
-argument-hint: "[pr-number] [--auto] [--force]"
+argument-hint: "[pr-number] [--yes] [--force]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git log:*), Bash(git diff:*), Bash(git status:*), Read, Write
 ---
 
@@ -24,6 +24,10 @@ If it fails, report what it said and stop.
 
 If `refusals` is non-empty, print each reason and stop — unless the user asked
 for `--force`, in which case say what you are overriding and carry on.
+
+A check that has not finished is one of those reasons. Nothing here waits for
+one: say which check is still running and let the user come back, or merge on
+their `--force`. Do not loop, sleep or poll for it.
 
 ## 3. Write the body
 
@@ -59,7 +63,7 @@ printed. Command output is shown to you, not to them, so a body they never saw
 is a commit message nobody approved. Never write "as above" or "as printed
 above": from where the user is sitting there is nothing above.
 
-**With `--auto` in the arguments**, write them out just the same — they are the
+**With `--yes` in the arguments**, write them out just the same — they are the
 record — and go straight to the merge without asking.
 
 Otherwise, having written them out, ask the user to choose:

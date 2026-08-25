@@ -104,6 +104,12 @@ The strategy defaults to whatever the repository itself prefers, and a strategy
 it forbids is refused before the API is called. Run by hand with no body, the
 fallback is the description plus the trailers: deterministic, no bullets.
 
+A draft, a conflict, a failing check, a check still running or a protection
+rule is refused by name, and `--force` is what merges past one. The checks are
+read once, at the moment of the merge; nothing sleeps or polls, so a pull
+request whose CI is still running is a "come back in a minute" rather than a
+wait. `gh pr merge --auto` is the queue for that, and it is the forge's to run.
+
 ## renew
 
 Three routes, chosen by what the branch is rather than by what was typed.

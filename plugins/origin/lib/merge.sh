@@ -27,7 +27,6 @@ origin merge [<number>] [flags]
   --body <text>         The body
   --body-file <path>    The body, from a file ("-" for standard input)
   --edit                Open the body in $EDITOR before merging
-  --auto                Do not ask; with no body, take the default one
   --force               Merge anyway, having been told why not
   --no-delete-branch    Leave the remote branch alone
   --dry-run             Print what would be merged, and stop
@@ -81,14 +80,11 @@ merge_main() {
         edit=1
         shift
         ;;
-      # For the slash command, where the question is asked by the model rather
-      # than by this script - an agent session has no terminal to ask at. The
-      # model reads it to skip its own confirmation; here it means the same
-      # thing --yes does, and nothing about which body is used. A --body-file
-      # alongside it still wins.
+      # `gh pr merge --auto` queues a merge for the forge to run once the
+      # checks pass. This one never waited for anything; it was --yes under a
+      # name that promised otherwise.
       --auto)
-        ORIGIN_ASSUME_YES=1
-        shift
+        die "merge: --auto is gone - it meant --yes, and it read like gh pr merge --auto; pass --yes"
         ;;
       --force)
         force=1
@@ -251,7 +247,7 @@ merge_load() {
 
 # Why not to merge, one reason per line. Empty means go ahead.
 merge_refusals() {
-  local checks
+  local checks pending
   [ "$(forge_pr_field .draft)" = "true" ] && printf 'it is a draft\n'
   case "$(forge_pr_field .mergeable)" in
     CONFLICTING) printf 'it conflicts with %s\n' "$(forge_pr_field .baseRef)" ;;
@@ -262,6 +258,16 @@ merge_refusals() {
   esac
   checks="$(printf '%s' "$FORGE_PR_JSON" | jq -r '.failingChecks | join(", ")')"
   [ -n "$checks" ] && printf 'these checks are failing: %s\n' "$checks"
+  # One reading, taken now. A check still running is a reason not to merge
+  # rather than a reason to sit and poll: the answer arrives minutes after the
+  # command would have returned, and `gh pr merge --auto` is what waiting is
+  # for. The forge's own word is the fallback for a pipeline it will not name.
+  pending="$(printf '%s' "$FORGE_PR_JSON" | jq -r '(.pendingChecks // []) | join(", ")')"
+  if [ -n "$pending" ]; then
+    printf 'these checks have not finished: %s\n' "$pending"
+  elif [ "$(forge_pr_field .mergeStateStatus)" = "PENDING" ]; then
+    printf 'the forge reports its checks still running\n'
+  fi
   return 0
 }
 

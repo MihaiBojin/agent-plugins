@@ -115,6 +115,62 @@ JSON
   [[ "$stderr" != *"build"* ]]
 }
 
+@test "a check still running is refused by name" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "UNSTABLE",
+    "statusCheckRollup": [
+      { "name": "build", "status": "COMPLETED", "conclusion": "SUCCESS" },
+      { "name": "e2e", "status": "IN_PROGRESS", "conclusion": null }
+    ]'
+  origin_cli merge --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"these checks have not finished: e2e"* ]]
+  [[ "$stderr" != *"build"* ]]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "a commit status still pending is refused, and one that is expected too" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "UNSTABLE",
+    "statusCheckRollup": [
+      { "context": "ci/deploy", "state": "PENDING" },
+      { "context": "ci/sign", "state": "EXPECTED" },
+      { "context": "ci/unit", "state": "SUCCESS" }
+    ]'
+  origin_cli merge --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"these checks have not finished: ci/deploy, ci/sign"* ]]
+  [[ "$stderr" != *"ci/unit"* ]]
+}
+
+@test "a check that failed is named once, as failing rather than as unfinished" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "UNSTABLE",
+    "statusCheckRollup": [
+      { "name": "lint", "status": "COMPLETED", "conclusion": "FAILURE" }
+    ]'
+  origin_cli merge --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"these checks are failing: lint"* ]]
+  [[ "$stderr" != *"have not finished"* ]]
+}
+
+@test "--force merges past a check that has not finished" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "UNSTABLE",
+    "statusCheckRollup": [ { "name": "e2e", "status": "QUEUED", "conclusion": null } ]'
+  origin_cli merge --yes --force --body "Chunked reads."
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"have not finished: e2e"* ]]
+  [[ "$stderr" == *"merging anyway"* ]]
+}
+
+@test "gather reports the unfinished checks without waiting for them" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "UNSTABLE",
+    "statusCheckRollup": [ { "name": "e2e", "status": "IN_PROGRESS", "conclusion": null } ]'
+  origin_cli merge --gather
+  [ "$status" -eq 0 ]
+  [ "$(jq_of "$output" '.pr.pendingChecks | join(",")')" = "e2e" ]
+  [[ "$(jq_of "$output" '.refusals | join("|")')" == *"have not finished: e2e"* ]]
+}
+
 @test "a conflict is refused" {
   pr_json '"state": "OPEN", "isDraft": false, "mergeable": "CONFLICTING", "mergeStateStatus": "DIRTY", "statusCheckRollup": []'
   origin_cli merge --yes
@@ -322,25 +378,77 @@ JSON
   [[ "$output" != *"(#4)"* ]]
 }
 
+@test "a GitLab pipeline still running is refused" {
+  stub_forge https://gitlab.example.com/group/project.git
+  stub_json api.json <<'JSON'
+{ "merge_method": "merge", "squash_option": "always" }
+JSON
+  stub_json mr.json <<'JSON'
+{
+  "iid": 4, "title": "Rewrite the loader", "description": "Fixes #12",
+  "state": "opened", "web_url": "https://gitlab.example.com/group/project/-/merge_requests/4",
+  "author": { "username": "someone" }, "draft": false,
+  "target_branch": "main", "source_branch": "feature",
+  "has_conflicts": false, "detailed_merge_status": "ci_still_running",
+  "head_pipeline": { "status": "running" }
+}
+JSON
+
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"these checks have not finished: pipeline"* ]]
+  run grep_count "glab mr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "a GitLab merge request waiting on CI it will not name is refused anyway" {
+  stub_forge https://gitlab.example.com/group/project.git
+  stub_json api.json <<'JSON'
+{ "merge_method": "merge", "squash_option": "always" }
+JSON
+  stub_json mr.json <<'JSON'
+{
+  "iid": 4, "title": "Rewrite the loader", "description": "Fixes #12",
+  "state": "opened", "web_url": "https://gitlab.example.com/group/project/-/merge_requests/4",
+  "author": { "username": "someone" }, "draft": false,
+  "target_branch": "main", "source_branch": "feature",
+  "has_conflicts": false, "detailed_merge_status": "ci_still_running"
+}
+JSON
+
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"checks still running"* ]]
+}
+
 @test "--edit with nowhere to open an editor refuses rather than hangs" {
   origin_cli merge --yes --edit --body "Anything" </dev/null
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"needs a terminal"* ]]
 }
 
-@test "--auto merges without asking, and a body passed with it still wins" {
-  # The flag exists so the slash command can pass $ARGUMENTS straight through:
-  # the model asks the question, because an agent session has no terminal to
-  # ask at. Here it means --yes and nothing about which body is used.
+@test "--yes merges without asking, and a body passed with it still wins" {
+  # The slash command passes $ARGUMENTS straight through: the model asks the
+  # question, because an agent session has no terminal to ask at. Here --yes
+  # says nothing about which body is used.
   printf 'A body somebody wrote\n' >"${ROOT}/body.txt"
 
-  origin_cli merge 7 --auto --body-file "${ROOT}/body.txt" --dry-run --verbose
+  origin_cli merge 7 --yes --body-file "${ROOT}/body.txt" --dry-run --verbose
   [ "$status" -eq 0 ]
   [[ "$output$stderr" == *"A body somebody wrote"* ]]
 }
 
-@test "--auto is accepted alongside --gather, so \$ARGUMENTS passes through" {
-  origin_cli merge 7 --auto --gather
+@test "--yes is accepted alongside --gather, so \$ARGUMENTS passes through" {
+  origin_cli merge 7 --yes --gather
   [ "$status" -eq 0 ]
   [ "$(jq_of "$output" .pr.number)" = "7" ]
+}
+
+@test "--auto says what took its place instead of merging" {
+  origin_cli merge 7 --auto --body "Anything"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"--auto is gone"* ]]
+  [[ "$stderr" == *"pass --yes"* ]]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
 }
