@@ -103,7 +103,7 @@ ${CLAUDE_PLUGIN_ROOT}/bin/origin merge $ARGUMENTS --body-file <the file> --yes
 ```
 
 The strategy defaults to whatever the repository itself prefers; pass
-`--squash`, `--merge` or `--rebase` only if the user asked for one. Afterwards
-it deletes the remote branch.
+`--squash`, `--merge` or `--rebase` only if the user asked for one. The branch
+on the remote is untouched; whether it goes is the forge's own setting.
 
 Report the merge and the URL. Do not offer to revert it.

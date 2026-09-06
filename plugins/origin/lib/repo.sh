@@ -180,10 +180,18 @@ repo_remote_url_raw() {
 # `ls-remote`, which answers the same question without writing the ref:
 # `git remote set-head --auto` would record it, and a command that reports on a
 # repository - `doctor`, or anything under --dry-run - must not change one.
+# `ls-remote` writes nothing, so it runs under --dry-run as well, and a dry run
+# names the same branch as the run it describes.
 repo_head_branch() {
   local remote stated head candidate
   stated="$(git config --get git-worktree-plugin.headBranch 2>/dev/null || printf '')"
   if [ -n "$stated" ]; then
+    # A bare branch name, whichever way it was written down. `origin/main` and
+    # `refs/heads/main` name the branch `main`, and everything that compares
+    # against this answer is comparing branch names.
+    remote="$(repo_remote 2>/dev/null || printf '')"
+    stated="${stated#refs/heads/}"
+    [ -n "$remote" ] && stated="${stated#"${remote}/"}"
     printf '%s\n' "$stated"
     return 0
   fi
@@ -192,7 +200,7 @@ repo_head_branch() {
   if [ -n "$remote" ]; then
     head="$(git symbolic-ref --quiet --short "refs/remotes/${remote}/HEAD" 2>/dev/null || printf '')"
     head="${head#"${remote}/"}"
-    if [ -z "$head" ] && [ "$ORIGIN_DRY_RUN" != 1 ]; then
+    if [ -z "$head" ]; then
       head="$(git ls-remote --symref "$remote" HEAD 2>/dev/null |
         awk '$1 == "ref:" { sub(/^refs\/heads\//, "", $2); print $2; exit }')"
     fi
@@ -223,8 +231,17 @@ repo_head_branch() {
 
 # `<remote>/<head>` when there is a remote, the local branch when there is not.
 repo_head_ref() {
-  local head remote
-  head="$(repo_head_branch)"
+  repo_head_ref_for "$(repo_head_branch)"
+}
+
+# The same, for a head branch already in hand.
+#
+# A caller that needs both the branch and the ref asks once and names the
+# second from the first: `repo_head_branch` is not cached, so asking twice can
+# mean two `ls-remote` round trips and two answers that a default branch
+# renamed in between would make disagree.
+repo_head_ref_for() {
+  local head="$1" remote
   remote="$(repo_remote 2>/dev/null || printf '')"
   if [ -n "$remote" ] && git show-ref --verify --quiet "refs/remotes/${remote}/${head}"; then
     printf '%s/%s\n' "$remote" "$head"

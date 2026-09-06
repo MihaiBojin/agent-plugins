@@ -10,6 +10,7 @@ Two files are generated and must not be hand-edited: the catalogs.
 
 ```text
 plugins/<name>/                   A plugin. The source, not a copy of one
+plugins/<name>/CHANGELOG.md       Its releases, and the choices behind them
 .claude-plugin/marketplace.json   Claude Code's catalog     (generated)
 .agents/plugins/marketplace.json  Codex's catalog           (generated)
 scripts/validate-plugin.mjs       One plugin's own layout
@@ -62,6 +63,17 @@ changed and its version did not.
 Semver is judged from what an agent sees: new commands or skills are a minor,
 wording and fixes are a patch, and removing a command or changing what one does
 is a major.
+
+## Recording a choice
+
+A release writes itself into `plugins/<name>/CHANGELOG.md`, newest first: what
+changed, under the version carrying it, and the choices behind it under
+`### Choices`.
+
+A choice that changed nothing belongs there too. What a later change needs, and
+cannot get from the diff, is the reason not to act - an alternative weighed and
+dropped, a cost taken on purpose, a bug left alone because something else
+already stops it.
 
 ## Before committing
 

@@ -57,6 +57,18 @@ worktree_branch_at() {
   worktree_records | awk -F'\037' -v path="$1" '$1 == path { print $3; exit }'
 }
 
+# The whole record for one path - sha, branch and flags in one line - or
+# nothing when this repository has no worktree there. Nothing is the answer to
+# "is this ours", which an empty branch alone cannot give: a detached worktree
+# has one too.
+worktree_record_at() {
+  worktree_records | awk -F'\037' -v path="$1" '$1 == path { print; exit }'
+}
+
+worktree_record_field() {
+  printf '%s\n' "$1" | awk -F'\037' -v n="$2" '{ print $n }'
+}
+
 # shellcheck disable=SC2088  # the tilde is being printed
 worktree_pretty_path() {
   case "$1" in
@@ -405,11 +417,13 @@ worktree_remove_usage() {
 origin git-worktree remove <branch> | <path> [flags]   (aliases: gw remove, gwr)
 
   Removes a worktree whose branch is finished, and deletes the branch when git
-  can prove its change is already in the head branch. Prints the command that
-  restores a deleted branch.
+  can prove its change is already in the head branch. The head branch itself is
+  never deleted. A detached worktree goes when some ref already reaches the
+  commit it sits on. Prints the command that puts back whatever went.
 
-  --force             Remove the checkout of an unfinished branch. Keeps the
-                      branch, and never touches uncommitted work.
+  --force             Remove the checkout of an unfinished branch, or of a
+                      detached worktree no ref reaches. Keeps the branch, and
+                      never touches uncommitted work.
   --delete-ignored    Delete the ignored files in the worktree too. Nothing
                       restores them; without this the removal stops and says
                       which they are.
@@ -471,15 +485,20 @@ worktree_remove() {
   [ -n "$target" ] ||
     die "git-worktree remove: which worktree? give a branch or a path - 'origin gwl' lists them"
 
-  local path branch
+  local path record branch at flags what
   path="$(worktree_path_of_branch "$target")"
-  if [ -n "$path" ]; then
-    branch="$target"
-  else
-    path="$(repo_resolve_path "$target")"
-    branch="$(worktree_branch_at "$path")"
-    [ -n "$branch" ] || die "git-worktree remove: ${target} is not a worktree of this repository"
-  fi
+  [ -n "$path" ] || path="$(repo_resolve_path "$target")"
+  record="$(worktree_record_at "$path")"
+  [ -n "$record" ] ||
+    die "git-worktree remove: ${target} is not a worktree of this repository"
+  branch="$(worktree_record_field "$record" 3)"
+  at="$(worktree_record_field "$record" 2)"
+  flags="$(worktree_record_field "$record" 4)"
+
+  # An empty branch is a detached HEAD. That worktree holds a commit rather
+  # than a branch, so every question below is asked about the commit instead.
+  what="the worktree for ${branch}"
+  [ -n "$branch" ] || what="the detached worktree at $(worktree_pretty_path "$path")"
 
   local main current
   main="$(repo_main_worktree)"
@@ -487,21 +506,43 @@ worktree_remove() {
   [ "$path" = "$main" ] && die "git-worktree remove: that is the main worktree"
   [ "$path" = "$current" ] && die "git-worktree remove: that is the worktree you are standing in"
 
-  case "$(worktree_records | awk -F'\037' -v p="$path" '$1 == p { print $4 }')" in
-    *locked*) die "git-worktree remove: ${branch} is locked" ;;
+  case "$flags" in
+    *locked*) die "git-worktree remove: ${what} is locked" ;;
   esac
 
-  local stashes
-  stashes="$(repo_stashes_for_branch "$branch")"
-  [ "${stashes:-0}" -gt 0 ] &&
-    die "git-worktree remove: ${branch} has ${stashes} stash $([ "$stashes" = 1 ] && printf 'entry' || printf 'entries')"
+  if [ -n "$branch" ]; then
+    local stashes
+    stashes="$(repo_stashes_for_branch "$branch")"
+    [ "${stashes:-0}" -gt 0 ] &&
+      die "git-worktree remove: ${branch} has ${stashes} stash $([ "$stashes" = 1 ] && printf 'entry' || printf 'entries')"
+  fi
 
   repo_fetch
-  local head_ref reason='' merged=0 finished=0
-  head_ref="$(repo_head_ref)"
-  if reason="$(merged_reason "$branch" "$head_ref")"; then
-    merged=1
-    finished=1
+  local head_branch='' head_ref='' reason='' reached='' merged=0 finished=0
+  if [ -n "$branch" ]; then
+    head_branch="$(repo_head_branch)"
+    head_ref="$(repo_head_ref_for "$head_branch")"
+    if reason="$(merged_reason "$branch" "$head_ref")"; then
+      merged=1
+      finished=1
+    fi
+  else
+    # A commit is finished when something else already reaches it. A ref that
+    # does leaves nothing behind here; none at all makes this checkout the only
+    # thing pointing at that commit.
+    reached="$(git for-each-ref --contains "$at" --count=1 --format='%(refname)' 2>/dev/null || printf '')"
+    if [ -n "$reached" ]; then
+      finished=1
+    fi
+  fi
+
+  # The sha this run can name: a branch's tip, or the commit a detached
+  # worktree sits on.
+  local sha=''
+  if [ -n "$branch" ]; then
+    sha="$(git rev-parse --short "$branch" 2>/dev/null || printf '')"
+  else
+    sha="$(git rev-parse --short "$at" 2>/dev/null || printf '')"
   fi
 
   # The forge knows two things git here cannot: a pull request merged into a
@@ -512,7 +553,7 @@ worktree_remove() {
   # stays with `merged_reason`, which compares content and is the only thing
   # here that can prove nothing would be lost.
   local pr='' pr_state='' pr_number=''
-  if [ "$finished" = 0 ] && [ "${ORIGIN_NO_FORGE:-0}" != 1 ] && forge_available; then
+  if [ -n "$branch" ] && [ "$finished" = 0 ] && [ "${ORIGIN_NO_FORGE:-0}" != 1 ] && forge_available; then
     forge_pr_bulk_load
     pr="$(forge_pr_state_for "$branch")"
     pr_state="${pr%%$'\t'*}"
@@ -537,15 +578,25 @@ worktree_remove() {
   fi
 
   local unpushed extra=''
-  unpushed="$(merged_unpushed_count "$branch")"
-  [ "${unpushed:-0}" -gt 0 ] && extra=" and has ${unpushed} commit(s) on no remote"
+  if [ -n "$branch" ]; then
+    unpushed="$(merged_unpushed_count "$branch")"
+    [ "${unpushed:-0}" -gt 0 ] && extra=" and has ${unpushed} commit(s) on no remote"
+  fi
   if [ "$finished" = 0 ]; then
     if [ "$force" = 0 ]; then
       say ''
-      say "${branch} is not merged into ${head_ref}${extra}."
-      die "git-worktree remove: refusing; pass --force to remove the checkout and keep the branch"
+      if [ -n "$branch" ]; then
+        say "${branch} is not merged into ${head_ref}${extra}."
+        die "git-worktree remove: refusing; pass --force to remove the checkout and keep the branch"
+      fi
+      say "no ref reaches ${sha}, so this checkout is the only thing pointing at that commit."
+      die "git-worktree remove: refusing; keep it with 'git branch <name> ${sha}', or pass --force"
     fi
-    warn "${branch} is not merged; removing the checkout and keeping the branch because --force"
+    if [ -n "$branch" ]; then
+      warn "${branch} is not merged; removing the checkout and keeping the branch because --force"
+    else
+      warn "no ref reaches ${sha}; removing the checkout because --force"
+    fi
   fi
 
   # --force removes a checkout. It never deletes a branch: it is what somebody
@@ -556,8 +607,14 @@ worktree_remove() {
     delete_branch=1
   fi
 
-  local sha
-  sha="$(git rev-parse --short "$branch" 2>/dev/null || printf '')"
+  # A worktree can hold the head branch while the main checkout is elsewhere,
+  # and a head branch the remote already has arrives here finished. The
+  # checkout goes on that answer; the branch everything else is measured
+  # against is not one this deletes.
+  if [ "$delete_branch" = 1 ] && [ "$branch" = "$head_branch" ]; then
+    delete_branch=0
+  fi
+
   # b2, as an invariant rather than a courtesy: a branch whose sha this run
   # could not read is a branch it cannot tell anybody how to get back, so it
   # does not delete it.
@@ -584,6 +641,12 @@ EOF
   fi
   if [ "$delete_branch" = 1 ]; then
     losses+=("branch ${branch} (${sha}) — restore with: git branch ${branch} ${sha}")
+  elif [ -z "$branch" ] && [ "$finished" = 1 ]; then
+    losses+=("the commit ${sha} stays; ${reached} reaches it")
+  elif [ -z "$branch" ]; then
+    losses+=("the last ref to ${sha} — restore with: git worktree add --detach ${path} ${sha}")
+  elif [ "$branch" = "$head_branch" ]; then
+    losses+=("branch ${branch} stays; it is the head branch")
   else
     losses+=("branch ${branch} stays")
   fi
@@ -597,9 +660,13 @@ EOF
       --delete-ignored
   fi
 
-  confirm "Remove the worktree for ${branch}?" \
-    "git worktree remove ${path}" \
-    "$([ "$delete_branch" = 1 ] && printf 'git branch -d %s' "$branch" || printf 'keep branch %s' "$branch")"
+  if [ -n "$branch" ]; then
+    confirm "Remove ${what}?" \
+      "git worktree remove ${path}" \
+      "$([ "$delete_branch" = 1 ] && printf 'git branch -d %s' "$branch" || printf 'keep branch %s' "$branch")"
+  else
+    confirm "Remove ${what}?" "git worktree remove ${path}"
+  fi
 
   # Nothing escalates to `git worktree remove --force`. Everything this plugin
   # can name has been checked; whatever git is still holding on to is something
@@ -615,12 +682,12 @@ EOF
 
   if [ "$delete_branch" = 1 ]; then
     worktree_delete_branch "$branch" "$sha" "$reason"
-  else
+  elif [ -n "$branch" ]; then
     note "kept branch ${branch}"
   fi
 
   git_run worktree prune
-  good "removed the worktree for ${branch}"
+  good "removed ${what}"
 }
 
 # Deletes a branch this run has proved merged, and says how to undo it.

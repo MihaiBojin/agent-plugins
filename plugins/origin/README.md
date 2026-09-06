@@ -70,6 +70,17 @@ checkout and no more: a merged pull request says nothing about the commits
 sitting on the local branch, and only the content comparison can say that
 deleting it loses nothing.
 
+The head branch is never deleted. A worktree can hold it while the main
+checkout is on some other branch, and a head branch the remote already has
+reaches the merged test finished, like any other branch. Its checkout goes on
+that answer; the branch does not.
+
+A worktree with a detached HEAD has no branch to be finished, so what counts
+is whether any ref already reaches the commit it sits on. One that does makes
+the removal ordinary. None at all makes this checkout the only thing pointing
+at that commit, and the removal is refused until `--force`, which prints
+`git worktree add --detach <path> <sha>` as the undo.
+
 An unfinished branch keeps its worktree, because that is where the work is. A
 stash on the branch, a lock, the main worktree and the one you are standing in
 are each refused with the reason.
@@ -95,7 +106,9 @@ The default squash body on both forges is the commit list — `wip`, `fix lint`,
 `address review comments` — which records how the work happened rather than
 what it did. `origin merge --gather` emits the title, description, commits,
 diffstat and trailers as JSON; the model writes the body from that; the script
-shows it, merges, and deletes the remote branch.
+shows it and merges. The branch on the remote is left where it is: GitHub's
+"automatically delete head branches" and GitLab's "delete source branch"
+already decide that, per repository.
 
 `Fixes #123` and `Co-authored-by:` are re-attached afterwards by the script,
 because a trailer stops working the moment it is paraphrased.

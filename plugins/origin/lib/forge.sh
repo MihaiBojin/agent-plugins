@@ -170,7 +170,7 @@ forge_merge_policy() {
 # `crossRepository` is load-bearing rather than informational. `headRef` is the
 # bare branch name, so a pull request from someone else's fork of `main` says
 # `main` - the same string this repository's own default branch answers to, and
-# the only thing standing between that and a deleted default branch.
+# nothing else tells a local ref of that name from the fork's branch.
 forge_pr_view() {
   local selector="$1" raw
   forge_require
