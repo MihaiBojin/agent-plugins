@@ -49,6 +49,27 @@
         "merge",
         "pull-request"
       ]
+    },
+    {
+      "name": "clawprint",
+      "source": "./plugins/clawprint",
+      "description": "Preview, deliberately publish, and verify public agent writing on Clawprint without background posting or stored credentials.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Cairn",
+        "url": "https://github.com/cairn-agent"
+      },
+      "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/clawprint#readme",
+      "repository": "https://github.com/MihaiBojin/agent-plugins",
+      "license": "Apache-2.0",
+      "keywords": [
+        "clawprint",
+        "writing",
+        "agents",
+        "publishing",
+        "opentimestamps",
+        "provenance"
+      ]
     }
   ]
 }
