@@ -765,3 +765,99 @@ JSON
     [ "$output" = "${WORKTREES}/${b}/proj" ]
   done
 }
+
+# Eight, and every one asked about. `worktree_record_at` reads the record list
+# the same way `worktree_path_of_branch` does, and the failure that shape used
+# to carry only showed when at least three records followed the match. Git
+# lists linked worktrees sorted by directory name rather than by creation
+# order, so the one just made is not the last one.
+many_worktrees() {
+  local branch
+  for branch in "$@"; do
+    origin_cli gwa "$branch"
+    [ "$status" -eq 0 ]
+  done
+}
+
+@test "remove: a worktree is recognised wherever it sits in the list" {
+  many_worktrees h8 g7 f6 e5 d4 c3 b2 a1
+
+  local branch
+  for branch in h8 g7 f6 e5 d4 c3 b2 a1; do
+    (
+      cd "${WORKTREES}/${branch}/proj" || exit 1
+      commit_file work.txt yes "Work on ${branch}"
+    )
+  done
+
+  # Unmerged, so each refuses and says why. The failure this covers exits 141
+  # with both streams empty.
+  for branch in h8 g7 f6 e5 d4 c3 b2 a1; do
+    origin_cli gwr "$branch"
+    [ "$status" -eq 1 ]
+    [ -n "${output}${stderr}" ]
+    [[ "${output}${stderr}" == *"${branch}"* ]]
+  done
+}
+
+@test "list: many worktrees are all reported, with their branches" {
+  many_worktrees h8 g7 f6 e5 d4 c3 b2 a1
+
+  origin_cli gwl --json
+  [ "$status" -eq 0 ]
+  run jq_of "$output" 'length'
+  [ "$output" = 9 ]
+
+  origin_cli gwl --json
+  run jq_of "$output" '[.[].branch] | sort | join(",")'
+  [ "$output" = "a1,b2,c3,d4,e5,f6,g7,h8,main" ]
+}
+
+@test "list: age and dirty state survive the shared commit lookup" {
+  many_worktrees b2 a1
+  printf 'scratch\n' >"${WORKTREES}/a1/proj/untracked.txt"
+
+  origin_cli gwl --json
+  [ "$status" -eq 0 ]
+  run jq_of "$output" '.[] | select(.branch == "a1") | .dirty'
+  [ "$output" = true ]
+
+  origin_cli gwl --json
+  run jq_of "$output" '.[] | select(.branch == "b2") | .dirty'
+  [ "$output" = false ]
+
+  # Every worktree here sits on the same commit, which is what the cache keys
+  # on: all of them still carry that commit's date and age.
+  origin_cli gwl --json
+  run jq_of "$output" '[.[] | select(.lastCommit == "" or .age == "")] | length'
+  [ "$output" = 0 ]
+}
+
+# The key is set after the worktree exists, because `gwa` branches from the
+# head branch and a name resolving to nothing has nothing to branch from. The
+# work is a real file: an empty commit reaches the head branch and is finished.
+@test "remove: a refusal under a misstated head branch names the config key" {
+  origin_cli gwa feature
+  cd "${WORKTREES}/feature/proj"
+  commit_file work.txt yes "The work"
+  cd "$REPO"
+  git config git-worktree-plugin.headBranch does-not-exist
+
+  origin_cli gwr feature
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"git-worktree-plugin.headBranch names does-not-exist"* ]]
+  [[ "$stderr" == *"no branch here or on origin"* ]]
+  [[ "$stderr" == *"origin doctor"* ]]
+}
+
+@test "remove: a refusal under a working head branch says nothing about the key" {
+  origin_cli gwa feature
+  cd "${WORKTREES}/feature/proj"
+  commit_file work.txt yes "The work"
+  cd "$REPO"
+
+  origin_cli gwr feature
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"feature is not merged into origin/main"* ]]
+  [[ "$stderr" != *"git-worktree-plugin.headBranch"* ]]
+}

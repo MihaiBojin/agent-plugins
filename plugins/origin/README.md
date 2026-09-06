@@ -11,15 +11,15 @@ codex plugin add origin@MihaiBojin
 
 ## Commands
 
-|                                     | Aliases            |                                                    |
-| ----------------------------------- | ------------------ | -------------------------------------------------- |
-| `origin git-worktree add <branch>`  | `gw add`, `gwa`    | Create a worktree, print its path                  |
-| `origin git-worktree remove <what>` | `gw remove`, `gwr` | Remove a finished worktree, delete a merged branch |
-| `origin git-worktree list`          | `gw list`, `gwl`   | Branch, drift, state, pull request, age            |
-| `origin git-worktree path <branch>` | `gw path`, `gwp`   | Where that branch's worktree is, or exit 1         |
-| `origin merge [<number>]`           |                    | Merge a pull request with a written body           |
-| `origin renew`                      |                    | Put this branch back on top of the head branch     |
-| `origin doctor`                     |                    | Check git, jq, the remote, the forge, permissions  |
+|                                     | Aliases            |                                                                    |
+| ----------------------------------- | ------------------ | ------------------------------------------------------------------ |
+| `origin git-worktree add <branch>`  | `gw add`, `gwa`    | Create a worktree, print its path                                  |
+| `origin git-worktree remove <what>` | `gw remove`, `gwr` | Remove a finished worktree, delete a merged branch                 |
+| `origin git-worktree list`          | `gw list`, `gwl`   | Branch, drift, state, pull request, age                            |
+| `origin git-worktree path <branch>` | `gw path`, `gwp`   | Where that branch's worktree is, or exit 1                         |
+| `origin merge [<number>]`           |                    | Merge a pull request with a written body                           |
+| `origin renew`                      |                    | Put this branch back on top of the head branch                     |
+| `origin doctor`                     |                    | Check git, jq, the remote, the head branch, the forge, permissions |
 
 Every command takes `--dry-run`, `--yes`, `--quiet`, `--verbose` and
 `--no-color`. `git-worktree list` adds `--json`, and is the only command with

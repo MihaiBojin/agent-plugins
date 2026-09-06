@@ -2,6 +2,48 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.8.1
+
+- `doctor` fails on a `git-worktree-plugin.headBranch` naming no ref, and says
+  which name. It reported `ok` and `ready`, while every reap refused with
+  `<branch> is not merged into <name>` for as long as the setting stood.
+- A reap refused under that setting names the key rather than only the branch.
+  `feature is not merged into does-not-exist` is true and useless: it reads as
+  a fact about the branch, and the operator has no way to tell a misconfigured
+  key from a branch that exists somewhere they cannot see.
+- `git-worktree list` runs 35 git subprocesses over nine worktrees rather than
+  63, and takes about half as long. `%cI` and `%cr` come from one `git log` per
+  commit rather than two per worktree, and the head ref is checked once for the
+  whole list instead of once per row.
+
+### Choices
+
+`repo_head_branch` still returns a stated head branch as written. Making it
+refuse an unresolvable name would stop `gwl` and `gwa` too, in a repository
+where the only thing wrong is one config line, and `repo_head_ref_for` already
+documents passing an unrecognised name through for git to resolve as it always
+did. The new message is on the refusal path in `git-worktree remove` alone,
+where the cost of the mistake is a destructive command that cannot explain
+itself, and it fires only when the name came from the config key and resolves
+to nothing. `doctor` holds the full answer and the message points there.
+
+Two caches, both keyed on something that cannot change inside one run: the
+commit date pair, keyed by sha, and the main worktree, which `git worktree add`
+and `git worktree remove` never move. Neither is read through `$(…)` in the
+form that would matter - a subshell takes the cache with it when it exits, so
+`worktree_commit_age` sets globals rather than printing, and `worktree_require`
+warms the main worktree in the caller's own shell the way `repo_require`
+already warms the remote. Nothing caches `worktree_records`: `gwa` and `gwr`
+change what it answers.
+
+The main worktree is warmed in `worktree_require` rather than `repo_require`.
+Every command calls `repo_require`, and `merge` and `renew` would have paid for
+a `git worktree list` neither of them reads.
+
+The head ref's existence is hoisted out of the row loop rather than cached. It
+is one fact for the whole list, and a variable says so more plainly than a
+lookup would.
+
 ## 0.8.0
 
 - `git-worktree path <branch>` prints the path of the worktree that has that

@@ -10,6 +10,16 @@
 # root, one <repo> directory each, so the same branch name in several of them
 # groups their worktrees together. A slash in a branch name nests.
 
+# `repo_require`, plus the main worktree resolved in this shell. `worktree_root`
+# and `worktree_path_for` both read it through `$(…)`, and a subshell would take
+# the cached answer with it; warming it here means the two of them cost one
+# `git worktree list` between them rather than one each. Only the three
+# worktree commands need it, so only they pay for it.
+worktree_require() {
+  repo_require
+  ORIGIN_MAIN_WORKTREE="$(repo_main_worktree || printf '')"
+}
+
 worktree_root() {
   printf '%s/.worktrees\n' "$(dirname "$(repo_main_worktree)")"
 }
@@ -270,7 +280,7 @@ worktree_add() {
   git check-ref-format --branch "$branch" >/dev/null 2>&1 ||
     die "git-worktree add: '${branch}' is not a valid branch name"
 
-  repo_require
+  worktree_require
 
   local existing
   existing="$(worktree_path_of_branch "$branch")"
@@ -339,6 +349,35 @@ worktree_is_dirty() {
   [ -n "$(git -C "$1" status --porcelain 2>/dev/null)" ]
 }
 
+# `%cI` and `%cr` for one commit, into ORIGIN_COMMIT_ISO and ORIGIN_COMMIT_AGE.
+#
+# Two globals rather than a printed pair, because a caller writing
+# `$(worktree_commit_age ...)` would run this in a subshell and the cache would
+# die with it. One `git log` covers both fields, and worktrees sharing a commit
+# - every one just branched from the head branch - share the answer.
+ORIGIN_COMMIT_CACHE=''
+ORIGIN_COMMIT_ISO=''
+ORIGIN_COMMIT_AGE=''
+
+worktree_commit_age() {
+  local sha="$1" hit line
+  ORIGIN_COMMIT_ISO='' ORIGIN_COMMIT_AGE=''
+  [ -n "$sha" ] || return 0
+
+  hit="${ORIGIN_COMMIT_CACHE#*"${ORIGIN_FS}${sha}${ORIGIN_FS}"}"
+  if [ "$hit" = "$ORIGIN_COMMIT_CACHE" ]; then
+    line="$(git log -1 --format="%cI${ORIGIN_FS}%cr" "$sha" 2>/dev/null || printf '')"
+    ORIGIN_COMMIT_CACHE="${ORIGIN_COMMIT_CACHE}${ORIGIN_FS}${sha}${ORIGIN_FS}${line}"$'\n'
+  else
+    line="${hit%%$'\n'*}"
+  fi
+
+  ORIGIN_COMMIT_ISO="${line%%"$ORIGIN_FS"*}"
+  ORIGIN_COMMIT_AGE="${line#*"$ORIGIN_FS"}"
+  [ "$ORIGIN_COMMIT_AGE" = "$line" ] && ORIGIN_COMMIT_AGE=''
+  return 0
+}
+
 worktree_list() {
   local format='table' arg
   while [ "$#" -gt 0 ]; do
@@ -370,12 +409,16 @@ USAGE
     esac
   done
 
-  repo_require
+  worktree_require
 
-  local head_ref current root rows='' path sha branch flags use_forge=0
+  local head_ref current root rows='' path sha branch flags use_forge=0 head_exists=0
   head_ref="$(repo_head_ref)"
   current="$(repo_root 2>/dev/null || printf '')"
   root="$(worktree_root)"
+
+  # Once. The head ref is the same for every row, and asking per worktree cost
+  # one `rev-parse` each.
+  git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null 2>&1 && head_exists=1
 
   if [ "${ORIGIN_NO_FORGE:-0}" != 1 ] && forge_available; then
     use_forge=1
@@ -387,16 +430,15 @@ USAGE
     case "$flags" in *bare*) continue ;; esac
 
     local ahead=0 behind=0 counts dirty='clean' age='' committed='' pr='' pr_state='' pr_number=''
-    if [ -n "$branch" ] && git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
+    if [ -n "$branch" ] && [ "$head_exists" = 1 ]; then
       counts="$(repo_ahead_behind "refs/heads/${branch}" "$head_ref")"
       ahead="${counts%% *}"
       behind="${counts##* }"
     fi
     worktree_is_dirty "$path" && dirty='dirty'
-    if [ -n "$sha" ]; then
-      age="$(git log -1 --format=%cr "$sha" 2>/dev/null || printf '')"
-      committed="$(git log -1 --format=%cI "$sha" 2>/dev/null || printf '')"
-    fi
+    worktree_commit_age "$sha"
+    age="$ORIGIN_COMMIT_AGE"
+    committed="$ORIGIN_COMMIT_ISO"
     if [ "$use_forge" = 1 ] && [ -n "$branch" ]; then
       pr="$(forge_pr_state_for "$branch")"
       pr_state="${pr%%$'\t'*}"
@@ -535,7 +577,7 @@ worktree_remove() {
     esac
   done
 
-  repo_require
+  worktree_require
   # Say which. Defaulting to the current branch cannot work: from inside its
   # own worktree that is the checkout you are standing in, and from the main
   # checkout it is the main worktree, and both are refused twenty lines down.
@@ -645,6 +687,9 @@ worktree_remove() {
       say ''
       if [ -n "$branch" ]; then
         say "${branch} is not merged into $(ref_name "$head_ref")${extra}."
+        if repo_head_branch_misstated "$head_ref"; then
+          say "git-worktree-plugin.headBranch names ${head_ref}, which is no branch here or on ${ORIGIN_REMOTE:-the remote}, so nothing reaches it. 'origin doctor' has the rest."
+        fi
         die "git-worktree remove: refusing; pass --force to remove the checkout and keep the branch"
       fi
       say "no ref reaches ${sha}, so this checkout is the only thing pointing at that commit."
