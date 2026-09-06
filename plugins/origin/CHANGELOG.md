@@ -2,6 +2,42 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.8.0
+
+- `git-worktree path <branch>` prints the path of the worktree that has that
+  branch checked out, and exits 1 when no worktree of this repository has it.
+  It takes `gw path` and `gwp` as well. A shell function that means to `cd`
+  there gets the path alone on stdout and the reason on stderr, so it can tell
+  "there it is" from "make one first" without parsing anything.
+- `git-worktree add` and `git-worktree remove` answer for every branch rather
+  than five in eight. Asking about a branch whose worktree was not among the
+  first few records exited 141 with no output at all.
+
+### Choices
+
+`worktree_path_of_branch`, `worktree_branch_at` and `worktree_record_at` read
+their records from a here-doc rather than a pipe. Each pipes into an `awk` that
+`exit`s on the first match; `exit` closes awk's stdin while `worktree_records`
+is still writing, the writer takes SIGPIPE, `pipefail` turns that into 141 and
+`set -e` ends the program silently. It only starts once the match sits far
+enough down the list, which is why it looked like a repository-size bug rather
+than a shape bug. The here-doc is the same form `worktree_records` already uses
+to read `git worktree list`, so no new idiom arrives with the fix.
+
+The regression test makes nine worktrees. Every other worktree test makes at
+most three and then asks about the one it just made, which is always the last
+record, so the whole suite could run green against the crash - and did, through
+two releases.
+
+`path` reports only where a worktree _is_, never where one _would_ go. `gwa`
+already prints the destination when it makes one, and a single command that
+sometimes means "here it is" and sometimes "here is where it would be" cannot
+be `cd`-ed to without asking a second question.
+
+No command document under `commands/`. `path` answers a shell function, not an
+agent: an agent that wants the checkout runs `gwa`, which makes it when it is
+missing and prints the path either way.
+
 ## 0.7.1
 
 Git resolves a bare ref name through `refs/<name>`, `refs/tags/<name>`,

@@ -49,12 +49,21 @@ EOF
   return 0
 }
 
+# A here-doc rather than a pipe, in these three and for one reason: awk's `exit`
+# closes its stdin while worktree_records is still writing, so the writer takes
+# SIGPIPE, pipefail turns that into 141, and `set -e` exits the program with no
+# output at all. It starts once there are more worktrees than a pipe buffer's
+# worth of records ahead of the match.
 worktree_path_of_branch() {
-  worktree_records | awk -F'\037' -v branch="$1" '$3 == branch { print $1; exit }'
+  awk -F'\037' -v branch="$1" '$3 == branch { print $1; exit }' <<EOF
+$(worktree_records)
+EOF
 }
 
 worktree_branch_at() {
-  worktree_records | awk -F'\037' -v path="$1" '$1 == path { print $3; exit }'
+  awk -F'\037' -v path="$1" '$1 == path { print $3; exit }' <<EOF
+$(worktree_records)
+EOF
 }
 
 # The whole record for one path - sha, branch and flags in one line - or
@@ -62,7 +71,9 @@ worktree_branch_at() {
 # "is this ours", which an empty branch alone cannot give: a detached worktree
 # has one too.
 worktree_record_at() {
-  worktree_records | awk -F'\037' -v path="$1" '$1 == path { print; exit }'
+  awk -F'\037' -v path="$1" '$1 == path { print; exit }' <<EOF
+$(worktree_records)
+EOF
 }
 
 worktree_record_field() {
@@ -168,6 +179,49 @@ worktree_dest_state() {
 # --------------------------------------------------------------------------
 # add
 # --------------------------------------------------------------------------
+
+# Where this branch's worktree is. A shell function whose whole job is to `cd`
+# there needs the path alone on stdout, so the reason there is not one goes to
+# stderr and the exit code carries the answer.
+worktree_path() {
+  local branch='' arg
+  while [ "$#" -gt 0 ]; do
+    arg="$1"
+    if parse_common_flag "$arg"; then
+      shift
+      continue
+    fi
+    case "$arg" in
+      -h | --help)
+        cat >&2 <<'USAGE'
+origin git-worktree path <branch>   (aliases: gw path, gwp)
+
+Print the path of the worktree that has <branch> checked out. Exit 1 when no
+worktree of this repository has it.
+USAGE
+        return 0
+        ;;
+      -*) die "git-worktree path: unknown argument ${arg}" ;;
+      *)
+        [ -z "$branch" ] ||
+          die "git-worktree path: one branch at a time, not '${branch}' and '${arg}'"
+        branch="$arg"
+        shift
+        ;;
+    esac
+  done
+
+  [ -n "$branch" ] || die "git-worktree path: which branch?"
+
+  repo_require
+
+  local path
+  path="$(worktree_path_of_branch "$branch")"
+  [ -n "$path" ] ||
+    die "no worktree of this repository has ${branch} checked out"
+
+  printf '%s\n' "$path"
+}
 
 worktree_add_usage() {
   cat >&2 <<'USAGE'

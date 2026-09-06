@@ -53,8 +53,9 @@ WORKTREES
   git-worktree add <branch>      Create a worktree and print its path
   git-worktree remove <what>     Remove a finished worktree, delete a merged branch
   git-worktree list [--json]     Every worktree: branch, drift, state, pull request
+  git-worktree path <branch>     Print where that branch's worktree is
 
-  Each takes `gw <sub>` and a two-letter form: gwa, gwr, gwl.
+  Each takes `gw <sub>` and a two-letter form: gwa, gwr, gwl, gwp.
 
 EVERYTHING ELSE
   merge [<number>]               Merge a pull request with a written body
@@ -94,8 +95,9 @@ worktree_dispatch() {
     add) worktree_add "$@" ;;
     remove | rm) worktree_remove "$@" ;;
     list | ls) worktree_list "$@" ;;
+    path) worktree_path "$@" ;;
     '' | -h | --help) usage ;;
-    *) die "git-worktree ${subcommand} is not a thing; try add, remove or list" ;;
+    *) die "git-worktree ${subcommand} is not a thing; try add, remove, list or path" ;;
   esac
 }
 
@@ -113,6 +115,7 @@ main() {
     gwa) worktree_add "$@" ;;
     gwr) worktree_remove "$@" ;;
     gwl) worktree_list "$@" ;;
+    gwp) worktree_path "$@" ;;
     merge) merge_main "$@" ;;
     renew) renew_main "$@" ;;
     doctor) doctor "$@" ;;
