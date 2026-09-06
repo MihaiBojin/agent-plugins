@@ -861,3 +861,162 @@ many_worktrees() {
   [[ "$stderr" == *"feature is not merged into origin/main"* ]]
   [[ "$stderr" != *"git-worktree-plugin.headBranch"* ]]
 }
+
+# --------------------------------------------------------------------------
+# move
+# --------------------------------------------------------------------------
+#
+# Directory name equals branch name is the invariant `gwl` and `gwr` both read,
+# so every one of these checks both halves, never just the rename.
+
+@test "move: renames the branch and moves the checkout together" {
+  origin_cli gwa old-name
+  cd "${WORKTREES}/old-name/proj"
+
+  origin_cli gwm new-name --yes
+  [ "$status" -eq 0 ]
+  [ "$output" = "${WORKTREES}/new-name/proj" ]
+  [ -d "${WORKTREES}/new-name/proj" ]
+  [ ! -d "${WORKTREES}/old-name/proj" ]
+  [ "$(git -C "${WORKTREES}/new-name/proj" rev-parse --abbrev-ref HEAD)" = "new-name" ]
+  run git show-ref --verify --quiet refs/heads/old-name
+  [ "$status" -ne 0 ]
+}
+
+@test "move: the empty parent a nested name leaves behind goes, the root stays" {
+  origin_cli gwa fix/login
+  cd "${WORKTREES}/fix/login/proj"
+
+  origin_cli gwm renamed --yes
+  [ "$status" -eq 0 ]
+  [ ! -d "${WORKTREES}/fix" ]
+  [ -d "$WORKTREES" ]
+}
+
+@test "move: a nested new name gets its parent made for it" {
+  origin_cli gwa flat
+  cd "${WORKTREES}/flat/proj"
+
+  origin_cli gwm fix/login --yes
+  [ "$status" -eq 0 ]
+  [ -d "${WORKTREES}/fix/login/proj" ]
+  [ "$(git -C "${WORKTREES}/fix/login/proj" rev-parse --abbrev-ref HEAD)" = "fix/login" ]
+}
+
+@test "move: the main worktree is refused" {
+  origin_cli gwm something --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"main worktree"* ]]
+}
+
+@test "move: a name already taken by a branch is refused" {
+  origin_cli gwa one
+  git branch taken main
+  cd "${WORKTREES}/one/proj"
+
+  origin_cli gwm taken --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"already exists"* ]]
+  [ -d "${WORKTREES}/one/proj" ]
+}
+
+@test "move: renaming to the name it already has is refused" {
+  origin_cli gwa same
+  cd "${WORKTREES}/same/proj"
+
+  origin_cli gwm same --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"already called that"* ]]
+}
+
+@test "move: a destination another worktree already holds is refused" {
+  origin_cli gwa one
+  origin_cli gwa two
+  cd "${WORKTREES}/one/proj"
+
+  origin_cli gwm two --yes
+  [ "$status" -eq 1 ]
+  [ -d "${WORKTREES}/one/proj" ]
+  [ -d "${WORKTREES}/two/proj" ]
+}
+
+@test "move: an invalid branch name is refused before anything moves" {
+  origin_cli gwa one
+  cd "${WORKTREES}/one/proj"
+
+  origin_cli gwm 'not a branch' --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"not a valid branch name"* ]]
+  [ -d "${WORKTREES}/one/proj" ]
+}
+
+@test "move: with no name it says which it needs" {
+  origin_cli gwa one
+  cd "${WORKTREES}/one/proj"
+
+  origin_cli gwm
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"which name"* ]]
+}
+
+@test "move: two names is an error, not a guess" {
+  origin_cli gwa one
+  cd "${WORKTREES}/one/proj"
+
+  origin_cli gwm alpha beta
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"one branch name, not two"* ]]
+}
+
+@test "move: a detached worktree has no branch to rename" {
+  origin_cli gwa one
+  cd "${WORKTREES}/one/proj"
+  git checkout -q --detach
+
+  origin_cli gwm renamed --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"no branch checked out"* ]]
+}
+
+@test "move: a locked worktree is refused, and names the unlock" {
+  origin_cli gwa one
+  git worktree lock "${WORKTREES}/one/proj"
+  cd "${WORKTREES}/one/proj"
+
+  origin_cli gwm renamed --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"is locked"* ]]
+  [[ "$stderr" == *"worktree unlock"* ]]
+}
+
+@test "move: gw move and gwm are the same command" {
+  origin_cli gwa one
+  cd "${WORKTREES}/one/proj"
+
+  origin_cli gw move renamed --yes
+  [ "$status" -eq 0 ]
+  [ "$output" = "${WORKTREES}/renamed/proj" ]
+}
+
+@test "move: what it moved is what gwl then reports" {
+  origin_cli gwa old-name
+  cd "${WORKTREES}/old-name/proj"
+  origin_cli gwm new-name --yes
+  cd "$REPO"
+
+  origin_cli gwl --json
+  run jq_of "$output" '[.[].branch] | sort | join(",")'
+  [ "$output" = "main,new-name" ]
+}
+
+@test "move: a dry run moves nothing" {
+  origin_cli gwa one
+  cd "${WORKTREES}/one/proj"
+
+  origin_cli gwm renamed --dry-run
+  [ "$status" -eq 0 ]
+  [ -d "${WORKTREES}/one/proj" ]
+  [ ! -d "${WORKTREES}/renamed/proj" ]
+  run git show-ref --verify --quiet refs/heads/one
+  [ "$status" -eq 0 ]
+}
