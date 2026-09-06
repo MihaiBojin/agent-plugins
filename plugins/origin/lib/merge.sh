@@ -27,9 +27,23 @@ origin merge [<number>] [flags]
   --body <text>         The body
   --body-file <path>    The body, from a file ("-" for standard input)
   --edit                Open the body in $EDITOR before merging
-  --force               Merge anyway, having been told why not
+  --with-failing-checks Merge although named checks are failing
   --dry-run             Print what would be merged, and stop
   --yes                 Do not ask
+
+  Seven things stop a merge. Only the first has a flag:
+
+    these checks are failing        --with-failing-checks
+    it is a draft                   asked at a terminal, and marked ready
+    these checks have not finished  refused
+    its checks are still running    refused
+    it does not merge cleanly       refused
+    blocked, a review or a rule     refused
+    the forge reports it dirty      refused
+
+  A failing check is a judgement somebody can make, having read it. An
+  unfinished one is not a judgement anybody can make yet: `gh pr merge --auto`
+  is what waiting is for.
 USAGE
 }
 
@@ -41,7 +55,7 @@ merge_cleanup() {
 
 merge_main() {
   local number='' method='' title='' body='' body_file='' edit=0
-  local gather=0 force=0 have_body=0 arg
+  local gather=0 with_failing_checks=0 have_body=0 arg
 
   while [ "$#" -gt 0 ]; do
     arg="$1"
@@ -85,9 +99,12 @@ merge_main() {
       --auto)
         die "merge: --auto is gone - it meant --yes, and it read like gh pr merge --auto; pass --yes"
         ;;
-      --force)
-        force=1
+      --with-failing-checks)
+        with_failing_checks=1
         shift
+        ;;
+      --force)
+        die "merge: --force is gone - it covered seven unrelated refusals with one word; pass --with-failing-checks for the only one a person can judge"
         ;;
       # The branch on the remote is the forge's. GitHub's "automatically
       # delete head branches" and GitLab's "delete source branch" already
@@ -139,6 +156,12 @@ merge_main() {
   # it usually does.
   repo_fetch
 
+  # Before the refusals are read, and before `--gather` reports them: a gather
+  # that says `could not determine whether it merges cleanly` about a pull
+  # request the merge would settle and accept sends the model away for no
+  # reason, and the two would be answering from different readings.
+  merge_settle_mergeable "$pr_number"
+
   if [ "$gather" = 1 ]; then
     merge_gather
     return 0
@@ -149,13 +172,36 @@ merge_main() {
 
   local refusals
   refusals="$(merge_refusals)"
+
+  if merge_has_kind draft "$refusals"; then
+    if [ "$ORIGIN_DRY_RUN" = 1 ]; then
+      note "would ask whether to mark #${pr_number} ready for review"
+      refusals="$(printf '%s\n' "$refusals" | grep -v "^draft${ORIGIN_FS}" || printf '')"
+    else
+      merge_undraft "$pr_number"
+      # Everything is read again. Marking a draft ready can start required
+      # checks and request reviews it never had, so a pull request refused only
+      # for being a draft can come back refused for a pending check - which is
+      # the right answer, not a bug.
+      merge_settle_mergeable "$pr_number"
+      refusals="$(merge_refusals)"
+    fi
+  fi
+
   if [ -n "$refusals" ]; then
     say ''
     warn "$(forge_noun) #${pr_number} is not ready to merge:"
-    printf '%s\n' "$refusals" | indent_lines
+    printf '%s\n' "$refusals" | cut -d"$ORIGIN_FS" -f2- | indent_lines
     say ''
-    [ "$force" = 1 ] || die "refusing to merge; pass --force if you mean it"
-    warn "merging anyway, because --force"
+    # Anything that is not a failing check is the end of it. One flag covering
+    # seven unrelated refusals is what `--force` was, and the reason a merge
+    # could get past a blocked review by naming a check.
+    if printf '%s\n' "$refusals" | cut -d"$ORIGIN_FS" -f1 | grep -qv '^checks$'; then
+      die "refusing to merge; no flag gets past that"
+    fi
+    [ "$with_failing_checks" = 1 ] ||
+      die "refusing to merge; pass --with-failing-checks if you have read them and mean it"
+    warn "merging anyway, because --with-failing-checks"
   fi
 
   # The body: whatever was passed, or a plain one built from what is already
@@ -220,30 +266,103 @@ merge_load() {
     die "no open $(forge_noun) for ${branch}; say which one to merge"
 }
 
-# Why not to merge, one reason per line. Empty means go ahead.
+merge_has_kind() {
+  printf '%s\n' "$2" | grep -q "^${1}${ORIGIN_FS}"
+}
+
+# Waits for the forge to work out whether it merges cleanly.
+#
+# Both forges compute mergeability asynchronously: a pull request read moments
+# after a push answers UNKNOWN and answers properly a moment later. Refusing on
+# the first UNKNOWN would reject perfectly mergeable work at random, which
+# reads as flaky rather than careful.
+#
+# Three tries, two seconds apart. Both numbers are a guess - nothing here has
+# been measured against a live pull request, and that is the thing to do before
+# trusting them. The two variables exist so a test does not sleep.
+merge_settle_mergeable() {
+  local number="$1" tries="${ORIGIN_MERGEABLE_TRIES:-3}" wait="${ORIGIN_MERGEABLE_WAIT:-2}" try=1
+  while [ "$(forge_pr_field .mergeable)" = "UNKNOWN" ] && [ "$try" -lt "$tries" ]; do
+    note "the forge has not said whether it merges cleanly yet; asking again"
+    if [ "$wait" -gt 0 ]; then
+      sleep "$wait"
+    fi
+    forge_pr_load_number "$number" || break
+    try=$((try + 1))
+  done
+  return 0
+}
+
+# A draft is a question rather than a refusal: the answer is usually "yes, it
+# is ready", and that is one command away.
+#
+# --yes does not answer it. Marking a draft ready changes the pull request -
+# starting required checks, requesting reviews - rather than performing one of
+# the ordinary steps --yes is there to skip.
+merge_undraft() {
+  local number="$1" reply how
+  if ! have_tty; then
+    case "$(forge_kind)" in
+      github) how="gh pr ready ${number}" ;;
+      gitlab) how="glab mr update ${number} --ready" ;;
+      *) how="mark it ready on the forge" ;;
+    esac
+    die "$(forge_noun) #${number} is a draft, and there is no terminal to ask at; mark it ready with: ${how}"
+  fi
+  say ''
+  say "$(forge_noun) #${number} is a draft."
+  printf 'Mark it ready for review? [y/N] ' >&2
+  read -r reply </dev/tty || reply=''
+  case "$reply" in
+    y | Y | yes | Yes | YES) ;;
+    *) die "aborted" ;;
+  esac
+  forge_pr_mark_ready "$number"
+}
+
+# Why not to merge: a kind, then the reason, one per line.
+#
+# The kind decides what can get past it. `checks` is the one a person can judge
+# - they have read the failure and decided it does not matter - and
+# `--with-failing-checks` is how they say so. `draft` is a question rather than
+# a refusal. Everything else is `hard`, and nothing overrides it.
 merge_refusals() {
   local checks pending
-  [ "$(forge_pr_field .draft)" = "true" ] && printf 'it is a draft\n'
+  [ "$(forge_pr_field .draft)" = "true" ] && printf 'draft%sit is a draft\n' "$ORIGIN_FS"
+  # Positively MERGEABLE, rather than "not CONFLICTING". Both forges compute
+  # this asynchronously and answer UNKNOWN until they have, and a field the
+  # forge never sent arrives here as UNKNOWN too - so treating anything but a
+  # conflict as safe merged on an answer nobody had given.
   case "$(forge_pr_field .mergeable)" in
-    CONFLICTING) printf 'it conflicts with %s\n' "$(forge_pr_field .baseRef)" ;;
+    MERGEABLE) ;;
+    CONFLICTING) printf 'hard%sit conflicts with %s\n' "$ORIGIN_FS" "$(forge_pr_field .baseRef)" ;;
+    *) printf 'hard%scould not determine whether it merges cleanly\n' "$ORIGIN_FS" ;;
   esac
   case "$(forge_pr_field .mergeStateStatus)" in
-    BLOCKED) printf 'the forge reports it blocked - a review, or a branch protection rule\n' ;;
-    DIRTY) printf 'the forge reports the merge dirty\n' ;;
+    BLOCKED) printf 'hard%sthe forge reports it blocked - a review, or a branch protection rule\n' "$ORIGIN_FS" ;;
+    DIRTY) printf 'hard%sthe forge reports the merge dirty\n' "$ORIGIN_FS" ;;
   esac
   checks="$(printf '%s' "$FORGE_PR_JSON" | jq -r '.failingChecks | join(", ")')"
-  [ -n "$checks" ] && printf 'these checks are failing: %s\n' "$checks"
+  [ -n "$checks" ] && printf 'checks%sthese checks are failing: %s\n' "$ORIGIN_FS" "$checks"
   # One reading, taken now. A check still running is a reason not to merge
   # rather than a reason to sit and poll: the answer arrives minutes after the
   # command would have returned, and `gh pr merge --auto` is what waiting is
   # for. The forge's own word is the fallback for a pipeline it will not name.
   pending="$(printf '%s' "$FORGE_PR_JSON" | jq -r '(.pendingChecks // []) | join(", ")')"
   if [ -n "$pending" ]; then
-    printf 'these checks have not finished: %s\n' "$pending"
+    printf 'hard%sthese checks have not finished: %s\n' "$ORIGIN_FS" "$pending"
   elif [ "$(forge_pr_field .mergeStateStatus)" = "PENDING" ]; then
-    printf 'the forge reports its checks still running\n'
+    printf 'hard%sthe forge reports its checks still running\n' "$ORIGIN_FS"
   fi
   return 0
+}
+
+# The reasons alone, as a person reads them. The gate cuts the kinds off the
+# list it already has rather than calling this: `merge_refusals` asks the forge
+# object several questions, and a second reading could disagree with the one
+# the decision was made from.
+merge_refusal_reasons() {
+  merge_refusals | cut -d"$ORIGIN_FS" -f2-
 }
 
 # Everything a body could be written from, in one object.
@@ -254,7 +373,7 @@ merge_gather() {
   trailers="$(merge_trailers)"
   fallback_title="$(merge_decorate_title "$(forge_pr_field .title)" "$(forge_pr_field .number)" --squash)"
   fallback_body="$(merge_fallback_body)"
-  refusals="$(merge_refusals | json_array_from_lines)"
+  refusals="$(merge_refusal_reasons | json_array_from_lines)"
 
   jq -n \
     --argjson pr "$FORGE_PR_JSON" \

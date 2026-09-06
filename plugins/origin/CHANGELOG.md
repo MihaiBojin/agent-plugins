@@ -2,6 +2,51 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.9.0
+
+`merge --force` is gone. It covered seven unrelated refusals with one word, so
+a merge meant to get past a flaky check also got past a blocked review, a
+conflict and a draft.
+
+- `--with-failing-checks` replaces it, and covers only failing checks. A
+  failing check is a judgement somebody can make, having read it. Nothing gets
+  past a conflict, a protection rule, a dirty merge, or a check that has not
+  finished.
+- `--force` exits 1 and names what took its place.
+- A merge needs `mergeable` to say `MERGEABLE`. It tested only the
+  `CONFLICTING` arm, and a field the forge had not computed - which arrives as
+  `UNKNOWN`, and which a missing field also becomes - fell straight through to
+  the merge.
+- A draft is a question rather than a refusal. At a terminal it names the
+  pull request and offers to mark it ready; with no terminal it refuses and
+  prints the command. No flag proceeds past a draft.
+
+### Choices
+
+Both forges compute mergeability asynchronously, so a pull request read moments
+after a push answers `UNKNOWN` and answers properly a moment later. A flat
+refusal on the first `UNKNOWN` would reject mergeable work at random, which
+reads as flaky rather than careful, so it is asked again: three tries, two
+seconds apart, and a message that says `could not determine whether it merges
+cleanly` rather than `it does not merge cleanly`. **Both numbers are a guess.**
+Nothing here has been measured against a live pull request, and that is the
+thing to do before trusting them; `ORIGIN_MERGEABLE_TRIES` and
+`ORIGIN_MERGEABLE_WAIT` exist so the tests do not sleep, and so the numbers can
+be moved without a release.
+
+`--yes` does not answer the draft question. Marking a draft ready changes the
+pull request - starting required checks, requesting reviews - rather than
+performing one of the ordinary steps `--yes` is there to skip. Everything is
+read again afterwards, so a pull request refused only for being a draft can
+come back refused for a check the draft never ran. That is the right answer
+rather than a bug, and the command document says so.
+
+Refusals carry a kind now: `checks`, `draft`, or `hard`. The flag reads the
+kind rather than the wording, so a reason reworded later cannot quietly become
+overridable, and a reason added later is `hard` unless somebody decides
+otherwise. `--gather` still reports the prose alone, because its consumer is a
+model writing a body rather than a flag.
+
 ## 0.8.1
 
 - `doctor` fails on a `git-worktree-plugin.headBranch` naming no ref, and says

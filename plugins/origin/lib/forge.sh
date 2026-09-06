@@ -476,6 +476,20 @@ forge_pr_merge() {
   esac
 }
 
+# Marks a draft ready for review.
+#
+# This changes the pull request rather than reading it: undrafting can start
+# required checks and request reviews the draft never had, so whatever was
+# decided from the previous reading is stale afterwards.
+forge_pr_mark_ready() {
+  local number="$1"
+  case "$(forge_kind)" in
+    github) origin_run gh pr ready "$number" ;;
+    gitlab) origin_run glab mr update "$number" --ready ;;
+    *) die "no forge to mark it ready on" ;;
+  esac
+}
+
 # Every branch's pull-request state, in one call.
 #
 # `wt clean` in a repository with thirty stale branches must not make thirty

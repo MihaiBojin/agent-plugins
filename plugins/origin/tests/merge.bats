@@ -95,12 +95,22 @@ JSON
   [ "$output" = "0" ]
 }
 
-@test "a draft is refused, and says so" {
+@test "a draft with no terminal to ask at is refused, and names the command" {
   pr_json '"state": "OPEN", "isDraft": true, "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", "statusCheckRollup": []'
   origin_cli merge --yes
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"it is a draft"* ]]
-  [[ "$stderr" == *"pass --force"* ]]
+  [[ "$stderr" == *"is a draft"* ]]
+  [[ "$stderr" == *"gh pr ready 7"* ]]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "a draft is not something --with-failing-checks answers" {
+  pr_json '"state": "OPEN", "isDraft": true, "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", "statusCheckRollup": []'
+  origin_cli merge --yes --with-failing-checks
+  [ "$status" -eq 1 ]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
 }
 
 @test "a failing check is refused by name" {
@@ -153,13 +163,15 @@ JSON
   [[ "$stderr" != *"have not finished"* ]]
 }
 
-@test "--force merges past a check that has not finished" {
+@test "a check that has not finished keeps no override" {
   pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "UNSTABLE",
     "statusCheckRollup": [ { "name": "e2e", "status": "QUEUED", "conclusion": null } ]'
-  origin_cli merge --yes --force --body "Chunked reads."
-  [ "$status" -eq 0 ]
+  origin_cli merge --yes --with-failing-checks --body "Chunked reads."
+  [ "$status" -eq 1 ]
   [[ "$stderr" == *"have not finished: e2e"* ]]
-  [[ "$stderr" == *"merging anyway"* ]]
+  [[ "$stderr" == *"no flag gets past that"* ]]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
 }
 
 @test "gather reports the unfinished checks without waiting for them" {
@@ -178,12 +190,77 @@ JSON
   [[ "$stderr" == *"conflicts with main"* ]]
 }
 
-@test "--force merges past a refusal, having said what it is overriding" {
-  pr_json '"state": "OPEN", "isDraft": true, "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", "statusCheckRollup": []'
-  origin_cli merge --yes --force
+@test "--with-failing-checks merges past a failing check, having named it" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "UNSTABLE",
+    "statusCheckRollup": [ { "name": "flaky-e2e", "status": "COMPLETED", "conclusion": "FAILURE" } ]'
+  origin_cli merge --yes --with-failing-checks --body "Chunked reads."
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"it is a draft"* ]]
-  [[ "$stderr" == *"merging anyway"* ]]
+  [[ "$stderr" == *"these checks are failing: flaky-e2e"* ]]
+  [[ "$stderr" == *"merging anyway, because --with-failing-checks"* ]]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "1" ]
+}
+
+@test "a failing check without the flag is refused, and names the flag" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "UNSTABLE",
+    "statusCheckRollup": [ { "name": "flaky-e2e", "status": "COMPLETED", "conclusion": "FAILURE" } ]'
+  origin_cli merge --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"pass --with-failing-checks"* ]]
+}
+
+@test "--force is refused, and names what took its place" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", "statusCheckRollup": []'
+  origin_cli merge --yes --force
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"--force is gone"* ]]
+  [[ "$stderr" == *"--with-failing-checks"* ]]
+}
+
+@test "a failing check does not carry a blocked review with it" {
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "BLOCKED",
+    "statusCheckRollup": [ { "name": "flaky-e2e", "status": "COMPLETED", "conclusion": "FAILURE" } ]'
+  origin_cli merge --yes --with-failing-checks
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"no flag gets past that"* ]]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "mergeable UNKNOWN is refused, and says it could not tell" {
+  export ORIGIN_MERGEABLE_TRIES=1
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "UNKNOWN", "mergeStateStatus": "CLEAN", "statusCheckRollup": []'
+  origin_cli merge --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"could not determine whether it merges cleanly"* ]]
+  [[ "$stderr" != *"it conflicts with"* ]]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "a mergeable field the forge never sent is not treated as mergeable" {
+  export ORIGIN_MERGEABLE_TRIES=1
+  pr_json '"state": "OPEN", "isDraft": false, "mergeStateStatus": "CLEAN", "statusCheckRollup": []'
+  origin_cli merge --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"could not determine whether it merges cleanly"* ]]
+}
+
+@test "an UNKNOWN that settles on a re-read is merged" {
+  export ORIGIN_MERGEABLE_TRIES=3
+  pr_json '"state": "OPEN", "isDraft": false, "mergeable": "UNKNOWN", "mergeStateStatus": "CLEAN", "statusCheckRollup": []'
+  # The forge works it out between the first reading and the second.
+  stub_json pr-settles.json <<'JSON'
+{ "number": 7, "title": "Rewrite the loader", "body": "", "state": "OPEN",
+  "url": "https://github.com/owner/repo/pull/7", "author": { "login": "someone" },
+  "isDraft": false, "isCrossRepository": false, "mergeable": "MERGEABLE",
+  "mergeStateStatus": "CLEAN", "baseRefName": "main", "headRefName": "feature",
+  "statusCheckRollup": [] }
+JSON
+  export ORIGIN_STUB_GH_VIEW_THEN=pr-settles.json
+
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 0 ]
   run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
   [ "$output" = "1" ]
 }
