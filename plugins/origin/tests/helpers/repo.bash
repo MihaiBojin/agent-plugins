@@ -26,6 +26,10 @@ setup_repo() {
   export GIT_AUTHOR_NAME=Tester GIT_AUTHOR_EMAIL=tester@example.invalid
   export GIT_COMMITTER_NAME=Tester GIT_COMMITTER_EMAIL=tester@example.invalid
   export NO_COLOR=1
+  # `origin merge` asks the forge again when it answers UNKNOWN to "does this
+  # merge cleanly", because both forges compute that asynchronously. The retry
+  # is real here; the wait between attempts is not, so no test sleeps for it.
+  export ORIGIN_MERGEABLE_WAIT=0
   export PATH="${STUBS}:${PATH}"
 
   mkdir -p "$ROOT" "$ORIGIN_STUB_DIR"

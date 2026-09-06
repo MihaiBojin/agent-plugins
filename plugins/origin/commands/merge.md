@@ -1,7 +1,7 @@
 ---
 name: merge
 description: Merge a pull request, writing the body from the change rather than the commit list
-argument-hint: "[pr-number] [--yes] [--force]"
+argument-hint: "[pr-number] [--yes] [--with-failing-checks]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git log:*), Bash(git diff:*), Bash(git status:*), Read, Write
 ---
 
@@ -22,13 +22,22 @@ If it fails, report what it said and stop.
 
 ## 2. Stop if it is not ready
 
-If `refusals` is non-empty, print each reason and stop — unless the user asked
-for `--force`, in which case say what you are overriding and carry on.
+If `refusals` is non-empty, print each reason and stop. Only one of them has a
+way through:
 
-One reason is not a full stop: a check that has not finished. Say which check
-is still running, carry on to the body, and offer **Merge on green** at step 4.
-Anything else in `refusals` beside it — a draft, a conflict, a failing check —
-stops as usual.
+| reason                                        | what to do                                                                                                       |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| these checks are failing                      | stop, unless the user asked for `--with-failing-checks`; then say which you are merging past and carry on        |
+| it is a draft                                 | the script asks at a terminal and marks it ready. With none it stops and names the command; report that and stop |
+| these checks have not finished                | say which is running, carry on to the body, and offer **Merge on green** at step 4                               |
+| its checks are still running                  | the same, without a name to give                                                                                 |
+| could not determine whether it merges cleanly | stop. The forge had not worked it out; running again in a minute is the answer                                   |
+| it conflicts with the base                    | stop                                                                                                             |
+| blocked, a review or a branch protection rule | stop                                                                                                             |
+| the forge reports the merge dirty             | stop                                                                                                             |
+
+A draft that is marked ready is read again, so it can come back refused for a
+check the draft never ran. That is the right answer, not a failure.
 
 ## 3. Write the body
 
@@ -91,7 +100,8 @@ ${CLAUDE_PLUGIN_ROOT}/bin/origin merge $ARGUMENTS --gather
 - Empty — merge, with the body they already approved. Do not ask again.
 - Still only the unfinished check — keep waiting. Say nothing each round.
 - A failing check, or anything else — stop and say which. A failure is not
-  something to wait through, and it is not a `--force` you can assume.
+  something to wait through, and `--with-failing-checks` is not a flag you can
+  assume: it says somebody read the failure and decided it does not matter.
 
 Give up after thirty minutes and report where the checks stood. Never poll
 unless the user picked this; the default is to say what is running and stop.

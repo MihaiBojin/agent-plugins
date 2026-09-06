@@ -77,6 +77,17 @@ case "${1:-}" in
     case "${2:-}" in
       view) canned mr.json | emit "$@" ;;
       list) canned mr-list.json | emit "$@" ;;
+      update)
+        # `--ready` on a draft, the GitLab spelling. Same shape as the gh stub:
+        # mr-ready.json when a test wrote one, otherwise the flag is cleared.
+        if [ -r "${ORIGIN_STUB_DIR}/mr-ready.json" ]; then
+          cp "${ORIGIN_STUB_DIR}/mr-ready.json" "${ORIGIN_STUB_DIR}/mr.json"
+        else
+          jq '.draft = false | .work_in_progress = false' "${ORIGIN_STUB_DIR}/mr.json" >"${ORIGIN_STUB_DIR}/mr.json.new"
+          mv "${ORIGIN_STUB_DIR}/mr.json.new" "${ORIGIN_STUB_DIR}/mr.json"
+        fi
+        exit 0
+        ;;
       merge)
         printf 'Merged\n'
         exit 0

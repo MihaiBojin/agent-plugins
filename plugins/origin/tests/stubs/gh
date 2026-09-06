@@ -76,8 +76,30 @@ case "${1:-}" in
   repo) canned repo.json | emit "$@" ;;
   pr)
     case "${2:-}" in
-      view) canned pr.json | emit "$@" ;;
+      view)
+        # A test that wants the forge's answer to change between readings sets
+        # ORIGIN_STUB_GH_VIEW_THEN to the file every reading after the first
+        # comes from. That is what an asynchronously computed field looks like.
+        if [ -n "${ORIGIN_STUB_GH_VIEW_THEN:-}" ] && [ -e "${ORIGIN_STUB_DIR}/.viewed" ]; then
+          canned "$ORIGIN_STUB_GH_VIEW_THEN" | emit "$@"
+        else
+          : >"${ORIGIN_STUB_DIR}/.viewed"
+          canned pr.json | emit "$@"
+        fi
+        ;;
       list) canned pr-list.json | emit "$@" ;;
+      ready)
+        # Marking it ready changes what the forge answers next. A test that
+        # wants the second reading to differ writes pr-ready.json; otherwise
+        # the draft flag is cleared where it stands.
+        if [ -r "${ORIGIN_STUB_DIR}/pr-ready.json" ]; then
+          cp "${ORIGIN_STUB_DIR}/pr-ready.json" "${ORIGIN_STUB_DIR}/pr.json"
+        else
+          jq '.isDraft = false' "${ORIGIN_STUB_DIR}/pr.json" >"${ORIGIN_STUB_DIR}/pr.json.new"
+          mv "${ORIGIN_STUB_DIR}/pr.json.new" "${ORIGIN_STUB_DIR}/pr.json"
+        fi
+        exit 0
+        ;;
       merge)
         [ "${ORIGIN_STUB_GH_MERGE_FAILS:-0}" = 1 ] && {
           printf 'Pull request is not mergeable\n' >&2
