@@ -303,6 +303,9 @@ forge_pr_field() {
 #
 # A pull request from a fork has no local range at all, whatever refs happen to
 # match its branch names, so it goes to the API instead.
+#
+# Full refs. The two names come from the forge, and nothing stops a repository
+# holding a tag called `origin/main` that git would resolve first.
 forge_pr_range() {
   local base head remote
   [ "$(forge_pr_field .crossRepository)" = "true" ] && return 1
@@ -313,7 +316,7 @@ forge_pr_range() {
   [ -n "$remote" ] || return 1
   git show-ref --verify --quiet "refs/remotes/${remote}/${base}" || return 1
   git show-ref --verify --quiet "refs/remotes/${remote}/${head}" || return 1
-  printf '%s/%s %s/%s\n' "$remote" "$base" "$remote" "$head"
+  printf 'refs/remotes/%s/%s refs/remotes/%s/%s\n' "$remote" "$base" "$remote" "$head"
 }
 
 # Commits, as [{sha, author, subject, body}], oldest first.

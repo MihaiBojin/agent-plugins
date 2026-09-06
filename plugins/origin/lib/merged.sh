@@ -13,6 +13,11 @@
 # as a single commit on top of the merge base, and ask `git cherry` whether
 # that patch is upstream. It answers about content rather than history, which
 # is what a squash preserves.
+#
+# Every question here is asked of `refs/heads/<branch>` rather than `<branch>`.
+# Git prefers a tag, so in a repository holding a tag and a branch of the same
+# name the bare name reads the tag - and what this file answers is what decides
+# whether somebody's commits get deleted.
 
 # The synthetic commit is written into the object database, unreferenced, and
 # collected by the next gc. Nothing points at it and nothing ever will.
@@ -28,16 +33,16 @@ MERGED_IDENTITY=(
 # The plain case: every commit on the branch is already in the head branch.
 merged_is_ancestor() {
   local branch="$1" head_ref="$2"
-  git merge-base --is-ancestor "$branch" "$head_ref" 2>/dev/null
+  git merge-base --is-ancestor "refs/heads/${branch}" "$head_ref" 2>/dev/null
 }
 
 # The squash case.
 merged_is_squashed() {
   local branch="$1" head_ref="$2" base tree head_tree synth verdict
 
-  base="$(git merge-base "$head_ref" "$branch" 2>/dev/null || printf '')"
+  base="$(git merge-base "$head_ref" "refs/heads/${branch}" 2>/dev/null || printf '')"
   [ -n "$base" ] || return 1
-  tree="$(git rev-parse "${branch}^{tree}" 2>/dev/null || printf '')"
+  tree="$(git rev-parse "refs/heads/${branch}^{tree}" 2>/dev/null || printf '')"
   [ -n "$tree" ] || return 1
 
   # A branch that leaves the head branch's tree exactly as it found it has
@@ -80,10 +85,10 @@ merged_unpushed_count() {
   local branch="$1" upstream
   upstream="$(repo_upstream "$branch")"
   if [ -n "$upstream" ]; then
-    git rev-list --count "${upstream}..${branch}" 2>/dev/null || printf '0\n'
+    git rev-list --count "${upstream}..refs/heads/${branch}" 2>/dev/null || printf '0\n'
     return 0
   fi
   # No upstream: count what no remote-tracking ref can reach. A branch never
   # pushed anywhere is entirely unpushed, not zero commits behind nothing.
-  git rev-list --count "$branch" --not --remotes 2>/dev/null || printf '0\n'
+  git rev-list --count "refs/heads/${branch}" --not --remotes 2>/dev/null || printf '0\n'
 }

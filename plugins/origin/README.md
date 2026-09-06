@@ -217,7 +217,33 @@ This will delete:
 Each deletion carries the command that undoes it: a local branch, a branch on a
 remote (`git push <remote> <sha>:refs/heads/<branch>`), a rebased branch
 (`git reset --keep <sha>`), a leased push. A sha that cannot be read is a
-restore command that cannot be printed, and then nothing is deleted.
+restore command that cannot be printed, and then nothing is deleted; neither is
+a branch that has moved off the sha its restore line names.
+
+Every branch is named to git as `refs/heads/<branch>` and the head branch as
+`refs/remotes/<remote>/<head>`. `git rev-parse feature` prefers a tag called
+`feature` over the branch, so in a repository holding both, the bare name would
+answer for the branch — with a different commit — everywhere that decides
+whether a branch is finished and which sha brings it back.
+
+One thing that spelling does not cover is the abbreviated sha in a restore
+line. `a1b2c3d` is a name to git before it is an object, so a branch or tag
+actually called `a1b2c3d` answers for it, and pasting
+`git branch fix-login a1b2c3d` in a repository holding one lands on the wrong
+commit. The deletion itself is safe either way: it compares whole shas, and a
+branch that no longer resolves to the one its restore line names is kept rather
+than deleted, so what is at risk is the paste and not the work.
+
+Git says so when it happens - `warning: refname 'a1b2c3d' is ambiguous` - and
+the way past it is to name the object outright:
+
+```shell
+git rev-parse --disambiguate=a1b2c3d     # the whole sha of the object
+git branch fix-login <that sha>
+```
+
+`a1b2c3d^{commit}` does not help. It peels whatever the name resolved to, which
+is the ref.
 
 The exception is content git never tracked, where no such command exists.
 `--yes` answers for everything above and not for that: a worktree holding

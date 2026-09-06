@@ -222,9 +222,13 @@ git_guard() {
 # --set-upstream because a branch pushed by hand without it still has a
 # remote-tracking ref, and the next push should not have to work that out
 # again.
+#
+# `refs/heads/<branch>` because a bare name is a refspec git resolves against
+# every namespace: beside a tag of the same name it matches both and the push
+# is refused outright.
 git_push_lease() {
   local remote="$1" branch="$2"
-  git_run push --force-with-lease --force-if-includes --set-upstream "$remote" "$branch"
+  git_run push --force-with-lease --force-if-includes --set-upstream "$remote" "refs/heads/${branch}"
 }
 
 # Can this process actually open a terminal?

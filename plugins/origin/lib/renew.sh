@@ -106,7 +106,7 @@ renew_main() {
   head="$(repo_head_branch)"
   head_ref="$(repo_head_ref)"
   git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null ||
-    die "there is no ${head_ref} to move onto"
+    die "there is no $(ref_name "$head_ref") to move onto"
 
   if [ "$probe" = 1 ]; then
     [ "$squash" = 1 ] || die "--probe answers for --squash; pass both"
@@ -133,7 +133,7 @@ renew_main() {
   # forward. Reading it as finished would start a new branch off one begun a
   # moment ago, and would refuse to push the branch the user is standing on.
   local counts ahead
-  counts="$(repo_ahead_behind "$branch" "$head_ref")"
+  counts="$(repo_ahead_behind "refs/heads/${branch}" "$head_ref")"
   ahead="${counts%% *}"
 
   # What the branch is, asked of its content. A squash merge leaves no history
@@ -231,47 +231,47 @@ renew_resolve_name() {
 renew_fast_forward() {
   local head="$1" head_ref="$2" autostash="$3" counts ahead flag=''
 
-  counts="$(repo_ahead_behind "$head" "$head_ref")"
+  counts="$(repo_ahead_behind "refs/heads/${head}" "$head_ref")"
   ahead="${counts%% *}"
   if [ "${ahead:-0}" -gt 0 ]; then
     say ''
-    git --no-pager log --oneline "${head_ref}..${head}" >&2 || true
+    git --no-pager log --oneline "${head_ref}..refs/heads/${head}" >&2 || true
     say ''
-    die "${head} has ${ahead} commit(s) that ${head_ref} does not; a fast-forward would lose them"
+    die "${head} has ${ahead} commit(s) that $(ref_name "$head_ref") does not; a fast-forward would lose them"
   fi
 
   [ "$autostash" = 1 ] && flag=' --autostash'
-  confirm "Fast-forward ${head} to ${head_ref}?" "git merge --ff-only${flag} ${head_ref}"
+  confirm "Fast-forward ${head} to $(ref_name "$head_ref")?" "git merge --ff-only${flag} ${head_ref}"
 
   if [ "$autostash" = 1 ]; then
     git_run merge --ff-only --autostash "$head_ref" || die "could not fast-forward ${head}"
   else
     git_run merge --ff-only "$head_ref" || die "could not fast-forward ${head}"
   fi
-  good "${head} is at ${head_ref}"
+  good "${head} is at $(ref_name "$head_ref")"
 }
 
 renew_rebase() {
   local branch="$1" head_ref="$2" autostash="$3" counts behind ahead status=0 flag='' before=''
 
-  counts="$(repo_ahead_behind "$branch" "$head_ref")"
+  counts="$(repo_ahead_behind "refs/heads/${branch}" "$head_ref")"
   ahead="${counts%% *}"
   behind="${counts##* }"
   if [ "${behind:-0}" = 0 ]; then
-    good "${branch} is already on top of ${head_ref}"
+    good "${branch} is already on top of $(ref_name "$head_ref")"
     return 0
   fi
 
   # A rebase writes new commits and moves the branch off the old ones. They
   # stay in the reflog, but only somebody who was told the sha can find them,
   # and only until it expires.
-  before="$(git rev-parse --short "$branch" 2>/dev/null || printf '')"
+  before="$(git rev-parse --short "refs/heads/${branch}" 2>/dev/null || printf '')"
   losing "This will rewrite:" \
     "${ahead:-0} commit(s) on ${branch}, which becomes ${ahead:-0} new commit(s)" \
     "${branch} at ${before:-unknown} — restore with: git reset --keep ${before:-<sha>}"
 
   [ "$autostash" = 1 ] && flag=' --autostash'
-  confirm "Rebase ${branch} onto ${head_ref}?" "git rebase${flag} ${head_ref}"
+  confirm "Rebase ${branch} onto $(ref_name "$head_ref")?" "git rebase${flag} ${head_ref}"
 
   if [ "$autostash" = 1 ]; then
     git_run rebase --autostash "$head_ref" || status=$?
@@ -280,7 +280,7 @@ renew_rebase() {
   fi
 
   [ "$status" = 0 ] || renew_report_rebase_conflict "$branch" "$head_ref"
-  good "${branch} is on top of ${head_ref}"
+  good "${branch} is on top of $(ref_name "$head_ref")"
   [ -n "$before" ] && say "  restore: git reset --keep ${before}"
   return 0
 }
@@ -288,17 +288,17 @@ renew_rebase() {
 # The branch is finished. Nothing is moved; the next change gets a branch.
 renew_start_next() {
   local branch="$1" head_ref="$2" reason="$3" name="$4" auto="$5" autostash="$6" at=''
-  renew_resolve_name "$branch" "$name" "$auto" "is ${reason} into ${head_ref}"
+  renew_resolve_name "$branch" "$name" "$auto" "is ${reason} into $(ref_name "$head_ref")"
   name="$RENEW_NAME"
 
   say ''
-  note "${branch} is ${reason} into ${head_ref}, so its commits cannot go back on top of it"
-  confirm "Start ${name} from ${head_ref}?" \
+  note "${branch} is ${reason} into $(ref_name "$head_ref"), so its commits cannot go back on top of it"
+  confirm "Start ${name} from $(ref_name "$head_ref")?" \
     "git switch --create ${name} --no-track ${head_ref}"
 
   renew_switch_new "$name" "$head_ref" "$autostash"
-  at="$(git rev-parse --short "$branch" 2>/dev/null || printf '')"
-  good "on ${name}, from ${head_ref}"
+  at="$(git rev-parse --short "refs/heads/${branch}" 2>/dev/null || printf '')"
+  good "on ${name}, from $(ref_name "$head_ref")"
   say "  ${branch} is untouched${at:+, at ${at}}"
 }
 
@@ -317,16 +317,16 @@ renew_carry_onto() {
   renew_resolve_name "$branch" "$name" "$auto" 'is being carried onto a new branch'
   name="$RENEW_NAME"
 
-  sha="$(git rev-parse --short "$branch" 2>/dev/null || printf '')"
-  count="$(git rev-list --count "${head_ref}..${branch}" 2>/dev/null || printf '0')"
+  sha="$(git rev-parse --short "refs/heads/${branch}" 2>/dev/null || printf '')"
+  count="$(git rev-list --count "${head_ref}..refs/heads/${branch}" 2>/dev/null || printf '0')"
 
-  confirm "Carry ${branch} onto ${name}, from ${head_ref}?" \
+  confirm "Carry ${branch} onto ${name}, from $(ref_name "$head_ref")?" \
     "git switch --create ${name} --no-track ${head_ref}" \
-    "git merge --squash ${branch}"
+    "git merge --squash refs/heads/${branch}"
 
   renew_switch_new "$name" "$head_ref" "$autostash"
 
-  git_run merge --squash "$branch" || status=$?
+  git_run merge --squash "refs/heads/${branch}" || status=$?
   [ "$status" = 0 ] || renew_report_carry_conflict "$branch" "$name"
 
   if [ "$ORIGIN_DRY_RUN" = 1 ]; then
@@ -335,8 +335,8 @@ renew_carry_onto() {
   fi
 
   if git diff --cached --quiet; then
-    good "on ${name}, from ${head_ref}"
-    say "  ${branch} had nothing ${head_ref} did not already have"
+    good "on ${name}, from $(ref_name "$head_ref")"
+    say "  ${branch} had nothing $(ref_name "$head_ref") did not already have"
     say "  ${branch} is untouched${sha:+, at ${sha}}"
     return 0
   fi
@@ -374,12 +374,12 @@ renew_carry_message() {
 # `clean`, `conflicts`, or `unknown` when the git in hand is too old to say.
 renew_carry_verdict() {
   local branch="$1" head_ref="$2" base status=0
-  base="$(git merge-base "$head_ref" "$branch" 2>/dev/null || printf '')"
+  base="$(git merge-base "$head_ref" "refs/heads/${branch}" 2>/dev/null || printf '')"
   if [ -z "$base" ]; then
     printf 'unknown\n'
     return 0
   fi
-  git merge-tree --write-tree --merge-base="$base" "$head_ref" "$branch" \
+  git merge-tree --write-tree --merge-base="$base" "$head_ref" "refs/heads/${branch}" \
     >/dev/null 2>&1 || status=$?
   case "$status" in
     0) printf 'clean\n' ;;
@@ -397,7 +397,7 @@ renew_report_rebase_conflict() {
   local branch="$1" head_ref="$2" conflicted
   conflicted="$(git diff --name-only --diff-filter=U 2>/dev/null || printf '')"
   say ''
-  warn "the rebase of ${branch} onto ${head_ref} stopped on a conflict"
+  warn "the rebase of ${branch} onto $(ref_name "$head_ref") stopped on a conflict"
   if [ -n "$conflicted" ]; then
     say 'Conflicted:'
     printf '%s\n' "$conflicted" | indent_lines
@@ -419,12 +419,12 @@ renew_report_rebase_conflict() {
 renew_offer_carry() {
   local branch="$1" head_ref="$2" verdict count
   verdict="$(renew_carry_verdict "$branch" "$head_ref")"
-  count="$(git rev-list --count "${head_ref}..${branch}" 2>/dev/null || printf '0')"
+  count="$(git rev-list --count "${head_ref}..refs/heads/${branch}" 2>/dev/null || printf '0')"
   case "$verdict" in
     clean)
       say ''
-      say "${head_ref} already has some of this, which is what the replay keeps"
-      say "stopping on. The whole change applies to ${head_ref} cleanly as one"
+      say "$(ref_name "$head_ref") already has some of this, which is what the replay keeps"
+      say "stopping on. The whole change applies to $(ref_name "$head_ref") cleanly as one"
       say "commit, at the cost of the ${count} commit(s) on ${branch} becoming one:"
       say '  git rebase --abort && origin renew --squash --auto'
       ;;
@@ -481,7 +481,7 @@ renew_switch_new() {
     stashed=1
   fi
   git_run switch --create "$name" --no-track "$start" ||
-    die "could not create ${name} from ${start}"
+    die "could not create ${name} from $(ref_name "$start")"
   if [ "$stashed" = 1 ]; then
     git_run stash pop ||
       warn "the stash did not re-apply; it is still there - 'git stash list'"
@@ -524,7 +524,7 @@ renew_push_leased() {
     "${name} at ${before:-unknown} — restore with: git push ${remote} ${before:-<sha>}:refs/heads/${branch}"
 
   confirm "Push ${branch} to ${name}?" \
-    "git push --force-with-lease --force-if-includes --set-upstream ${remote} ${branch}"
+    "git push --force-with-lease --force-if-includes --set-upstream ${remote} refs/heads/${branch}"
 
   if git_push_lease "$remote" "$branch"; then
     good "pushed ${branch}"
@@ -538,7 +538,7 @@ renew_push_leased() {
   say ''
   warn "${remote} refused ${branch}; ${name} carries commits this clone never had"
   say 'Look at what is there, or leave it alone and take the next name:'
-  say "  git log ${name}"
+  say "  git log refs/remotes/${remote}/${branch}"
   renew_say_next_name "$branch"
   exit 1
 }
@@ -557,11 +557,11 @@ renew_push_first() {
   local branch="$1" remote="$2"
 
   confirm "Push ${branch} to ${remote}, as a new branch?" \
-    "git push --set-upstream ${remote} ${branch}"
+    "git push --set-upstream ${remote} refs/heads/${branch}"
 
-  if git_run push --set-upstream "$remote" "$branch"; then
+  if git_run push --set-upstream "$remote" "refs/heads/${branch}"; then
     good "pushed ${branch} to ${remote}"
-    say "  delete it again with: git push ${remote} --delete ${branch}"
+    say "  delete it again with: git push ${remote} --delete refs/heads/${branch}"
     return 0
   fi
 

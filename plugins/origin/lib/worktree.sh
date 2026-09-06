@@ -254,19 +254,22 @@ worktree_add() {
   local origin_of=''
   if git show-ref --verify --quiet "refs/heads/${branch}"; then
     note "Checking out ${branch}"
+    # The bare name, not `refs/heads/${branch}`: `git worktree add` reads a
+    # bare name as a branch to check out and a full ref as a commit to detach
+    # at, and it prefers the branch over a tag of the same name already.
     git_run worktree add "$path" "$branch"
   elif [ -n "$remote" ] && git show-ref --verify --quiet "refs/remotes/${remote}/${branch}"; then
     note "Checking out ${remote}/${branch}"
-    git_run worktree add --track -b "$branch" "$path" "${remote}/${branch}"
+    git_run worktree add --track -b "$branch" "$path" "refs/remotes/${remote}/${branch}"
     origin_of=" (tracking ${remote}/${branch})"
   else
     git rev-parse --verify --quiet "${base}^{commit}" >/dev/null ||
-      die "git-worktree add: ${base} is not a commit to branch from"
-    note "Branching ${branch} from ${base}"
+      die "git-worktree add: $(ref_name "$base") is not a commit to branch from"
+    note "Branching ${branch} from $(ref_name "$base")"
     # --no-track: a new branch off <remote>/<head> would otherwise take the
     # head branch as its upstream, and `git push` would target it.
     git_run worktree add --no-track -b "$branch" "$path" "$base"
-    origin_of=" (from ${base})"
+    origin_of=" (from $(ref_name "$base"))"
   fi
 
   good "${branch} at $(worktree_pretty_path "$path")${origin_of}"
@@ -331,7 +334,7 @@ USAGE
 
     local ahead=0 behind=0 counts dirty='clean' age='' committed='' pr='' pr_state='' pr_number=''
     if [ -n "$branch" ] && git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
-      counts="$(repo_ahead_behind "$branch" "$head_ref")"
+      counts="$(repo_ahead_behind "refs/heads/${branch}" "$head_ref")"
       ahead="${counts%% *}"
       behind="${counts##* }"
     fi
@@ -538,9 +541,10 @@ worktree_remove() {
 
   # The sha this run can name: a branch's tip, or the commit a detached
   # worktree sits on.
-  local sha=''
+  local sha='' commit=''
   if [ -n "$branch" ]; then
-    sha="$(git rev-parse --short "$branch" 2>/dev/null || printf '')"
+    sha="$(git rev-parse --short "refs/heads/${branch}" 2>/dev/null || printf '')"
+    commit="$(git rev-parse --verify --quiet "refs/heads/${branch}" 2>/dev/null || printf '')"
   else
     sha="$(git rev-parse --short "$at" 2>/dev/null || printf '')"
   fi
@@ -586,7 +590,7 @@ worktree_remove() {
     if [ "$force" = 0 ]; then
       say ''
       if [ -n "$branch" ]; then
-        say "${branch} is not merged into ${head_ref}${extra}."
+        say "${branch} is not merged into $(ref_name "$head_ref")${extra}."
         die "git-worktree remove: refusing; pass --force to remove the checkout and keep the branch"
       fi
       say "no ref reaches ${sha}, so this checkout is the only thing pointing at that commit."
@@ -681,7 +685,7 @@ EOF
   worktree_prune_empty_parents "$path"
 
   if [ "$delete_branch" = 1 ]; then
-    worktree_delete_branch "$branch" "$sha" "$reason"
+    worktree_delete_branch "$branch" "$sha" "$reason" "$commit"
   elif [ -n "$branch" ]; then
     note "kept branch ${branch}"
   fi
@@ -693,13 +697,26 @@ EOF
 # Deletes a branch this run has proved merged, and says how to undo it.
 #
 # The sha is not decoration. It is the whole reason deleting a branch is
-# allowed at all, so a call without one deletes nothing.
+# allowed at all, so a call without one deletes nothing - and neither does one
+# whose branch is no longer at it.
 worktree_delete_branch() {
-  local branch="$1" sha="$2" reason="$3"
+  local branch="$1" sha="$2" reason="$3" commit="${4-}" now
   [ -n "$sha" ] || {
     warn "not deleting ${branch}: nothing recorded the sha that would restore it"
     return 0
   }
+  # `git branch -d` deletes a name, and takes whatever that name points at now.
+  # The restore line names a commit. This holds the two together, and it is the
+  # last thing between a branch read wrongly and a lost afternoon.
+  #
+  # The whole sha, passed in beside the short one, because `${sha}` is a name
+  # to git before it is an object: a branch or tag actually called `a1b2c3d`
+  # answers for it and the comparison would fail on a branch that never moved.
+  now="$(git rev-parse --verify --quiet "refs/heads/${branch}" 2>/dev/null || printf '')"
+  if [ -z "$commit" ] || [ -z "$now" ] || [ "$now" != "$commit" ]; then
+    warn "not deleting ${branch}: it is no longer at ${sha}, which is the only commit the restore line offers"
+    return 0
+  fi
   if ! git_run branch -d "$branch" 2>/dev/null; then
     # `git branch -d` refuses a squash-merged branch: from where git stands it
     # is unmerged. The proof it is not is `reason`.
