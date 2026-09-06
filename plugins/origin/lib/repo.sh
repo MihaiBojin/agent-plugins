@@ -44,16 +44,29 @@ repo_name() {
 }
 
 # Empty when HEAD is detached.
+#
+# The prefix comes off here rather than from `--short`, which abbreviates to
+# the shortest spelling git can still resolve: beside a tag called `feature`
+# that is `heads/feature`, and every branch name this plugin passes on would
+# carry it.
 repo_current_branch() {
-  git symbolic-ref --quiet --short HEAD 2>/dev/null || printf ''
+  local ref
+  ref="$(git symbolic-ref --quiet HEAD 2>/dev/null || printf '')"
+  printf '%s\n' "${ref#refs/heads/}"
 }
 
 repo_is_dirty() {
   [ -n "$(git status --porcelain --untracked-files=normal 2>/dev/null)" ]
 }
 
+# The upstream of a branch, as `refs/remotes/<remote>/<branch>`.
+#
+# Full, because the answer is only ever handed back to git as a revision and
+# `origin/main` is a name a tag can take. The branch itself stays short:
+# `@{upstream}` is branch syntax, it refuses `refs/heads/<branch>@{upstream}`,
+# and it already reads the branch rather than a tag of the same name.
 repo_upstream() {
-  git rev-parse --abbrev-ref --symbolic-full-name "${1}@{upstream}" 2>/dev/null || printf ''
+  git rev-parse --symbolic-full-name "${1}@{upstream}" 2>/dev/null || printf ''
 }
 
 # "<ahead> <behind>" against any ref.
@@ -198,8 +211,11 @@ repo_head_branch() {
 
   remote="$(repo_remote 2>/dev/null || printf '')"
   if [ -n "$remote" ]; then
-    head="$(git symbolic-ref --quiet --short "refs/remotes/${remote}/HEAD" 2>/dev/null || printf '')"
-    head="${head#"${remote}/"}"
+    head="$(git symbolic-ref --quiet "refs/remotes/${remote}/HEAD" 2>/dev/null || printf '')"
+    # Both prefixes, because the ref is written by hand often enough to point
+    # at `refs/heads/<head>` rather than at this remote's copy of it.
+    head="${head#"refs/remotes/${remote}/"}"
+    head="${head#refs/heads/}"
     if [ -z "$head" ]; then
       head="$(git ls-remote --symref "$remote" HEAD 2>/dev/null |
         awk '$1 == "ref:" { sub(/^refs\/heads\//, "", $2); print $2; exit }')"
@@ -229,7 +245,15 @@ repo_head_branch() {
   printf '%s\n' "$head"
 }
 
-# `<remote>/<head>` when there is a remote, the local branch when there is not.
+# The head branch as a full ref: `refs/remotes/<remote>/<head>` when there is a
+# remote, `refs/heads/<head>` when there is not.
+#
+# Full, so git resolves it to this ref and to nothing else. Git prefers a tag
+# over everything below it, so a repository holding a tag called `origin/main`
+# would answer every question about the head branch with that tag - including
+# the question of whether a branch is finished and safe to delete.
+#
+# `ref_name` puts it back into the form a person writes.
 repo_head_ref() {
   repo_head_ref_for "$(repo_head_branch)"
 }
@@ -244,10 +268,31 @@ repo_head_ref_for() {
   local head="$1" remote
   remote="$(repo_remote 2>/dev/null || printf '')"
   if [ -n "$remote" ] && git show-ref --verify --quiet "refs/remotes/${remote}/${head}"; then
-    printf '%s/%s\n' "$remote" "$head"
+    printf 'refs/remotes/%s/%s\n' "$remote" "$head"
+  elif git show-ref --verify --quiet "refs/heads/${head}"; then
+    printf 'refs/heads/%s\n' "$head"
   else
+    # A name that is neither a branch here nor a branch on the remote is
+    # something this does not recognise, and it goes back exactly as it came
+    # for git to resolve as it always did. Prefixing it would produce
+    # `refs/heads/<name>`, which resolves to nothing, and turn a repository
+    # that worked into one where every command fails.
     printf '%s\n' "$head"
   fi
+}
+
+# A ref as a person writes it: `refs/remotes/origin/main` is `origin/main`,
+# `refs/heads/feature` is `feature`.
+#
+# For prose. The commands this plugin prints keep the full ref, because those
+# are what it runs and pasting one has to do the same thing.
+ref_name() {
+  case "${1-}" in
+    refs/heads/*) printf '%s\n' "${1#refs/heads/}" ;;
+    refs/remotes/*) printf '%s\n' "${1#refs/remotes/}" ;;
+    refs/tags/*) printf '%s\n' "${1#refs/tags/}" ;;
+    *) printf '%s\n' "${1-}" ;;
+  esac
 }
 
 # --------------------------------------------------------------------------

@@ -90,7 +90,7 @@ doctor_repository() {
   esac
 
   if head="$(repo_head_branch 2>/dev/null)"; then
-    doctor_row ok "head branch" "${head} ($(repo_head_ref))"
+    doctor_row ok "head branch" "${head} ($(ref_name "$(repo_head_ref)"))"
   else
     doctor_row no "head branch" "cannot tell; git config git-worktree-plugin.headBranch <name>"
   fi

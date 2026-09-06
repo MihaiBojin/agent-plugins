@@ -2,6 +2,76 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.7.1
+
+Git resolves a bare ref name through `refs/<name>`, `refs/tags/<name>`,
+`refs/heads/<name>`, `refs/remotes/<name>`, in that order, so a tag wins. This
+plugin named branches bare, and in a repository holding a tag and a branch of
+the same name it asked git about the tag and acted on the answer.
+
+- `git-worktree remove` no longer deletes unmerged work and prints a restore
+  command that does not restore it. It read the tag, called the branch
+  finished, deleted it, and printed `git branch <b> <sha>` naming the tag's
+  commit, so the work was left in the reflog and the way back did not lead
+  there. ([#2](https://github.com/MihaiBojin/agent-plugins/issues/2))
+- `renew --auto` names the next branch after the branch, not after
+  `heads/<branch>`. `git symbolic-ref --short` returns the shortest spelling
+  git can still resolve, which beside a tag of the same name is
+  `heads/feature`; the same reading turned the head branch into
+  `remotes/origin/main`, which resolves to nothing.
+- `git-worktree add` checks out a branch that exists only on the remote when a
+  tag matches `<remote>/<branch>`. It died with `fatal: ambiguous object name`.
+- `renew --push` pushes. Git refused a bare source refspec matching both a
+  branch and a tag with `src refspec matches more than one`.
+- A refused leased push names the branch to look at in full. `git log
+origin/feature` is what it printed, and that is the moment somebody decides
+  whether the work on the remote is theirs to overwrite.
+- A branch is deleted only while it still points at the commit its restore line
+  names. `git branch -d` deletes a name and takes whatever that name points at
+  now, and nothing tied that to the sha printed a moment earlier.
+
+### Choices
+
+A local branch is `refs/heads/<branch>` wherever it reaches git as a revision,
+and the head branch is a full ref. `ref_name` puts it back into the form a
+person writes, so every message reads as it did before.
+
+The commands this plugin prints keep the full ref. `git merge --ff-only
+refs/remotes/origin/main` is what actually runs, and a restore command that did
+not do what it said is the whole of #2; a prompt showing something shorter than
+the thing it is about to run is the same mistake in a smaller place.
+
+Four spellings stay bare, each for a reason git gives. `git worktree add <path>
+<branch>` reads a bare name as a branch to check out and a full ref as a commit
+to detach at, and already prefers the branch. `@{upstream}` is branch syntax:
+git refuses `refs/heads/<branch>@{upstream}`, and the short form already reads
+the branch. `git branch -d` takes a name, not a revision. And `--base <ref>` is
+whatever the user typed, where a tag is a legitimate thing to branch from.
+
+The delete guard compares whole shas rather than the abbreviation it prints,
+because `a1b2c3d` is a name to git before it is an object and a branch actually
+called that would answer for it.
+
+The restore lines still print the abbreviation, and a repository holding a ref
+by that name can still read one wrongly. Printing forty characters on every
+line that names a commit would cost every reader something to protect against a
+ref named like a short sha, which is rarer than the tag this release is about.
+The half that loses work is closed instead: nothing is deleted unless the whole
+sha still matches, so a line that reads wrongly is a paste that lands somewhere
+unexpected rather than work already gone. Git warns on the ambiguity itself,
+and README.md gives `git rev-parse --disambiguate=` as the way past it, beside
+the restore lines it applies to.
+
+A head branch that is neither a branch here nor a branch on the remote goes
+back to git exactly as it came, rather than being prefixed into
+`refs/heads/<name>` and resolving to nothing.
+
+`tests/refs.bats` holds what a tag and a branch of the same name do to every
+answer this plugin reads. Five more live beside the commands they belong to.
+Run against 0.7.0, fifteen of the seventeen fail, along with two existing
+assertions; the two that pass there are controls for the sha check, which 0.7.0
+does not have.
+
 ## 0.7.0
 
 - `git-worktree remove` never deletes the head branch. A linked worktree can

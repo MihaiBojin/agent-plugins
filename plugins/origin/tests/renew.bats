@@ -52,6 +52,45 @@ setup() {
   [ "$(git rev-parse --short feature)" = "$before" ]
 }
 
+@test "a tag sharing the branch's name does not decide what the branch is" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  local before
+  before="$(git rev-parse --short refs/heads/feature)"
+  # On the commit the branch left main at. Read for the branch it names the
+  # wrong commit to go back to, and it turns the branch's own name into
+  # `heads/feature`, which is the shortest spelling git can still resolve.
+  git tag feature main
+  upstream_moves
+
+  origin_cli renew --yes
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"commit(s) on feature,"* ]]
+  [[ "$stderr" == *"feature at ${before}"* ]]
+  # `run` overwrites $stderr, so the line comes out of it first.
+  local line
+  line="$(printf '%s\n' "$stderr" | grep 'restore: git reset' | sed 's/.*restore: //')"
+  [ -n "$line" ]
+
+  run git merge-base --is-ancestor refs/remotes/origin/main refs/heads/feature
+  [ "$status" -eq 0 ]
+
+  eval "$line"
+  [ "$(git rev-parse --short refs/heads/feature)" = "$before" ]
+}
+
+@test "a tag sharing the branch's name does not become part of the next one" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  squash_merge_branch feature
+  git checkout -q feature
+  git tag feature main
+
+  origin_cli renew --yes --auto
+  [ "$status" -eq 0 ]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-$(date +%Y-%m-%d)_001" ]
+}
+
 @test "a branch already on top is left alone" {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
@@ -153,7 +192,9 @@ setup() {
 
   origin_cli renew --yes --push --verbose
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"push --set-upstream origin feature"* ]]
+  # The refspec is spelled in full: a bare name matches a tag as well as a
+  # branch, and git refuses a push whose source matches both.
+  [[ "$stderr" == *"push --set-upstream origin refs/heads/feature"* ]]
   [[ "$stderr" != *"--force-with-lease"* ]]
   [ "$(git rev-parse --abbrev-ref '@{upstream}')" = "origin/feature" ]
 }
@@ -228,6 +269,10 @@ push_by_hand() {
   origin_cli renew --yes --push
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"never had"* ]]
+  # The branch to look at is named in full: this is the moment somebody decides
+  # whether the work on the remote is theirs to overwrite, and a tag of that
+  # name would answer instead.
+  [[ "$stderr" == *"git log refs/remotes/origin/feature-${today}_001"* ]]
   [[ "$stderr" == *"git branch -m feature-${today}_002"* ]]
 
   # Their commit is still there. The lease refused precisely because this

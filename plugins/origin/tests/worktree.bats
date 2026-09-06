@@ -21,6 +21,23 @@ setup() {
   [ "$status" -ne 0 ]
 }
 
+@test "add: a tag named like the remote-tracking ref does not stop the checkout" {
+  # The branch exists only on the remote, so `gwa` tracks it. `origin/feature`
+  # is a name a tag can take, and git refuses an ambiguous one outright.
+  git checkout -qb feature
+  commit_file theirs.txt yes "Their work"
+  git push -q origin feature
+  git checkout -q main
+  git branch -D feature
+  git tag origin/feature main
+
+  origin_cli gwa feature
+  [ "$status" -eq 0 ]
+  [ "$(git -C "$output" rev-parse --abbrev-ref HEAD)" = "feature" ]
+  [ "$(git config --get branch.feature.merge)" = "refs/heads/feature" ]
+  [[ "$stderr" == *"(tracking origin/feature)"* ]]
+}
+
 @test "add: a slash in the branch name nests" {
   origin_cli gwa fix/login
   [ "$output" = "${WORKTREES}/fix/login/proj" ]
@@ -234,6 +251,46 @@ setup() {
   [ -n "$line" ]
   eval "$line"
   [ "$(git rev-parse finished)" = "$before" ]
+}
+
+@test "remove: a tag sharing the branch's name does not finish it" {
+  origin_cli gwa unfinished
+  cd "${WORKTREES}/unfinished/proj"
+  commit_file wip.txt yes "Not done"
+  cd "$REPO"
+  # Read for the branch, this says the work is already on main.
+  git tag unfinished main
+
+  origin_cli gwr unfinished --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"is not merged"* ]]
+  [ -d "${WORKTREES}/unfinished/proj" ]
+  git show-ref --verify --quiet refs/heads/unfinished
+}
+
+@test "remove: the recovery line names the branch and not a tag beside it" {
+  origin_cli gwa finished
+  cd "${WORKTREES}/finished/proj"
+  commit_file done.txt yes "The work"
+  cd "$REPO"
+  local before
+  before="$(git rev-parse refs/heads/finished)"
+  squash_merge_branch finished
+  # A tag of the same name, on a different commit.
+  git tag finished main
+
+  origin_cli gwr finished --yes
+  [ "$status" -eq 0 ]
+  # `run` overwrites $stderr, so the line comes out of it first.
+  local line
+  line="$(printf '%s\n' "$stderr" | grep 'restore: ' | sed 's/.*restore: //')"
+  [ -n "$line" ]
+
+  run git show-ref --verify --quiet refs/heads/finished
+  [ "$status" -ne 0 ]
+
+  eval "$line"
+  [ "$(git rev-parse refs/heads/finished)" = "$before" ]
 }
 
 @test "remove: an unmerged branch keeps its worktree as well as its branch" {
