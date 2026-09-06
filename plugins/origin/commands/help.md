@@ -12,6 +12,8 @@ CLI; these commands gather intent and read the output back.
 | `/origin:gwa`    | Add a worktree for a branch and print its path              |
 | `/origin:gwr`    | Remove a finished worktree, deleting its branch when merged |
 | `/origin:gwl`    | Every worktree: branch, drift, state, pull request, age     |
+| `/origin:gwm`    | Rename this worktree's branch, and move it to match         |
+| `/origin:prune`  | Say which worktrees are finished, and why                   |
 | `/origin:merge`  | Merge a pull request with a written body                    |
 | `/origin:renew`  | Put this branch back on top of the head branch              |
 | `/origin:doctor` | Check git, jq, the remote, the forge and its permissions    |
@@ -22,8 +24,8 @@ The same commands run by hand:
 origin --help
 ```
 
-`git-worktree add` also answers to `gw add` and `gwa`; likewise `remove`/`gwr`
-and `list`/`gwl`.
+`git-worktree add` also answers to `gw add` and `gwa`; likewise `remove`/`gwr`,
+`list`/`gwl`, `path`/`gwp` and `move`/`gwm`.
 
 ## Layout
 

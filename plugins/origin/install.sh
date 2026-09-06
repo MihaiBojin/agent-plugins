@@ -9,6 +9,7 @@
 #   ./install.sh              link into ~/.local/bin
 #   ./install.sh --prefix DIR link somewhere else
 #   ./install.sh --uninstall  take it away
+# ---8<--- everything above this line is what --help prints
 
 set -euo pipefail
 
@@ -44,7 +45,8 @@ while [ "$#" -gt 0 ]; do
       shift
       ;;
     -h | --help)
-      sed -n '3,12p' "${ROOT}/install.sh" | sed -e 's/^# \{0,1\}//'
+      sed -n '3,/^# ---8<---/p' "${ROOT}/install.sh" |
+        sed -e '/^# ---8<---/d' -e 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -56,10 +58,22 @@ done
 
 LINK="${PREFIX}/origin"
 
+# The same care the install path takes below, in the direction that deletes.
+# A symlink named `origin` at the prefix is not necessarily ours: two clones of
+# this plugin, `--uninstall` run from the wrong one, and the other clone's
+# install disappears under a success message. Saying "nothing to remove" about
+# a link that is right there would hide it just as well as deleting it did.
 if [ "$UNINSTALL" = 1 ]; then
-  if [ -L "$LINK" ]; then
+  if [ -L "$LINK" ] && [ "$(readlink "$LINK")" = "${ROOT}/bin/origin" ]; then
     rm "$LINK"
     printf 'Removed %s\n' "$LINK"
+  elif [ -L "$LINK" ]; then
+    printf 'install.sh: %s points at %s, not this checkout; leaving it\n' \
+      "$LINK" "$(readlink "$LINK")" >&2
+    exit 1
+  elif [ -e "$LINK" ]; then
+    printf 'install.sh: %s is not a symlink; leaving it\n' "$LINK" >&2
+    exit 1
   else
     printf 'Nothing to remove at %s\n' "$LINK"
   fi

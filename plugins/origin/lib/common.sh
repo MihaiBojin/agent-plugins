@@ -143,7 +143,39 @@ git_run() {
 # git cannot give back, so there is nothing for a confirmation to be about.
 # Where a user genuinely wants one, the message says so and they type it.
 git_guard() {
-  local subcommand="${1:-}" arg delete=0 force=0 letters
+  local subcommand arg delete=0 force=0 letters
+
+  # Global options come before the subcommand, and several take a value.
+  # Skipping them is what makes `git_run -C <path> branch -D x` reach the
+  # branch guard below rather than sliding past it as a subcommand named `-C`.
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      -C | -c | --git-dir | --work-tree | --namespace | --exec-path | --super-prefix)
+        shift
+        shift || true
+        ;;
+      --git-dir=* | --work-tree=* | --namespace=* | --exec-path=* | --config-env=*)
+        shift
+        ;;
+      -p | -P | --paginate | --no-pager | --bare | --no-replace-objects)
+        shift
+        ;;
+      --literal-pathspecs | --glob-pathspecs | --noglob-pathspecs | --icase-pathspecs)
+        shift
+        ;;
+      *) break ;;
+    esac
+  done
+
+  # A leading dash here is a global this does not know, and the token after it
+  # would be read as the subcommand - which is how a guard stops guarding. Every
+  # call site is this plugin's own, so refusing is a bug report, not a
+  # limitation somebody hits.
+  case "${1:-}" in
+    -*) die "refusing a git command whose subcommand cannot be identified: $(quote_args "$@")" ;;
+  esac
+
+  subcommand="${1:-}"
   shift || true
   case "$subcommand" in
     reset)

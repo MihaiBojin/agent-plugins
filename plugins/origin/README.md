@@ -17,6 +17,8 @@ codex plugin add origin@MihaiBojin
 | `origin git-worktree remove <what>` | `gw remove`, `gwr` | Remove a finished worktree, delete a merged branch                 |
 | `origin git-worktree list`          | `gw list`, `gwl`   | Branch, drift, state, pull request, age                            |
 | `origin git-worktree path <branch>` | `gw path`, `gwp`   | Where that branch's worktree is, or exit 1                         |
+| `origin git-worktree move <new>`    | `gw move`, `gwm`   | Rename this worktree's branch, and move it to match                |
+| `origin prune`                      |                    | Say which worktrees are finished, and why                          |
 | `origin merge [<number>]`           |                    | Merge a pull request with a written body                           |
 | `origin renew`                      |                    | Put this branch back on top of the head branch                     |
 | `origin doctor`                     |                    | Check git, jq, the remote, the head branch, the forge, permissions |

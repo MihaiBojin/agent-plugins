@@ -147,3 +147,46 @@ setup() {
   run require_value --path "${ROOT}/somewhere"
   [ "$status" -eq 0 ]
 }
+
+# Global options come before the subcommand. A guard that reads $1 as the
+# subcommand reads `-C` as one, matches nothing, and lets the command through -
+# so every rule above had a one-flag bypass until `git_guard` learned to skip
+# them. `gwm` is the first command here that needs `git -C`, which is what
+# turned a latent hole into a reachable one.
+@test "a leading -C does not carry a command past the guard" {
+  run git_guard -C /tmp reset --hard HEAD
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"never discards work"* ]]
+
+  run git_guard -C /tmp clean -fdx
+  [ "$status" -eq 1 ]
+
+  run git_guard -C /tmp worktree remove --force /somewhere
+  [ "$status" -eq 1 ]
+}
+
+@test "a force delete is still a force delete behind a global option" {
+  run git_guard -C /tmp branch -D feature
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"force-delete"* ]]
+
+  run git_guard -c user.name=someone branch --delete --force feature
+  [ "$status" -eq 1 ]
+
+  run git_guard --git-dir=/tmp/.git branch -df feature
+  [ "$status" -eq 1 ]
+}
+
+@test "the globals gwm needs do not refuse the commands it runs" {
+  run git_guard -C /tmp branch -m old new
+  [ "$status" -eq 0 ]
+
+  run git_guard -C /tmp worktree move /a /b
+  [ "$status" -eq 0 ]
+}
+
+@test "a global this does not know refuses rather than guessing the subcommand" {
+  run git_guard --not-a-real-global branch -D feature
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot be identified"* ]]
+}

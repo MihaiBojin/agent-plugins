@@ -2,6 +2,63 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.10.0
+
+- `origin prune` says which worktrees are finished, and why, one verdict each.
+  It fetches first, clears git's bookkeeping for worktrees somebody deleted by
+  hand, and removes nothing without `--yes`. `--branch` narrows it to one,
+  `--no-fetch` assesses from what is already here and says the answer may be
+  stale.
+- `git-worktree move <new>` renames the branch checked out here and moves the
+  checkout to match. `gw move` and `gwm` too.
+- `install.sh --uninstall` no longer deletes a symlink belonging to a different
+  checkout. It removed any symlink named `origin` at the prefix, wherever it
+  pointed, and reported `Removed`. Two clones of this plugin and an
+  `--uninstall` run from the wrong one was enough to make the other one
+  disappear under a success message.
+- `install.sh --help` prints the whole header rather than lines 3 to 12 of
+  itself.
+
+### Choices
+
+Three verdicts, not two. `unknown` is not `keep` with a softer word: "this is
+not merged" and "no upstream says whether any of this was pushed" are different
+facts, and a sweep that prints them the same way invites somebody to act on the
+wrong one. A branch with no upstream is the common case, and `prune` says so
+rather than counting its commits against nothing and calling the answer zero.
+
+`prune` removes by calling `git-worktree remove`, one worktree at a time,
+rather than reimplementing the removal. Every refusal that command makes
+therefore still applies, and `prune` cannot talk its way past one; each call is
+a subshell, because those refusals are `die` and one worktree it will not take
+is not a reason to abandon the sweep. The test that matters hands every `go`
+verdict to `gwr` and requires it to be taken: `prune` proposing something that
+would then be refused is a bug in `prune`.
+
+There is no `--dry-run`. Without `--yes` this only reports, so a flag meaning
+"do not act" would be a no-op wearing the clothes of a safety feature, and
+somebody would one day read it as the reason a sweep was safe. Passing it is an
+error that says as much rather than being quietly accepted.
+
+`git_guard` now skips git's global options before reading the subcommand. It
+read `$1` as the subcommand, so `git -C <path> branch -D <branch>` reached it
+as a subcommand named `-C`, matched nothing, and went through - and so did
+`reset --hard`, `clean -fdx`, a bare `--force` push, and `worktree remove
+--force`. Nothing passed a global before now, which is why it had never fired;
+`gwm` is the first command that needs `git -C`, and writing it would have
+opened the hole rather than found it. A global the guard does not recognise is
+refused rather than skipped, because the alternative is reading the token after
+it as a subcommand, which is how a guard stops guarding.
+
+`gwm` renames the branch before moving the checkout. `git worktree move`
+records the path it moved to, so renaming afterwards would leave the two halves
+recoverable in the wrong order if the move failed. Both failure paths say which
+half happened and print the command that finishes it.
+
+The new path goes to stdout. A subprocess cannot `cd` its parent, so the shell
+that called `gwm` is still standing in a directory that no longer exists, and
+the path is what a shell function moves to.
+
 ## 0.9.0
 
 `merge --force` is gone. It covered seven unrelated refusals with one word, so

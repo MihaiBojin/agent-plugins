@@ -848,3 +848,354 @@ worktree_prune_empty_parents() {
   done
   return 0
 }
+
+# --------------------------------------------------------------------------
+# move
+# --------------------------------------------------------------------------
+
+worktree_move_usage() {
+  cat >&2 <<'USAGE'
+origin git-worktree move <new-branch>   (aliases: gw move, gwm)
+
+  Rename this worktree's branch and move its checkout so the two agree.
+USAGE
+}
+
+# Renames the branch checked out here, and moves the checkout to match.
+#
+# Directory name equals branch name is the invariant every command here reads,
+# so this is two git operations that have to happen together. `git branch -m`
+# alone leaves a worktree whose directory says one thing and whose HEAD says
+# another, which is the state `gwl` and `gwr` both misread; `git worktree move`
+# alone renames nothing.
+#
+# Three pieces of tidying git will not do: the new parent has to exist before
+# `git worktree move` will write into it, the old one is left behind empty, and
+# neither is `git worktree move`'s business.
+worktree_move() {
+  local new='' arg
+  while [ "$#" -gt 0 ]; do
+    arg="$1"
+    if parse_common_flag "$arg"; then
+      shift
+      continue
+    fi
+    case "$arg" in
+      -h | --help)
+        worktree_move_usage
+        return 0
+        ;;
+      -*) die "git-worktree move: unknown argument ${arg}" ;;
+      *)
+        [ -z "$new" ] || die "git-worktree move: one branch name, not two - usage: origin gwm <new-branch>"
+        new="$arg"
+        shift
+        ;;
+    esac
+  done
+
+  [ -n "$new" ] || die "git-worktree move: which name? usage: origin gwm <new-branch>"
+  git check-ref-format --branch "$new" >/dev/null 2>&1 ||
+    die "git-worktree move: '${new}' is not a valid branch name"
+
+  worktree_require
+
+  local main src record branch flags dest state
+  main="$(repo_main_worktree)"
+  src="$(repo_root 2>/dev/null || printf '')"
+  [ -n "$src" ] || die "git-worktree move: not inside a worktree of this repository"
+  [ "$src" != "$main" ] ||
+    die "git-worktree move: that is the main worktree; git cannot move it, and its directory is not named after a branch"
+
+  record="$(worktree_record_at "$src")"
+  [ -n "$record" ] || die "git-worktree move: ${src} is not a worktree of this repository"
+  branch="$(worktree_record_field "$record" 3)"
+  flags="$(worktree_record_field "$record" 4)"
+
+  case "$flags" in
+    *locked*)
+      say "Unlock it first:"
+      say "  git -C $(quote_args "$main") worktree unlock $(quote_args "$src")"
+      die "git-worktree move: ${src} is locked"
+      ;;
+  esac
+  [ -n "$branch" ] ||
+    die "git-worktree move: ${src} has no branch checked out; there is nothing to rename"
+  [ "$branch" != "$new" ] || die "git-worktree move: ${branch} is already called that"
+  git show-ref --verify --quiet "refs/heads/${new}" &&
+    die "git-worktree move: branch ${new} already exists"
+
+  dest="$(worktree_path_for "$new")"
+  state="$(worktree_dest_state "$dest")"
+  case "$state" in
+    free) ;;
+    ours) die "git-worktree move: ${dest} is already a worktree of this repository" ;;
+    blocked:*) die "git-worktree move: ${state#blocked:}" ;;
+    *) die "git-worktree move: cannot tell what is at ${dest}" ;;
+  esac
+
+  say ''
+  say "This will rename ${branch} to ${new}, and move its checkout:"
+  say "  $(worktree_pretty_path "$src")"
+  say "  $(worktree_pretty_path "$dest")"
+  confirm "Rename ${branch} to ${new}?" \
+    "git -C $(quote_args "$main") branch -m $(quote_args "$branch") $(quote_args "$new")" \
+    "git -C $(quote_args "$main") worktree move $(quote_args "$src") $(quote_args "$dest")"
+
+  # The branch first. `git worktree move` records the path it moved to, so
+  # renaming afterwards would leave the two halves recoverable in the wrong
+  # order if the move failed.
+  git_run -C "$main" branch -m "$branch" "$new"
+
+  origin_run mkdir -p "$(dirname "$dest")" || {
+    warn "${branch} is now ${new}; its worktree is still at ${src}"
+    die "git-worktree move: could not create $(dirname "$dest")"
+  }
+
+  if ! git_run -C "$main" worktree move "$src" "$dest"; then
+    warn "${branch} is now ${new}; its worktree is still at ${src}"
+    say "  finish it with: git -C $(quote_args "$main") worktree move $(quote_args "$src") $(quote_args "$dest")"
+    die "git-worktree move: the move failed"
+  fi
+
+  worktree_prune_empty_parents "$src"
+
+  # A subprocess cannot cd its parent, so the shell that called this is still
+  # standing in a directory that no longer exists. The path on stdout is what a
+  # shell function cd's to.
+  good "${new} at $(worktree_pretty_path "$dest")"
+  [ "$src" = "$(pwd -P 2>/dev/null || printf '')" ] &&
+    note "you are standing in the old path; cd to the one printed"
+  printf '%s\n' "$dest"
+}
+
+# --------------------------------------------------------------------------
+# prune
+# --------------------------------------------------------------------------
+
+worktree_prune_usage() {
+  cat >&2 <<'USAGE'
+origin prune [flags]
+
+  Say which worktrees are finished, and why, one line each. Removes nothing
+  unless --yes.
+
+  --branch <name>     Consider only that branch
+  --no-fetch          Assess from what is already here, without fetching
+  --delete-ignored    Let a worktree holding ignored files go
+  --yes               Remove what it proposes
+USAGE
+}
+
+# One assessment per worktree: verdict, branch, path, reason.
+#
+# The verdicts are `go`, `keep` and `unknown`, and the third is not the second
+# with a softer word: "no upstream, so nothing says whether this was pushed" is
+# a different fact from "this is not merged", and a sweep that prints them the
+# same way invites somebody to act on the wrong one.
+#
+# Every refusal `git-worktree remove` makes is checked here, in its order.
+# Proposing something that would then be refused is a bug in this, not a
+# surprise at the confirmation.
+worktree_prune_assess() {
+  local only="$1" head_branch head_ref main current
+  local record path sha branch flags reason unpushed ignored_count
+
+  head_branch="$(repo_head_branch)"
+  head_ref="$(repo_head_ref_for "$head_branch")"
+  main="$(repo_main_worktree)"
+  current="$(repo_root 2>/dev/null || printf '')"
+
+  while IFS="$ORIGIN_FS" read -r path sha branch flags; do
+    [ -n "$path" ] || continue
+    case "$flags" in *bare*) continue ;; esac
+    [ "$path" = "$main" ] && continue
+    [ -n "$only" ] && [ "$branch" != "$only" ] && continue
+
+    if [ "$path" = "$current" ]; then
+      printf 'keep%s%s%s%s%syou are standing in it\n' \
+        "$ORIGIN_FS" "${branch:-(detached)}" "$ORIGIN_FS" "$path" "$ORIGIN_FS"
+      continue
+    fi
+    case "$flags" in
+      *locked*)
+        printf 'keep%s%s%s%s%sit is locked\n' \
+          "$ORIGIN_FS" "${branch:-(detached)}" "$ORIGIN_FS" "$path" "$ORIGIN_FS"
+        continue
+        ;;
+    esac
+    if [ -n "$branch" ] && [ "$branch" = "$head_branch" ]; then
+      printf 'keep%s%s%s%s%sit is the head branch\n' \
+        "$ORIGIN_FS" "$branch" "$ORIGIN_FS" "$path" "$ORIGIN_FS"
+      continue
+    fi
+    if worktree_is_dirty "$path"; then
+      printf 'keep%s%s%s%s%sit has uncommitted changes\n' \
+        "$ORIGIN_FS" "${branch:-(detached)}" "$ORIGIN_FS" "$path" "$ORIGIN_FS"
+      continue
+    fi
+
+    if [ -z "$branch" ]; then
+      # Detached: finished when some ref already reaches the commit, which is
+      # the same question `git-worktree remove` asks of one.
+      if [ -n "$(git for-each-ref --count=1 --contains "$sha" 2>/dev/null)" ]; then
+        printf 'go%s(detached)%s%s%sits commit is reached by a ref\n' \
+          "$ORIGIN_FS" "$ORIGIN_FS" "$path" "$ORIGIN_FS"
+      else
+        printf 'unknown%s(detached)%s%s%sno ref reaches %s\n' \
+          "$ORIGIN_FS" "$ORIGIN_FS" "$path" "$ORIGIN_FS" "$sha"
+      fi
+      continue
+    fi
+
+    if ! reason="$(merged_reason "$branch" "$head_ref")"; then
+      unpushed="$(merged_unpushed_count "$branch")"
+      if [ -z "$(repo_upstream "$branch")" ]; then
+        printf 'unknown%s%s%s%s%snot merged into %s, and no upstream says whether %s commit(s) were pushed\n' \
+          "$ORIGIN_FS" "$branch" "$ORIGIN_FS" "$path" "$ORIGIN_FS" \
+          "$(ref_name "$head_ref")" "${unpushed:-0}"
+      else
+        printf 'keep%s%s%s%s%snot merged into %s\n' \
+          "$ORIGIN_FS" "$branch" "$ORIGIN_FS" "$path" "$ORIGIN_FS" "$(ref_name "$head_ref")"
+      fi
+      continue
+    fi
+
+    ignored_count="$(worktree_ignored "$path" | grep -c . || true)"
+    if [ "${ignored_count:-0}" -gt 0 ] && [ "$ORIGIN_PRUNE_DELETE_IGNORED" = 0 ]; then
+      printf 'keep%s%s%s%s%s%s, but holds %s ignored path(s); pass --delete-ignored\n' \
+        "$ORIGIN_FS" "$branch" "$ORIGIN_FS" "$path" "$ORIGIN_FS" "$reason" "$ignored_count"
+      continue
+    fi
+
+    printf 'go%s%s%s%s%s%s\n' "$ORIGIN_FS" "$branch" "$ORIGIN_FS" "$path" "$ORIGIN_FS" "$reason"
+  done <<EOF
+$(worktree_records)
+EOF
+  return 0
+}
+
+ORIGIN_PRUNE_DELETE_IGNORED=0
+
+worktree_prune() {
+  local only='' fetch=1 act=0 arg
+  ORIGIN_PRUNE_DELETE_IGNORED=0
+  while [ "$#" -gt 0 ]; do
+    arg="$1"
+    # Before parse_common_flag, which would take it. A flag meaning "do not
+    # act" on a command that does not act is a no-op wearing the clothes of a
+    # safety feature, and somebody will one day read it as the reason a sweep
+    # was safe.
+    case "$arg" in
+      --dry-run)
+        die "prune: there is no --dry-run; prune assesses and prints, and only --yes removes anything"
+        ;;
+    esac
+    if parse_common_flag "$arg"; then
+      shift
+      continue
+    fi
+    case "$arg" in
+      --branch)
+        require_value --branch "$@"
+        only="$2"
+        shift 2
+        ;;
+      --no-fetch)
+        fetch=0
+        shift
+        ;;
+      --delete-ignored)
+        ORIGIN_PRUNE_DELETE_IGNORED=1
+        shift
+        ;;
+      -h | --help)
+        worktree_prune_usage
+        return 0
+        ;;
+      *) die "prune: unknown argument ${arg}" ;;
+    esac
+  done
+
+  [ "$ORIGIN_ASSUME_YES" = 1 ] && act=1
+  worktree_require
+
+  # The fetch is what the assessment rests on: `: gone]` and every
+  # merged-ness answer below are read from remote-tracking refs, and a stale
+  # one gives a confident wrong answer rather than an uncertain right one.
+  if [ "$fetch" = 1 ]; then
+    repo_fetch
+  else
+    note "assessing from what is already here; refs may be stale (--no-fetch)"
+    # Each removal below is `git-worktree remove`, which fetches on its own
+    # unless something already has. Without this, --no-fetch would suppress one
+    # fetch and then perform one per worktree.
+    ORIGIN_FETCHED=1
+  fi
+
+  # Git's own bookkeeping for worktrees whose directories somebody removed by
+  # hand. Nothing else here calls it, and a stale entry is a record that
+  # answers for a directory that is not there.
+  git_run worktree prune
+
+  local rows go_count=0 kept=0 unknown=0 verdict branch path reason failed=0
+  rows="$(worktree_prune_assess "$only")"
+
+  if [ -z "$rows" ]; then
+    good "nothing to prune"
+    return 0
+  fi
+
+  while IFS="$ORIGIN_FS" read -r verdict branch path reason; do
+    [ -n "$verdict" ] || continue
+    case "$verdict" in
+      go) go_count=$((go_count + 1)) ;;
+      keep) kept=$((kept + 1)) ;;
+      unknown) unknown=$((unknown + 1)) ;;
+    esac
+  done <<EOF
+$rows
+EOF
+
+  {
+    printf 'VERDICT\tBRANCH\tWHY\tPATH\n'
+    while IFS="$ORIGIN_FS" read -r verdict branch path reason; do
+      [ -n "$verdict" ] || continue
+      printf '%s\t%s\t%s\t%s\n' "$verdict" "$branch" "$reason" "$(worktree_pretty_path "$path")"
+    done <<EOF
+$rows
+EOF
+  } | tabulate
+
+  say ''
+  say "$(printf '%s to remove, %s kept, %s unclear' "$go_count" "$kept" "$unknown")"
+
+  if [ "$go_count" = 0 ]; then
+    return 0
+  fi
+  if [ "$act" = 0 ]; then
+    say ''
+    note "nothing removed; pass --yes to remove the ${go_count} above"
+    return 0
+  fi
+
+  # The removal is `git-worktree remove` itself, one worktree at a time, so
+  # every refusal it makes still applies and this cannot talk its way past one.
+  # A subshell because those refusals are `die`: one worktree it will not take
+  # is not a reason to abandon the rest of the sweep.
+  while IFS="$ORIGIN_FS" read -r verdict branch path reason; do
+    [ "$verdict" = go ] || continue
+    if [ "$ORIGIN_PRUNE_DELETE_IGNORED" = 1 ]; then
+      (worktree_remove "$path" --yes --delete-ignored) || failed=$((failed + 1))
+    else
+      (worktree_remove "$path" --yes) || failed=$((failed + 1))
+    fi
+  done <<EOF
+$rows
+EOF
+
+  if [ "$failed" -gt 0 ]; then
+    die "prune: $(printf '%s of %s' "$failed" "$go_count") could not be removed; each said why above"
+  fi
+  good "$(printf 'removed %s worktree(s)' "$go_count")"
+}
