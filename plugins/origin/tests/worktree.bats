@@ -691,3 +691,77 @@ JSON
   run jq_of "$output" '[.[].branch] | join(",")'
   [ "$output" = "main,local-only" ]
 }
+
+@test "path: prints the worktree that has the branch" {
+  origin_cli gwa feature
+  origin_cli worktree path feature
+  [ "$status" -eq 0 ]
+  [ "$output" = "${WORKTREES}/feature/proj" ]
+}
+
+@test "path: stdout is one line, so a shell function can cd to it" {
+  origin_cli gwa feature
+  origin_cli worktree path feature
+  [ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" = 1 ]
+  [ -d "$output" ]
+}
+
+@test "path: a slash in the branch name nests" {
+  origin_cli gwa fix/login
+  origin_cli worktree path fix/login
+  [ "$output" = "${WORKTREES}/fix/login/proj" ]
+}
+
+@test "path: a branch with no worktree exits 1 and says which" {
+  git branch nowt main
+  origin_cli worktree path nowt
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+  [[ "$stderr" == *"no worktree of this repository has nowt"* ]]
+}
+
+@test "path: a branch that does not exist exits 1 with nothing on stdout" {
+  origin_cli worktree path never-existed
+  [ "$status" -eq 1 ]
+  [ -z "$output" ]
+}
+
+@test "path: naming no branch, or two, is an error" {
+  origin_cli worktree path
+  [ "$status" -eq 1 ]
+  origin_cli gwa feature
+  origin_cli worktree path feature main
+  [ "$status" -eq 1 ]
+}
+
+@test "path: gw path and gwp are the same command" {
+  origin_cli gwa feature
+  origin_cli gw path feature
+  local via_gw="$output"
+  origin_cli gwp feature
+  [ "$output" = "$via_gw" ]
+  [ "$output" = "${WORKTREES}/feature/proj" ]
+}
+
+# Nine worktrees, because the crash this guards against only starts when the
+# match sits far enough down the records that worktree_records is still writing
+# when awk exits. Every other worktree test makes at most three and asks about
+# the one it just made, which is always the last record - so the suite could
+# not see it.
+@test "every branch answers, however many worktrees there are" {
+  local b
+  for b in one two three four five six seven eight; do
+    origin_cli gwa "$b"
+    [ "$status" -eq 0 ]
+  done
+
+  for b in one two three four five six seven eight; do
+    origin_cli worktree path "$b"
+    [ "$status" -eq 0 ]
+    [ "$output" = "${WORKTREES}/${b}/proj" ]
+
+    origin_cli gwa "$b"
+    [ "$status" -eq 0 ]
+    [ "$output" = "${WORKTREES}/${b}/proj" ]
+  done
+}
