@@ -77,3 +77,21 @@ JSON
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"not inside a git repository"* ]]
 }
+
+@test "a stated head branch that names no ref is a failure, not readiness" {
+  git config git-worktree-plugin.headBranch does-not-exist
+
+  origin_cli doctor
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"does-not-exist is no branch here or on origin"* ]]
+  [[ "$stderr" == *"git-worktree-plugin.headBranch"* ]]
+  [[ "$stderr" != *"ready"* ]]
+}
+
+@test "a stated head branch that does name a ref still passes" {
+  git config git-worktree-plugin.headBranch origin/main
+
+  origin_cli doctor
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"main (origin/main)"* ]]
+}

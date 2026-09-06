@@ -21,9 +21,19 @@ repo_common_dir() {
   git rev-parse --path-format=absolute --git-common-dir
 }
 
+ORIGIN_MAIN_WORKTREE=''
+
 # The original clone, not a linked worktree. Empty for a bare repository.
+#
+# Cached, because it cannot move: `git worktree add` and `git worktree remove`
+# both act on linked worktrees, and neither changes which one is the main
+# checkout. `worktree_require` fills it, in a shell the answer outlives.
 repo_main_worktree() {
   local line path='' bare=0
+  if [ -n "$ORIGIN_MAIN_WORKTREE" ]; then
+    printf '%s\n' "$ORIGIN_MAIN_WORKTREE"
+    return 0
+  fi
   while IFS= read -r line; do
     case "$line" in
       "worktree "*) path="${line#worktree }" ;;
@@ -33,7 +43,9 @@ repo_main_worktree() {
   done <<EOF
 $(git worktree list --porcelain)
 EOF
+  # A bare repository has no main checkout, and nothing to cache.
   [ "$bare" = 1 ] && return 0
+  ORIGIN_MAIN_WORKTREE="$path"
   printf '%s\n' "$path"
 }
 
@@ -279,6 +291,20 @@ repo_head_ref_for() {
     # that worked into one where every command fails.
     printf '%s\n' "$head"
   fi
+}
+
+# True when the head branch was written down in
+# `git-worktree-plugin.headBranch` and names no ref.
+#
+# Every other way of arriving at a head branch checks that it exists first, so
+# a stated one is the only kind that can be a name and nothing else. Worth
+# telling apart on a refusal: nothing is ever merged into a branch that is not
+# there, and `<branch> is not merged into <name>` reads as a fact about the
+# branch rather than about the setting.
+repo_head_branch_misstated() {
+  [ -n "$(git config --get git-worktree-plugin.headBranch 2>/dev/null || printf '')" ] || return 1
+  git rev-parse --verify --quiet "${1}^{commit}" >/dev/null 2>&1 && return 1
+  return 0
 }
 
 # A ref as a person writes it: `refs/remotes/origin/main` is `origin/main`,

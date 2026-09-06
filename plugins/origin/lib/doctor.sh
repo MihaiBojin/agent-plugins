@@ -89,8 +89,23 @@ doctor_repository() {
     *) doctor_row warn "remote" "none; the worktree commands still work" ;;
   esac
 
+  # The ref is named from the branch already in hand, which is also the one
+  # `repo_head_ref_for` documents: `repo_head_branch` is not cached, and asking
+  # twice can cost a second `ls-remote`.
+  #
+  # A stated `git-worktree-plugin.headBranch` is taken as written, so a name
+  # that resolves to nothing reaches every other command intact - and every
+  # reap then refuses with `<branch> is not merged into <name>`, forever. That
+  # is a misconfiguration, not readiness.
+  local head_ref
   if head="$(repo_head_branch 2>/dev/null)"; then
-    doctor_row ok "head branch" "${head} ($(ref_name "$(repo_head_ref)"))"
+    head_ref="$(repo_head_ref_for "$head")"
+    if git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null 2>&1; then
+      doctor_row ok "head branch" "${head} ($(ref_name "$head_ref"))"
+    else
+      doctor_row no "head branch" \
+        "${head} is no branch here or on ${ORIGIN_REMOTE:-the remote}; git config git-worktree-plugin.headBranch <name>"
+    fi
   else
     doctor_row no "head branch" "cannot tell; git config git-worktree-plugin.headBranch <name>"
   fi
