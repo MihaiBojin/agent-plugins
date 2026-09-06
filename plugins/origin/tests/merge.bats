@@ -241,28 +241,24 @@ JSON
   [ "$output" = "0" ]
 }
 
-@test "merging deletes the branch on the remote" {
-  run git show-ref --verify --quiet refs/remotes/origin/feature
-  [ "$status" -eq 0 ]
-
+@test "merging leaves the remote branch where it is" {
   origin_cli merge --yes --body "Anything"
   [ "$status" -eq 0 ]
-  run git show-ref --verify --quiet refs/remotes/origin/feature
-  [ "$status" -ne 0 ]
+  git --git-dir="$UPSTREAM" show-ref --verify --quiet refs/heads/feature
+  git show-ref --verify --quiet refs/remotes/origin/feature
+  [[ "$stderr" != *"This will delete:"* ]]
 }
 
-@test "a pull request from a fork does not take this repository's branch with it" {
+@test "a pull request from a fork takes nothing of this repository with it" {
   # `headRefName` is the bare branch name, so a fork's `main` and this
-  # repository's `main` are the same string. Only isCrossRepository tells them
-  # apart, and the branch here belongs to nobody in that pull request.
+  # repository's `main` are the same string, and a remote-tracking ref matching
+  # the name is evidence of nothing.
   pr_json '"state": "OPEN", "isDraft": false, "isCrossRepository": true,
     "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", "statusCheckRollup": []'
 
   origin_cli merge --yes --body "Anything"
   [ "$status" -eq 0 ]
-  [[ "$stderr" == *"came from a fork"* ]]
-  run git --git-dir="$UPSTREAM" show-ref --verify --quiet refs/heads/feature
-  [ "$status" -eq 0 ]
+  git --git-dir="$UPSTREAM" show-ref --verify --quiet refs/heads/feature
 }
 
 @test "a number that names a different pull request than it resolves to is refused" {
@@ -291,27 +287,12 @@ JSON
   [ "$output" = "3" ]
 }
 
-@test "deleting the remote branch says where it was and how to put it back" {
-  local sha
-  sha="$(git rev-parse --short refs/remotes/origin/feature)"
-
-  origin_cli merge --yes --body "Anything"
-  [ "$status" -eq 0 ]
-  [[ "$stderr" == *"This will delete:"* ]]
-  [[ "$stderr" == *"origin/feature (${sha})"* ]]
-  [[ "$stderr" == *"restore: git push origin ${sha}:refs/heads/feature"* ]]
-
-  # And the line is exactly runnable.
-  line="$(printf '%s\n' "$stderr" | grep 'restore: git push' | sed 's/.*restore: //')"
-  eval "$line"
-  git --git-dir="$UPSTREAM" show-ref --verify --quiet refs/heads/feature
-}
-
-@test "--no-delete-branch leaves the remote branch where it is" {
+@test "--no-delete-branch is refused, because nothing here deletes one" {
   origin_cli merge --yes --no-delete-branch --body "Anything"
-  [ "$status" -eq 0 ]
-  run git show-ref --verify --quiet refs/remotes/origin/feature
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"--no-delete-branch is gone"* ]]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
 }
 
 @test "the strategy defaults to what the repository prefers" {

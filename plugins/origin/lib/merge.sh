@@ -28,7 +28,6 @@ origin merge [<number>] [flags]
   --body-file <path>    The body, from a file ("-" for standard input)
   --edit                Open the body in $EDITOR before merging
   --force               Merge anyway, having been told why not
-  --no-delete-branch    Leave the remote branch alone
   --dry-run             Print what would be merged, and stop
   --yes                 Do not ask
 USAGE
@@ -42,7 +41,7 @@ merge_cleanup() {
 
 merge_main() {
   local number='' method='' title='' body='' body_file='' edit=0
-  local gather=0 force=0 delete_branch=1 have_body=0 arg
+  local gather=0 force=0 have_body=0 arg
 
   while [ "$#" -gt 0 ]; do
     arg="$1"
@@ -90,9 +89,11 @@ merge_main() {
         force=1
         shift
         ;;
+      # The branch on the remote is the forge's. GitHub's "automatically
+      # delete head branches" and GitLab's "delete source branch" already
+      # decide it per repository, so there is nothing here to turn off.
       --no-delete-branch)
-        delete_branch=0
-        shift
+        die "merge: --no-delete-branch is gone - the remote branch is left alone either way; the forge's own setting decides whether it goes"
         ;;
       -h | --help)
         merge_usage
@@ -194,41 +195,15 @@ merge_main() {
   printf '%s\n' "$body" | indent_lines '  '
   say ''
 
-  local plan="${method#--}" remote branch_plan head_sha=''
-  remote="$(repo_remote 2>/dev/null || printf '')"
-  # Read before the merge, because after it the branch may be gone from the
-  # forge and this is the only thing that says where it was.
-  [ -n "$remote" ] &&
-    head_sha="$(git rev-parse --short "refs/remotes/${remote}/${head_ref}" 2>/dev/null || printf '')"
-
-  if [ "$(forge_pr_field .crossRepository)" = "true" ]; then
-    # Left to `merge_delete_remote_branch`, which refuses it and says so out
-    # loud - the confirmation is silent under --yes, and this is worth saying.
-    branch_plan="leave ${head_ref} alone; it is a fork's branch"
-  elif [ "$delete_branch" = 1 ] && [ -n "$remote" ] && [ -n "$head_sha" ]; then
-    branch_plan="git push ${remote} --delete ${head_ref}"
-    losing "This will delete:" \
-      "${remote}/${head_ref} (${head_sha}) — restore with: git push ${remote} ${head_sha}:refs/heads/${head_ref}"
-  else
-    # No sha to name means no way to say how to put it back, so it stays.
-    [ "$delete_branch" = 1 ] && [ -n "$remote" ] &&
-      warn "not deleting ${remote}/${head_ref}: nothing here records the sha that would restore it"
-    delete_branch=0
-    branch_plan="keep ${remote:+${remote}/}${head_ref}"
-  fi
+  local plan="${method#--}"
 
   confirm "Merge #${pr_number} into ${base_ref} (${plan})?" \
     "$(forge_cli) merge #${pr_number} ${method} with the title and body above" \
-    "$branch_plan"
+    "leave ${head_ref} alone; whether it goes is the forge's setting to apply"
 
   forge_pr_merge "$pr_number" "$method" --title "$title" --body-file "$body_path" ||
     die "the merge was refused by $(forge_cli)"
   good "merged #${pr_number}"
-
-  if [ "$delete_branch" = 1 ]; then
-    merge_delete_remote_branch "$head_ref" "$head_sha"
-  fi
-
 }
 
 # Either the number given, or the one belonging to the branch in hand.
@@ -475,37 +450,4 @@ merge_edit() {
   edited="$(printf '%s\n' "$edited" | sed -e '/./,$!d')"
   [ -n "$edited" ] || die "the body is empty; nothing merged"
   printf '%s\n' "$edited"
-}
-
-# The branch on the remote, once nothing points at it.
-#
-# A pull request from a fork is left alone. Its head branch lives in somebody
-# else's repository, and `headRef` carries the bare name, so a fork's `main`
-# and this repository's `main` are one string - the forge is the only thing
-# that can tell them apart, and a remote-tracking ref matching the name is
-# evidence of nothing.
-merge_delete_remote_branch() {
-  local branch="$1" sha="${2:-}" remote
-  if [ "$(forge_pr_field .crossRepository)" = "true" ]; then
-    note "#$(forge_pr_field .number) came from a fork; leaving ${branch} alone"
-    return 0
-  fi
-  remote="$(repo_remote 2>/dev/null || printf '')"
-  [ -n "$remote" ] || return 0
-  if ! git show-ref --verify --quiet "refs/remotes/${remote}/${branch}"; then
-    note "${remote} has no ${branch} to delete"
-    return 0
-  fi
-  # The same rule the local branch delete follows: no recorded sha, no
-  # deletion. A branch on a remote is harder to get back, not easier.
-  [ -n "$sha" ] || {
-    warn "not deleting ${remote}/${branch}: nothing here records the sha that would restore it"
-    return 0
-  }
-  git_run push "$remote" --delete "$branch" || {
-    warn "could not delete ${remote}/${branch}; it may already be gone"
-    return 0
-  }
-  say "deleted ${remote}/${branch} (was ${sha})"
-  say "  restore: git push ${remote} ${sha}:refs/heads/${branch}"
 }

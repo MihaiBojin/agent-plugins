@@ -31,11 +31,17 @@ The branch is **deleted** only on git's own answer, because only that one
 compares the content and can say nothing would be lost. A pull request the
 forge calls merged is enough to drop the checkout and no more.
 
+- **The head branch** — the branch stays, whatever the merged test says. Its
+  worktree is removed on the ordinary rules, and no restore line is printed
+  because nothing was deleted. This one outranks the two below it.
 - **Finished, and git can prove it** — the worktree goes and the branch goes
   with it. The output carries `restore: git branch <name> <sha>`; copy that
   line, it is the undo.
 - **Finished on the forge** — the worktree goes, the branch stays.
 - **Not finished** — it refuses, because the checkout is where that work lives.
+- **Detached** — no branch, so what counts is whether some ref already reaches
+  its commit. One that does: the worktree goes. None: refused, and `--force`
+  removes it and prints `git worktree add --detach <path> <sha>` as the undo.
 - **`--force`** — removes the checkout of an unfinished branch and **keeps the
   branch**. Never pass it on your own initiative; the refusal is the point.
 

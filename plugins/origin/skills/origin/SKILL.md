@@ -82,11 +82,16 @@ that is where the work is.
 
 The branch is deleted only on git's own answer. The forge's is enough to drop
 the checkout and no more, because a pull request says nothing about the commits
-sitting on the local branch.
+sitting on the local branch. The head branch is never deleted. A worktree
+holding it is removed on the ordinary rules, and the branch stays.
 
 When it does delete a branch it prints `restore: git branch <name> <sha>`.
 Relay that line. It is the undo, and it is the reason no flag is needed to
 protect the branch.
+
+A worktree with a detached HEAD has no branch. It goes when some ref already
+reaches the commit it sits on, and is refused when none does; `--force` removes
+it and prints `git worktree add --detach <path> <sha>`.
 
 `--force` removes the checkout of an unfinished branch, and **never deletes a
 branch**. Do not pass it on your own initiative. It does not cover a worktree

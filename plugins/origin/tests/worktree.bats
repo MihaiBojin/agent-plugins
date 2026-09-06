@@ -307,6 +307,158 @@ setup() {
   [[ "$stderr" == *"kept branch finished"* ]]
 }
 
+# --- the head branch -------------------------------------------------------
+
+@test "remove: a worktree holding the head branch goes, and the branch stays" {
+  # The main checkout has to be somewhere else before git will check main out
+  # a second time, which is the ordinary shape: work in the clone, keep the
+  # head branch in a worktree of its own.
+  git checkout -q -b side
+  origin_cli gwa main
+  [ "$status" -eq 0 ]
+
+  origin_cli gwr main --yes
+  [ "$status" -eq 0 ]
+  [ ! -d "${WORKTREES}/main/proj" ]
+  git show-ref --verify --quiet refs/heads/main
+  [[ "$stderr" == *"branch main stays; it is the head branch"* ]]
+  [[ "$stderr" == *"kept branch main"* ]]
+}
+
+@test "remove: the head branch is never offered a restore line" {
+  git checkout -q -b side
+  origin_cli gwa main
+
+  origin_cli gwr main --yes --quiet
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"This will delete:"* ]]
+  [[ "$stderr" != *"restore"* ]]
+}
+
+@test "remove: the head branch is whichever git-worktree-plugin.headBranch names" {
+  git checkout -q -b release
+  git push -q origin release
+  git checkout -q main
+  git config git-worktree-plugin.headBranch release
+  origin_cli gwa release
+  [ "$status" -eq 0 ]
+
+  origin_cli gwr release --yes
+  [ "$status" -eq 0 ]
+  [ ! -d "${WORKTREES}/release/proj" ]
+  git show-ref --verify --quiet refs/heads/release
+}
+
+@test "remove: a head branch written as a remote ref is still the head branch" {
+  git checkout -q -b side
+  origin_cli gwa main
+  git config git-worktree-plugin.headBranch origin/main
+
+  origin_cli gwr main --yes
+  [ "$status" -eq 0 ]
+  git show-ref --verify --quiet refs/heads/main
+  [[ "$stderr" == *"branch main stays; it is the head branch"* ]]
+}
+
+@test "remove: a head branch written as a full ref is still the head branch" {
+  git checkout -q -b side
+  origin_cli gwa main
+  git config git-worktree-plugin.headBranch refs/heads/main
+
+  origin_cli gwr main --yes
+  [ "$status" -eq 0 ]
+  git show-ref --verify --quiet refs/heads/main
+  [[ "$stderr" == *"branch main stays; it is the head branch"* ]]
+}
+
+@test "remove: a head branch with a slash in its name is matched whole" {
+  # Never pushed, so the head ref is the bare branch name: a guard that cut the
+  # name at its first slash would compare against '2.x' and miss.
+  git checkout -q -b release/2.x
+  git checkout -q main
+  git config git-worktree-plugin.headBranch release/2.x
+  origin_cli gwa release/2.x
+  [ "$status" -eq 0 ]
+
+  origin_cli gwr release/2.x --yes
+  [ "$status" -eq 0 ]
+  git show-ref --verify --quiet refs/heads/release/2.x
+}
+
+@test "remove: a merged branch whose name ends the head ref is still deleted" {
+  # 'ain' is a suffix of 'origin/main'. Only an exact comparison tells the two
+  # apart, and this branch is not the head branch.
+  origin_cli gwa ain
+  cd "${WORKTREES}/ain/proj"
+  commit_file done.txt yes "The work"
+  cd "$REPO"
+  squash_merge_branch ain
+
+  origin_cli gwr ain --yes
+  [ "$status" -eq 0 ]
+  run git show-ref --verify --quiet refs/heads/ain
+  [ "$status" -ne 0 ]
+}
+
+@test "remove: the head branch is kept in a repository with no remote" {
+  git remote remove origin
+  git checkout -q -b side
+  origin_cli gwa main
+  [ "$status" -eq 0 ]
+
+  origin_cli gwr main --yes
+  [ "$status" -eq 0 ]
+  [ ! -d "${WORKTREES}/main/proj" ]
+  git show-ref --verify --quiet refs/heads/main
+}
+
+# --- a detached worktree ---------------------------------------------------
+
+@test "remove: a detached worktree goes when a ref already reaches its commit" {
+  git worktree add -q --detach "${ROOT}/look" HEAD
+
+  origin_cli gwr "${ROOT}/look" --yes
+  [ "$status" -eq 0 ]
+  [ ! -d "${ROOT}/look" ]
+  [[ "$stderr" == *"stays; refs/heads/main reaches it"* ]]
+}
+
+@test "remove: a detached worktree at a commit no ref reaches is refused" {
+  git worktree add -q --detach "${ROOT}/orphan" HEAD
+  git -C "${ROOT}/orphan" commit -q --allow-empty -m "Only here"
+  local sha
+  sha="$(git -C "${ROOT}/orphan" rev-parse --short HEAD)"
+
+  origin_cli gwr "${ROOT}/orphan" --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"no ref reaches ${sha}"* ]]
+  [[ "$stderr" == *"git branch <name> ${sha}"* ]]
+  [ -d "${ROOT}/orphan" ]
+}
+
+@test "remove: --force takes an unreached detached worktree, and the undo is runnable" {
+  git worktree add -q --detach "${ROOT}/orphan" HEAD
+  git -C "${ROOT}/orphan" commit -q --allow-empty -m "Only here"
+  local sha
+  sha="$(git -C "${ROOT}/orphan" rev-parse --short HEAD)"
+
+  origin_cli gwr "${ROOT}/orphan" --yes --force
+  [ "$status" -eq 0 ]
+  [ ! -d "${ROOT}/orphan" ]
+
+  local line
+  line="$(printf '%s\n' "$stderr" | grep 'restore with: git worktree add' | sed 's/.*restore with: //')"
+  [ -n "$line" ]
+  eval "$line"
+  [ "$(git -C "${ROOT}/orphan" rev-parse --short HEAD)" = "$sha" ]
+}
+
+@test "remove: a path this repository has no worktree at is named as such" {
+  origin_cli gwr "${ROOT}/nowhere" --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"is not a worktree of this repository"* ]]
+}
+
 @test "remove: a closed pull request finishes the checkout, and the branch stays" {
   stub_forge https://github.com/owner/repo.git
   origin_cli gwa abandoned
