@@ -183,6 +183,39 @@ setup() {
   [ "$output" = "$path" ]
 }
 
+@test "guard: a stale path segment does not answer for a branch with no worktree" {
+  # The directory keeps whatever name the branch had when `gwa` made it. A
+  # later branch of that name has no worktree, and the destination computed
+  # from it lands on the earlier checkout.
+  origin_cli gwa feature
+  local path="$output"
+  git -C "$path" branch -m renamed
+  git branch feature
+
+  origin_cli gwa feature
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"already a worktree of this repository"* ]]
+  [[ "$stderr" == *"(renamed)"* ]]
+  [ "$(git -C "$path" rev-parse --abbrev-ref HEAD)" = "renamed" ]
+}
+
+@test "guard: --path onto another of our worktrees is refused" {
+  origin_cli gwa feature
+  local path="$output"
+
+  origin_cli gwa other --path "$path"
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"(feature)"* ]]
+}
+
+@test "guard: a detached worktree at the destination is named as detached" {
+  git worktree add -q --detach "${WORKTREES}/feature/proj"
+
+  origin_cli gwa feature
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"(detached)"* ]]
+}
+
 @test "guard: the walk stops at the worktree root" {
   # The parent directory is itself a repository; an unbounded walk upward
   # would find it and refuse every destination.
