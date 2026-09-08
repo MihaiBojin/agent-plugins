@@ -2,6 +2,79 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.12.0
+
+- `/origin:pr` reads what a session changed, splits it into layers when it has
+  them, and takes each one from branch to open pull request before starting the
+  next: branch off the layer below, stage by path, commit, push, open the pull
+  request based on its parent. On GitHub, `gh stack link` joins them into a
+  stack afterwards when the extension happens to be installed, best effort.
+  The push is `renew`'s: plain the first time, `--force-with-lease
+--force-if-includes` once the remote has the branch.
+- Three slash commands, plus `help`: `pr`, `merge` and `renew`. `gwa`, `gwr`,
+  `gwl`, `gwm`, `prune` and `doctor` are CLI subcommands only, and the skill
+  runs them when a session needs one.
+- The skill is model-invocable only, and carries the `allowed-tools` the removed
+  commands used to: `bin/origin`, `git worktree list`, `git status`,
+  `git branch`.
+- `bin/` goes on PATH by a line in your shell config. There is no installer.
+
+### Choices
+
+A command file earns its place by holding something the model has to decide.
+`merge` writes a body from the change; `renew` routes a conflict and asks which
+way out. `gwa` printed a path and `doctor` printed a table: prose around a call
+that has no branch in it, maintained in a second place, and drifting from the
+CLI it wraps.
+
+`gwr` went with them, and its two rules moved into the skill: show the dry run
+first, and never add `--delete-ignored` on your own initiative. A deletion the
+script already refuses to make blindly does not need a second document saying
+so.
+
+The skill keeps every subcommand, so nothing left the plugin. What left is
+seven menu entries for a tool with two decisions in it.
+
+`pr` is a command file with no subcommand behind it, which no other command
+here is. Committing and opening a pull request would be several hundred lines
+of bash whose every decision - which paths belong to the change, what the
+message says, whether this is one change or three - is the model's anyway. The
+cost is real and stated in the file: git runs directly, so `lib/common.sh`
+refuses nothing on its behalf.
+
+alt: `origin pr` as a subcommand, with the model writing only the message. It
+would own staging and pushing, and it would have to be told which paths the
+session touched, which is the one thing only the session knows.
+
+Stacking is base branches, so `pr` files a stack with plain `gh pr create
+--base` and `glab mr create --target-branch`, on either forge. `gh stack link`
+runs last and only when the extension is already installed, because it adds
+what GitHub shows and nothing the pull requests need. GitLab, an older `gh`, a
+repository where the extension does not work: the step is skipped without a
+word, and what was filed is the same either way.
+
+alt: `gh stack init` and `gh stack add` driving the branches from the start.
+It puts a GitHub extension in the path of every layer, including on GitLab,
+to arrive at the same chain of base branches.
+
+One layer reaches an open pull request before the next one starts. The other
+order - branch and commit everything, then push and file five - leaves five
+branches and no reviews when it stops half way.
+
+`user-invocable: false` rather than leaving the skill in the menu beside the
+commands. Two ways to invoke the same thing, one of which loads a document and
+the other of which runs a script, is a menu that has to be explained.
+
+No installer, because a symlink is a shim and a shim wants a stable path.
+`~/.claude/plugins/marketplaces/MihaiBojin/plugins/origin/bin` is one, kept
+current by `claude plugin update`, and a PATH line is what the rest of a shell
+config already looks like. The 106 lines it replaces had produced two bugs in
+one release: an `--uninstall` that deleted another clone's symlink under a
+success message, and a `--help` that printed the wrong line range.
+
+alt: keep `install.sh` for `--prefix` and `--uninstall`. Both are one command
+each at a shell, against a file with a tested-but-real capacity to delete the
+wrong link.
 ## 0.11.0
 
 - The `git-worktree-plugin.*` namespace is gone. `git config

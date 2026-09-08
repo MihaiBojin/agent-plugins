@@ -13,7 +13,7 @@
     "lint": "prettier --ignore-unknown --write '**/*.{ts,js,mjs,json,md,yml,yaml}'",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:shell": "bats plugins/*/tests",
-    "lint:shell": "shellcheck -x plugins/*/bin/* plugins/*/hooks/*.sh plugins/*/install.sh plugins/*/tests/stubs/*",
+    "lint:shell": "shellcheck -x plugins/*/bin/* plugins/*/hooks/*.sh plugins/*/tests/stubs/*",
     "validate": "node scripts/validate-plugin.mjs && node scripts/validate-marketplaces.mjs",
     "sync": "node scripts/sync-catalogs.mjs",
     "check": "npm run lint && npm run lint:shell && npm test && npm run test:shell && npm run validate"

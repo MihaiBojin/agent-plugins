@@ -1,6 +1,8 @@
 ---
 name: origin
 description: Create, list and remove git worktrees; merge a pull request or merge request with a written body; put a branch back on top of the head branch, or start the next one when it cannot go back. Use when adding or cleaning up worktrees, merging a PR/MR, rebasing onto main, catching a branch up, starting the next branch after one was merged, deciding whether a branch is safe to delete, or diagnosing gh/glab authentication. Covers GitHub via gh and GitLab via glab; the worktree commands need neither.
+user-invocable: false
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git worktree list:*), Bash(git status:*), Bash(git branch:*)
 ---
 
 # origin
@@ -50,9 +52,12 @@ pass the flag only after they have agreed to those exact paths.
 | A worktree for a branch     | `origin gwa <branch>`     |
 | What worktrees exist        | `origin gwl --json`       |
 | Get rid of a finished one   | `origin gwr <branch>`     |
+| Open a pull request         | below, and `/origin:pr`   |
 | Merge a pull request        | `origin merge [<number>]` |
 | Catch a branch up with main | `origin renew`            |
 | Start the next branch       | `origin renew --auto`     |
+| Rename this branch          | `origin gwm <new>`        |
+| Which ones are finished     | `origin prune`            |
 | Something is misconfigured  | `origin doctor`           |
 
 `gwa`/`gwr`/`gwl` also spell out as `origin git-worktree add|remove|list` and
@@ -71,6 +76,9 @@ repository. Its last line of stdout is the path:
 ```bash
 cd "$(origin gwa my-branch --quiet)"
 ```
+
+Show `gwr --dry-run` first and put its output in your reply; run it again with
+`--yes` once the user has agreed to what it named.
 
 `gwr` takes the branch or path to remove — there is no default — and removes it
 **only when its branch is finished**: merged, squash-merged, or with a pull
@@ -97,6 +105,36 @@ it and prints `git worktree add --detach <path> <sha>`.
 branch**. Do not pass it on your own initiative. It does not cover a worktree
 holding uncommitted work: that is refused outright, with the uncommitted files
 listed, because the checkout is the only place they exist.
+
+## Opening one
+
+There is no subcommand for this. It is git and the forge CLI, so nothing
+refuses on your behalf and `--force` is never the answer to a step that failed.
+
+1. Read `git status --short` and `git diff`. Say what the change does, and
+   whether it is one change or several. Anything the session did not touch is
+   somebody else's: list those paths and ask before staging one. Never
+   `git add -A`.
+2. On the head branch, `git switch --create <name>`, named after the change.
+   On any other branch, that is the branch.
+3. Several layers stack by their base branches and nothing else: the first
+   branches off the head branch, each later one off the branch before it, and
+   each pull request is based on its parent. Take one layer all the way to an
+   open pull request before starting the next.
+4. Stage by path and commit per layer. The message says what the change does,
+   not how the session went. A decision file under `.claude/decisions/` goes in
+   with the work it explains.
+5. Push the way `renew` does: `git push --set-upstream <remote>
+refs/heads/<branch>` when the remote-tracking ref does not exist, and
+   `git push --force-with-lease --force-if-includes --set-upstream ...` when it
+   does. A refused first push means the name is taken: rename and push. A
+   refused leased push means somebody else's commits are there; stop.
+6. Write the title and body in your reply, ask, then `gh pr create --base
+<parent>` or `glab mr create --target-branch <parent>`.
+7. On GitHub, once every one is open,
+   `gh extension list | grep -q gh-stack && gh stack link` teaches GitHub the
+   chain. Best effort: never install the extension, never mention it on GitLab
+   or where it does not work, and never let it failing change what was filed.
 
 ## Merging
 

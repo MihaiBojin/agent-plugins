@@ -7,20 +7,34 @@ description: What the origin plugin does and which command to reach for
 and expensive to get wrong. Each lives in a tested shell script with a stable
 CLI; these commands gather intent and read the output back.
 
-| Command          | What it does                                                |
-| ---------------- | ----------------------------------------------------------- |
-| `/origin:gwa`    | Add a worktree for a branch and print its path              |
-| `/origin:gwr`    | Remove a finished worktree, deleting its branch when merged |
-| `/origin:gwl`    | Every worktree: branch, drift, state, pull request, age     |
-| `/origin:gwm`    | Rename this worktree's branch, and move it to match         |
-| `/origin:prune`  | Say which worktrees are finished, and why                   |
-| `/origin:merge`  | Merge a pull request with a written body                    |
-| `/origin:renew`  | Put this branch back on top of the head branch              |
-| `/origin:doctor` | Check git, jq, the remote, the forge and its permissions    |
+Three commands, because those are the three where an agent has something to
+add: `pr` reads the change and writes the commits, `merge` writes a body from
+it, and `renew` routes a conflict.
 
-The same commands run by hand:
+| Command         | What it does                                             |
+| --------------- | -------------------------------------------------------- |
+| `/origin:pr`    | Commit this session's work on a branch and open a PR     |
+| `/origin:merge` | Merge a pull request with a body written from the change |
+| `/origin:renew` | Put this branch back on top of the head branch           |
+| `/origin:help`  | This                                                     |
+
+`pr` is the one command that does not run `bin/origin` for the steps that
+touch the repository: git has no `origin` subcommand for committing or opening
+a pull request, so the refusals in `lib/common.sh` do not cover it. A change
+with layers in it becomes a stack of pull requests, each based on the branch
+below, filed one at a time and finished before the next one starts.
+
+The rest of the CLI has no slash command. Type these at a terminal, or ask and
+the skill will run them:
 
 ```bash
+origin gwa <branch>     # add a worktree, print its path
+origin gwr <what>       # remove a finished worktree, delete a merged branch
+origin gwl              # branch, drift, state, pull request, age
+origin gwm <new>        # rename this worktree's branch, move it to match
+origin gwp <branch>     # where that branch's worktree is
+origin prune            # which worktrees are finished, and why
+origin doctor           # git, jq, the remote, the forge, permissions
 origin --help
 ```
 

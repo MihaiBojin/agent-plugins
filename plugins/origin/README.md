@@ -6,8 +6,23 @@ branch, from one CLI that a person and an agent run the same way.
 ```shell
 claude plugin install origin@MihaiBojin
 codex plugin add origin@MihaiBojin
-./install.sh                            # and on PATH, for the terminal
 ```
+
+For the terminal, put `bin/` on PATH. The marketplace clone is a stable path
+that `claude plugin update` keeps current:
+
+```shell
+path+=(~/.claude/plugins/marketplaces/MihaiBojin/plugins/origin/bin)          # zsh
+fish_add_path ~/.claude/plugins/marketplaces/MihaiBojin/plugins/origin/bin    # fish
+```
+
+From a clone of this repository, point at that `bin/` instead.
+
+Three slash commands, which are the three places an agent has something to
+add: `/origin:pr` reads a session's work and writes the commits and the pull
+request, `/origin:merge` writes the body that lands, and `/origin:renew` routes
+a conflict. `pr` has no subcommand behind it - it is git and `gh` directly. The
+rest of the CLI runs the same either way.
 
 ## Commands
 
