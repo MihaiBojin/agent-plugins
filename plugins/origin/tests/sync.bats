@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 #
-# renew: rebasing a branch that can be rebased, and starting the next one
+# sync: rebasing a branch that can be rebased, and starting the next one
 # when it cannot.
 
 load helpers/repo
@@ -13,7 +13,7 @@ setup() {
   git checkout -qb feature
   printf 'uncommitted\n' >>README.md
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"working tree is dirty"* ]]
   [[ "$stderr" == *"--autostash"* ]]
@@ -24,7 +24,7 @@ setup() {
   commit_file mine.txt yes "My work"
   upstream_moves
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 0 ]
   run git log --oneline -1 --format=%s "origin/main"
   [ "$output" = "A commit from somewhere else" ]
@@ -39,7 +39,7 @@ setup() {
   before="$(git rev-parse --short feature)"
   upstream_moves
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"This will rewrite:"* ]]
   [[ "$stderr" == *"feature at ${before}"* ]]
@@ -63,7 +63,7 @@ setup() {
   git tag feature main
   upstream_moves
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"commit(s) on feature,"* ]]
   [[ "$stderr" == *"feature at ${before}"* ]]
@@ -79,30 +79,18 @@ setup() {
   [ "$(git rev-parse --short refs/heads/feature)" = "$before" ]
 }
 
-@test "a tag sharing the branch's name does not become part of the next one" {
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-  git checkout -q feature
-  git tag feature main
-
-  origin_cli renew --yes --auto
-  [ "$status" -eq 0 ]
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-$(date +%Y-%m-%d)_001" ]
-}
-
 @test "a branch already on top is left alone" {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"already on top of origin/main"* ]]
 }
 
 @test "the head branch fast-forwards" {
   upstream_moves
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"main is at origin/main"* ]]
   run git log --oneline -1 --format=%s main
@@ -113,7 +101,7 @@ setup() {
   commit_file accident.txt yes "A commit that should not be here"
   upstream_moves
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"A commit that should not be here"* ]]
   [[ "$stderr" == *"would lose them"* ]]
@@ -126,7 +114,7 @@ setup() {
   commit_file contested.txt mine "Mine"
   upstream_moves contested.txt theirs "Theirs"
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"stopped on a conflict"* ]]
   [[ "$stderr" == *"contested.txt"* ]]
@@ -145,7 +133,7 @@ setup() {
   git fetch -q origin
   git rebase origin/main || true
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"already in progress"* ]]
   git rebase --abort
@@ -157,7 +145,7 @@ setup() {
   printf 'work in progress\n' >>README.md
   upstream_moves
 
-  origin_cli renew --yes --autostash
+  origin_cli sync --yes --autostash
   [ "$status" -eq 0 ]
   run grep -c "work in progress" README.md
   [ "$output" = "1" ]
@@ -167,7 +155,7 @@ setup() {
 
 @test "a detached HEAD is refused rather than guessed at" {
   git checkout -q --detach
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"detached"* ]]
 }
@@ -178,7 +166,7 @@ setup() {
   git push -q -u origin feature
   upstream_moves
 
-  origin_cli renew --yes --push --dry-run --verbose
+  origin_cli sync --yes --push --dry-run --verbose
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"--force-with-lease --force-if-includes"* ]]
   [[ "$stderr" != *"push --force "* ]]
@@ -190,7 +178,7 @@ setup() {
   commit_file mine.txt yes "My work"
   upstream_moves
 
-  origin_cli renew --yes --push --verbose
+  origin_cli sync --yes --push --verbose
   [ "$status" -eq 0 ]
   # The refspec is spelled in full: a bare name matches a tag as well as a
   # branch, and git refuses a push whose source matches both.
@@ -214,7 +202,7 @@ push_by_hand() {
   push_by_hand
   commit_file more.txt yes "More work"
 
-  origin_cli renew --yes --push
+  origin_cli sync --yes --push
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"pushed feature"* ]]
   [[ "$stderr" != *"got to the name first"* ]]
@@ -230,7 +218,7 @@ push_by_hand() {
   push_by_hand
   upstream_moves
 
-  origin_cli renew --yes --push
+  origin_cli sync --yes --push
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"pushed feature"* ]]
   [[ "$stderr" != *"git branch -m"* ]]
@@ -239,18 +227,9 @@ push_by_hand() {
   [ "$status" -eq 0 ]
 }
 
-@test "a first push onto a name somebody else took is refused, and the next number is named" {
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-  git checkout -q feature
-  origin_cli renew --yes --auto
+@test "a first push onto a name somebody else took is refused, and renaming is named" {
+  origin_cli new next-thing --yes
   [ "$status" -eq 0 ]
-
-  local name today
-  today="$(date +%Y-%m-%d)"
-  name="feature-${today}_001"
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "$name" ]
   commit_file later.txt yes "Later work"
 
   # Somebody else pushes a branch of that name, from a clone of their own.
@@ -258,34 +237,34 @@ push_by_hand() {
   git clone -q "$UPSTREAM" "$other"
   (
     cd "$other" || exit 1
-    git checkout -q -b "$name" origin/main
+    git checkout -q -b next-thing origin/main
     printf 'theirs\n' >theirs.txt
     git add theirs.txt
     git commit -qm "Theirs"
-    git push -q origin "$name"
+    git push -q origin next-thing
   )
   rm -rf "$other"
 
-  origin_cli renew --yes --push
+  origin_cli sync --yes --push
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"never had"* ]]
   # The branch to look at is named in full: this is the moment somebody decides
   # whether the work on the remote is theirs to overwrite, and a tag of that
   # name would answer instead.
-  [[ "$stderr" == *"git log refs/remotes/origin/feature-${today}_001"* ]]
-  [[ "$stderr" == *"git branch -m feature-${today}_002"* ]]
+  [[ "$stderr" == *"git log refs/remotes/origin/next-thing"* ]]
+  [[ "$stderr" == *"git branch -m"* ]]
 
   # Their commit is still there. The lease refused precisely because this
   # clone never had it.
   git fetch -q origin
-  run git log --oneline -1 "origin/${name}"
+  run git log --oneline -1 origin/next-thing
   [[ "$output" == *"Theirs"* ]]
 
   # And doing what it said works.
-  git branch -m "feature-${today}_002"
-  origin_cli renew --yes --push
+  git branch -m another-thing
+  origin_cli sync --yes --push
   [ "$status" -eq 0 ]
-  [ "$(git rev-parse --abbrev-ref '@{upstream}')" = "origin/feature-${today}_002" ]
+  [ "$(git rev-parse --abbrev-ref '@{upstream}')" = "origin/another-thing" ]
 }
 
 @test "a repository with no remote is not pushed" {
@@ -293,7 +272,7 @@ push_by_hand() {
   commit_file mine.txt yes "My work"
   git remote remove origin
 
-  origin_cli renew --yes --push
+  origin_cli sync --yes --push
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"no remote"* ]]
 }
@@ -302,125 +281,66 @@ push_by_hand() {
 # A branch whose change is already in the head branch
 # --------------------------------------------------------------------------
 
-@test "a finished branch is not rebased, and both ways to name the next one are given" {
+@test "a finished branch is not rebased, and the way on is named" {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
   squash_merge_branch feature
   git checkout -q feature
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"squash-merged"* ]]
-  [[ "$stderr" == *"--branch <name>"* ]]
-  [[ "$stderr" == *"--auto"* ]]
+  [[ "$stderr" == *"origin new <name>"* ]]
   # Nothing moved.
   [ "$(git rev-parse --abbrev-ref HEAD)" = "feature" ]
 }
 
-@test "--auto starts the next branch from the head branch and leaves this one alone" {
+@test "a carried branch does not take the head branch as its upstream" {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-  git checkout -q feature
-  local before
-  before="$(git rev-parse feature)"
+  upstream_moves
 
-  origin_cli renew --yes --auto
-  [ "$status" -eq 0 ]
-
-  local expected
-  expected="feature-$(date +%Y-%m-%d)_001"
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "$expected" ]
-  [ "$(git rev-parse "$expected")" = "$(git rev-parse origin/main)" ]
-  # The branch it came from is exactly where it was.
-  [ "$(git rev-parse feature)" = "$before" ]
-  [[ "$stderr" == *"feature is untouched"* ]]
-}
-
-@test "the next branch does not take the head branch as its upstream" {
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-  git checkout -q feature
-
-  origin_cli renew --yes --auto
+  origin_cli sync --yes --squash --branch carried
   [ "$status" -eq 0 ]
   run git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'
   [ "$status" -ne 0 ]
 }
 
-@test "a second renewal on the same day takes the next number" {
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-
-  git checkout -q feature
-  origin_cli renew --yes --auto
-  [ "$status" -eq 0 ]
-  git checkout -q feature
-  origin_cli renew --yes --auto
-  [ "$status" -eq 0 ]
-
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-$(date +%Y-%m-%d)_002" ]
-}
-
-@test "renewing a renewed branch does not stack suffixes" {
-  local today
-  today="$(date +%Y-%m-%d)"
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-  git checkout -q feature
-  origin_cli renew --yes --auto
-  [ "$status" -eq 0 ]
-
-  # Work on the new branch, and get that merged too.
-  commit_file second.txt yes "Second round"
-  squash_merge_branch "feature-${today}_001"
-  git checkout -q "feature-${today}_001"
-
-  origin_cli renew --yes --auto
-  [ "$status" -eq 0 ]
-  # A sibling, not a name with two dates in it.
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-${today}_002" ]
-}
-
 @test "a branch carrying nothing is empty rather than finished" {
   # It points at the head branch, so every merge test says it is merged. That
-  # is not a reason to start another branch off it, nor to refuse to push it.
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-  git checkout -q feature
-  origin_cli renew --yes --auto
+  # is not a reason to refuse to push it.
+  origin_cli new next-thing --yes
   [ "$status" -eq 0 ]
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"already on top of origin/main"* ]]
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-$(date +%Y-%m-%d)_001" ]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "next-thing" ]
 }
 
 @test "--branch takes the name given, and refuses one already in use" {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
-  squash_merge_branch feature
+  upstream_moves
 
-  git checkout -q feature
-  origin_cli renew --yes --branch next-thing
+  origin_cli sync --yes --squash --branch next-thing
   [ "$status" -eq 0 ]
   [ "$(git rev-parse --abbrev-ref HEAD)" = "next-thing" ]
 
   git checkout -q feature
-  origin_cli renew --yes --branch next-thing
+  origin_cli sync --yes --squash --branch next-thing
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"already a branch called next-thing"* ]]
 }
 
-@test "--branch and --auto together are refused rather than one being picked" {
-  origin_cli renew --yes --branch a --auto
+@test "a carry with no name is refused rather than given a generated one" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  upstream_moves
+
+  origin_cli sync --yes --squash
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"pass one"* ]]
+  [[ "$stderr" == *"--branch <name>"* ]]
 }
 
 @test "naming a branch for a rebase in place is refused, and --squash is named" {
@@ -428,7 +348,7 @@ push_by_hand() {
   commit_file mine.txt yes "My work"
   upstream_moves
 
-  origin_cli renew --yes --branch elsewhere
+  origin_cli sync --yes --branch elsewhere
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"unfinished"* ]]
   [[ "$stderr" == *"--squash"* ]]
@@ -447,7 +367,7 @@ push_by_hand() {
   local before
   before="$(git rev-parse feature)"
 
-  origin_cli renew --yes --squash --branch carried
+  origin_cli sync --yes --squash --branch carried
   [ "$status" -eq 0 ]
   [ "$(git rev-parse --abbrev-ref HEAD)" = "carried" ]
   # One commit, holding both files, on top of the head branch.
@@ -467,7 +387,7 @@ push_by_hand() {
   commit_file two.txt two "Two"
   upstream_moves
 
-  origin_cli renew --yes --squash --branch carried
+  origin_cli sync --yes --squash --branch carried
   [ "$status" -eq 0 ]
   run git log -1 --format=%B carried
   [[ "$output" == *"feature, carried onto main"* ]]
@@ -485,7 +405,7 @@ push_by_hand() {
   git checkout -q feature
   commit_file other.txt three "Three"
 
-  origin_cli renew --yes --squash --branch carried
+  origin_cli sync --yes --squash --branch carried
   [ "$status" -eq 0 ]
   [ "$(git rev-list --count origin/main..carried)" = "1" ]
   [ -f other.txt ]
@@ -500,7 +420,7 @@ push_by_hand() {
   local before
   before="$(git rev-parse feature)"
 
-  origin_cli renew --yes --squash --branch carried
+  origin_cli sync --yes --squash --branch carried
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"stopped on a conflict"* ]]
   [[ "$stderr" == *"contested.txt"* ]]
@@ -532,10 +452,10 @@ setup_replay_conflict() {
 @test "a rebase conflict offers the carry when the carry would work" {
   setup_replay_conflict
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"stopped on a conflict"* ]]
-  [[ "$stderr" == *"origin renew --squash --auto"* ]]
+  [[ "$stderr" == *"origin sync --squash --auto"* ]]
   # And it says what the offer costs.
   [[ "$stderr" == *"becoming one"* ]]
   git rebase --abort
@@ -548,10 +468,10 @@ setup_replay_conflict() {
   commit_file contested.txt mine "Mine"
   upstream_moves contested.txt theirs "Theirs"
 
-  origin_cli renew --yes
+  origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"stopped on a conflict"* ]]
-  [[ "$stderr" != *"origin renew --squash --auto"* ]]
+  [[ "$stderr" != *"origin sync --squash --auto"* ]]
   [[ "$stderr" == *"would conflict here too"* ]]
   git rebase --abort
 }
@@ -561,7 +481,7 @@ setup_replay_conflict() {
   local before
   before="$(git rev-parse feature)"
 
-  origin_cli renew --yes --squash --probe
+  origin_cli sync --yes --squash --probe
   [ "$status" -eq 0 ]
   [ "$output" = "clean" ]
   [ "$(git rev-parse feature)" = "$before" ]
@@ -575,7 +495,7 @@ setup_replay_conflict() {
   commit_file contested.txt mine "Mine"
   upstream_moves contested.txt theirs "Theirs"
 
-  origin_cli renew --yes --squash --probe
+  origin_cli sync --yes --squash --probe
   [ "$status" -eq 0 ]
   [ "$output" = "conflicts" ]
 }
@@ -583,7 +503,7 @@ setup_replay_conflict() {
 @test "--probe answers on stdout, so it survives --quiet" {
   setup_replay_conflict
 
-  origin_cli renew --yes --squash --probe --quiet
+  origin_cli sync --yes --squash --probe --quiet
   [ "$status" -eq 0 ]
   [ "$output" = "clean" ]
 }
@@ -592,7 +512,7 @@ setup_replay_conflict() {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
 
-  origin_cli renew --yes --probe
+  origin_cli sync --yes --probe
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"--probe answers for --squash"* ]]
 }
@@ -603,41 +523,44 @@ setup_replay_conflict() {
   squash_merge_branch feature
   git checkout -q feature
 
-  origin_cli renew --yes --squash --branch carried
-  [ "$status" -eq 0 ]
-  [ "$(git rev-parse carried)" = "$(git rev-parse origin/main)" ]
-}
-
-@test "--dry-run on a finished branch creates nothing" {
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-  git checkout -q feature
-
-  origin_cli renew --yes --auto --dry-run
-  [ "$status" -eq 0 ]
-  [[ "$stderr" == *"would run: git switch --create"* ]]
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature" ]
-  run git show-ref --verify --quiet "refs/heads/feature-$(date +%Y-%m-%d)_001"
+  # Finished is finished, whichever route was asked for: a carry here would
+  # commit nothing, so the answer is the same one a plain sync gives.
+  origin_cli sync --yes --squash --branch carried
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"origin new <name>"* ]]
+  run git show-ref --verify --quiet refs/heads/carried
   [ "$status" -ne 0 ]
 }
 
-@test "--autostash carries uncommitted work onto the next branch" {
+@test "--dry-run on a carry creates nothing" {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
-  squash_merge_branch feature
-  git checkout -q feature
+  upstream_moves
+
+  origin_cli sync --yes --squash --branch carried --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"would run: git switch --create"* ]]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature" ]
+  run git show-ref --verify --quiet refs/heads/carried
+  [ "$status" -ne 0 ]
+}
+
+@test "--autostash carries uncommitted work onto the carried branch" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  upstream_moves
   printf 'work in progress\n' >>README.md
 
-  origin_cli renew --yes --auto --autostash
+  origin_cli sync --yes --squash --branch carried --autostash
   [ "$status" -eq 0 ]
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-$(date +%Y-%m-%d)_001" ]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "carried" ]
   run grep -c "work in progress" README.md
   [ "$output" = "1" ]
 }
 
-@test "a new branch and the head branch are not the same request" {
-  origin_cli renew --yes --auto
+@test "--branch on the head branch is refused rather than acted on" {
+  origin_cli sync --yes --branch somewhere
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"head branch"* ]]
 }
+

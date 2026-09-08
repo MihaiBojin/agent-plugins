@@ -4,36 +4,69 @@ Newest release first. Each says what changed, and the choices behind it.
 
 ## 0.12.0
 
+The plugin is a branch, a pull request, and the two moves between them. What a
+person does in a terminal has left it.
+
+- `origin new [<name>]` fetches and branches off the head branch, with
+  `--no-track`. `nb` too. Same shape as the `gnb` shell function. With no name
+  it takes `<branch>-YYYY-MM-DD_NNN` from the branch you are on, at the first
+  number free today.
+- `origin renew` is `origin sync`, and does one thing: fetch, fast-forward the
+  head branch or rebase this branch onto it, and push with a lease when asked.
+  A finished branch is refused, naming `origin new`. `--auto` is gone, and the
+  generated names moved to `new`; a carry takes `--branch <name>`.
 - `/origin:pr` reads what a session changed, splits it into layers when it has
   them, and takes each one from branch to open pull request before starting the
   next: branch off the layer below, stage by path, commit, push, open the pull
-  request based on its parent. On GitHub, `gh stack link` joins them into a
-  stack afterwards when the extension happens to be installed, best effort.
-  The push is `renew`'s: plain the first time, `--force-with-lease
---force-if-includes` once the remote has the branch.
-- Three slash commands, plus `help`: `pr`, `merge` and `renew`. `gwa`, `gwr`,
-  `gwl`, `gwm`, `prune` and `doctor` are CLI subcommands only, and the skill
-  runs them when a session needs one.
-- The skill is model-invocable only, and carries the `allowed-tools` the removed
-  commands used to: `bin/origin`, `git worktree list`, `git status`,
-  `git branch`.
-- `bin/` goes on PATH by a line in your shell config. There is no installer.
+  request based on its parent. `--no-branch`, `--no-push` and `--draft` control
+  it, and it is repeatable - a second run does only what is left. On GitHub,
+  `gh stack link` joins the pull requests into a stack afterwards when the
+  extension happens to be installed, best effort. The push is `sync`'s: plain
+  the first time, `--force-with-lease --force-if-includes` once the remote has
+  the branch.
+- Three slash commands, plus `help`: `pr`, `sync` and `merge`. The skill is
+  `user-invocable: false`, so it stops answering as a slash command beside
+  them, and carries the `allowed-tools` the removed command files had.
+- Worktrees are gone: `git-worktree add|remove|list|path|move`, `prune` and
+  their `gw*` spellings. So is `doctor`, and so is `install.sh`. `bin/` goes on
+  PATH from a line in a shell config pointing at the marketplace clone, which
+  `claude plugin update` keeps current.
 
 ### Choices
 
 A command file earns its place by holding something the model has to decide.
-`merge` writes a body from the change; `renew` routes a conflict and asks which
-way out. `gwa` printed a path and `doctor` printed a table: prose around a call
-that has no branch in it, maintained in a second place, and drifting from the
-CLI it wraps.
+`merge` writes a body from the change; `sync` routes a conflict and asks which
+way out; `pr` reads a session and decides what is one change and what is three.
+`gwa` printed a path and `doctor` printed a table: prose around a call that has
+no branch in it, maintained in a second place, and drifting from the CLI it
+wraps.
 
-`gwr` went with them, and its two rules moved into the skill: show the dry run
-first, and never add `--delete-ignored` on your own initiative. A deletion the
-script already refuses to make blindly does not need a second document saying
-so.
+The worktree commands existed three times over - here in bash, and in the zsh
+and fish `gw*` commands, which are the ones a person actually types. Two of the
+three were a tax on every change. The one that went is the one nobody typed:
+worktrees are a terminal activity, and an agent that needs one says so.
 
-The skill keeps every subcommand, so nothing left the plugin. What left is
-seven menu entries for a tool with two decisions in it.
+`doctor` went with them. Half its table was worktree rows, and the half that
+was not existed so `pr` could read the head branch and the remote out of a
+diagnostic. Both come from `git config git-worktree-plugin.remote` and
+`.headBranch`, with `<remote>/HEAD` behind them, which is what every command
+already reads and what the command files now read directly.
+
+alt: keep `doctor` for `gh auth` diagnosis. `gh auth status` says it, and a
+table that exists to explain one other command is a second thing to maintain.
+
+One command generates a branch name, and only when asked for none.
+`<branch>-YYYY-MM-DD_NNN` is right where the branch is a continuation - this
+one is merged, the next change carries on from it - and wrong as a default,
+because a name nobody chose ends up in a branch list, a pull request title and
+a merge commit. So `origin new` generates it, `origin new <name>` does not, and
+`sync --squash --branch <name>` has no generated form at all: a carry is a
+deliberate act with a name behind it.
+
+The stem drops a suffix before adding one, so a day of continuations reads as
+`feature-2026-09-09_001`, `_002`, `_003` rather than a name with three dates
+in it. Taken counts the remote as well as here, because the number exists to
+avoid a collision and half the collisions are somebody else's branch.
 
 `pr` is a command file with no subcommand behind it, which no other command
 here is. Committing and opening a pull request would be several hundred lines
@@ -54,8 +87,8 @@ repository where the extension does not work: the step is skipped without a
 word, and what was filed is the same either way.
 
 alt: `gh stack init` and `gh stack add` driving the branches from the start.
-It puts a GitHub extension in the path of every layer, including on GitLab,
-to arrive at the same chain of base branches.
+It puts a GitHub extension in the path of every layer, including on GitLab, to
+arrive at the same chain of base branches.
 
 One layer reaches an open pull request before the next one starts. The other
 order - branch and commit everything, then push and file five - leaves five
@@ -63,7 +96,8 @@ branches and no reviews when it stops half way.
 
 `user-invocable: false` rather than leaving the skill in the menu beside the
 commands. Two ways to invoke the same thing, one of which loads a document and
-the other of which runs a script, is a menu that has to be explained.
+the other of which runs a script, is a menu that has to be explained. Codex
+ignores the key and lists the skill anyway; it costs nothing there.
 
 No installer, because a symlink is a shim and a shim wants a stable path.
 `~/.claude/plugins/marketplaces/MihaiBojin/plugins/origin/bin` is one, kept
@@ -126,6 +160,10 @@ say where a branch came from; `remote.pushDefault` says where it is going.
 The refusal reads the branch out of `git worktree list --porcelain` rather than
 out of the path, which is the same source every other command uses. The path
 segment is a label; the porcelain is the fact.
+
+The guard against `git worktree remove --force` stays in `lib/common.sh` with
+nothing left that removes a worktree. A refusal costs nothing to keep and the
+next command to want one would arrive without it.
 
 ## 0.10.0
 

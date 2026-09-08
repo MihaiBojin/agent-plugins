@@ -1,11 +1,26 @@
 ---
 name: pr
 description: Commit this session's work on a branch and open a pull request
-argument-hint: "[--draft] [--branch <name>]"
+argument-hint: "[--draft] [--branch <name>] [--no-branch] [--no-push]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git switch:*), Bash(git add:*), Bash(git commit:*), Bash(git push --set-upstream:*), Bash(git push --force-with-lease --force-if-includes --set-upstream:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh stack:*), Bash(gh extension list), Bash(glab mr create:*), Read, Write, AskUserQuestion
 ---
 
 Open a pull request for the work in this session. Arguments: `$ARGUMENTS`
+
+Three flags change what it does, and they are the user's to pass:
+
+|               |                                                                                                                       |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `--no-branch` | Commit on the branch you are on, whatever it is. A second pull request from the same branch is a normal thing to want |
+| `--no-push`   | Commit and stop. Nothing is pushed and nothing is opened                                                              |
+| `--draft`     | Open it as a draft                                                                                                    |
+
+**It is repeatable, and running it again does only what is left.** A run with
+`--no-push` commits; a run after it pushes and opens the pull request; a run
+after that finds the branch pushed and its pull request open, says so in one
+line, and does nothing. Before each step, check whether it has already
+happened - `git status --short`, `git rev-parse @{upstream}`,
+`gh pr view --json number,state` - rather than assuming this is the first run.
 
 `bin/origin` does not do this one. Every step below is git and the forge CLI
 directly, so the refusals in `lib/common.sh` are not standing behind you. Read
@@ -35,10 +50,16 @@ one-line subject of each layer, in order. Let the user change it.
 
 ```bash
 git rev-parse --abbrev-ref HEAD
-${CLAUDE_PLUGIN_ROOT}/bin/origin doctor
+git config --get git-worktree-plugin.remote          # or: origin
+git config --get git-worktree-plugin.headBranch      # or the line below
+git symbolic-ref --short refs/remotes/<remote>/HEAD  # <remote>/<head branch>
 ```
 
-`doctor` names the head branch and the remote this repository belongs to.
+Those two config keys are what `origin` itself reads, so an answer taken from
+them is the answer every other command will use. Neither is usually set, and
+the fallbacks are `origin` and whatever `<remote>/HEAD` points at.
+
+`--no-branch` skips this step: you commit where you are.
 
 - **The first layer** branches off the head branch, unless you are already on
   a branch of your own, in which case that is the first layer.
@@ -48,6 +69,8 @@ ${CLAUDE_PLUGIN_ROOT}/bin/origin doctor
 - `git switch --create <name>` carries the uncommitted work with you. Name
   each branch after its own layer in kebab-case, three or four words.
   `--branch <name>` in the arguments names the first one.
+- Starting fresh work with nothing uncommitted is `origin new <name>` instead,
+  which fetches first so the branch begins on top of what the remote has.
 
 ## 3. One layer at a time, start to finish
 
@@ -74,7 +97,8 @@ The message says what the change does, not how the session went:
 A decision file under `.claude/decisions/` belongs in the commit with the work
 it explains.
 
-**Push.** Which push depends on whether the remote has this branch, which is
+**Push.** `--no-push` stops here: say which branch holds the commits and that
+nothing has been pushed. Otherwise, which push depends on whether the remote has this branch, which is
 the remote-tracking ref rather than the configured upstream:
 
 ```bash
@@ -102,7 +126,9 @@ taken by somebody else's branch: rename with `git branch -m <name>` and push
 again. A refused leased push means the branch on the remote carries commits
 this clone never had. Do not widen the flags. Say what it said, and stop.
 
-**Open it.** Write the title and the body **in your reply**, in full, before
+**Open it.** If `gh pr view --json number,state` already names an open pull
+request for this branch, there is nothing to open: give its URL and stop.
+Otherwise write the title and the body **in your reply**, in full, before
 anything is created. Command output is shown to you, not to the user. Then
 ask, and let them edit either.
 

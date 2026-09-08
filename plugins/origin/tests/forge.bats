@@ -145,22 +145,10 @@ JSON
   git remote add upstream "$UPSTREAM"
   git config --unset branch.main.remote
 
-  run --separate-stderr "$ORIGIN_BIN" gwa feature
+  run --separate-stderr "$ORIGIN_BIN" sync
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"several remotes"* ]]
   [[ "$stderr" == *"git config checkout.defaultRemote"* ]]
-  [ ! -d "${WORKTREES}/feature/proj" ]
-}
-
-@test "doctor reports the ambiguity as a failing row rather than dying mid-table" {
-  git remote add upstream "$UPSTREAM"
-  git config --unset branch.main.remote
-
-  run --separate-stderr "$ORIGIN_BIN" doctor
-  [ "$status" -eq 1 ]
-  [[ "$stderr" == *"several, and nothing says which"* ]]
-  # The rows after it still printed.
-  [[ "$stderr" == *"worktree root"* ]]
 }
 
 @test "the resolved remote is cached, not recomputed per caller" {

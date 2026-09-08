@@ -1,7 +1,7 @@
 # origin
 
-Git worktrees, pull request merges, and keeping a branch on top of the head
-branch, from one CLI that a person and an agent run the same way.
+A branch, kept on top of the head branch, and the pull request it becomes. One
+CLI that a person and an agent run the same way.
 
 ```shell
 claude plugin install origin@MihaiBojin
@@ -18,105 +18,54 @@ fish_add_path ~/.claude/plugins/marketplaces/MihaiBojin/plugins/origin/bin    # 
 
 From a clone of this repository, point at that `bin/` instead.
 
-Three slash commands, which are the three places an agent has something to
-add: `/origin:pr` reads a session's work and writes the commits and the pull
-request, `/origin:merge` writes the body that lands, and `/origin:renew` routes
-a conflict. `pr` has no subcommand behind it - it is git and `gh` directly. The
-rest of the CLI runs the same either way.
-
 ## Commands
 
-|                                     | Aliases            |                                                                    |
-| ----------------------------------- | ------------------ | ------------------------------------------------------------------ |
-| `origin git-worktree add <branch>`  | `gw add`, `gwa`    | Create a worktree, print its path                                  |
-| `origin git-worktree remove <what>` | `gw remove`, `gwr` | Remove a finished worktree, delete a merged branch                 |
-| `origin git-worktree list`          | `gw list`, `gwl`   | Branch, drift, state, pull request, age                            |
-| `origin git-worktree path <branch>` | `gw path`, `gwp`   | Where that branch's worktree is, or exit 1                         |
-| `origin git-worktree move <new>`    | `gw move`, `gwm`   | Rename this worktree's branch, and move it to match                |
-| `origin prune`                      |                    | Say which worktrees are finished, and why                          |
-| `origin merge [<number>]`           |                    | Merge a pull request with a written body                           |
-| `origin renew`                      |                    | Put this branch back on top of the head branch                     |
-| `origin doctor`                     |                    | Check git, jq, the remote, the head branch, the forge, permissions |
+|                           |                                                          |
+| ------------------------- | -------------------------------------------------------- |
+| `origin new <name>`       | Fetch, then branch `<name>` off the head branch          |
+| `origin sync`             | Fetch, rebase onto the head branch, push with a lease    |
+| `origin merge [<number>]` | Merge a pull request with a body written from the change |
 
 Every command takes `--dry-run`, `--yes`, `--quiet`, `--verbose` and
-`--no-color`. `git-worktree list` adds `--json`, and is the only command with
-machine-readable output. Commentary goes to stderr and data to stdout, so
-`--json` and `--quiet` are parseable and `cd "$(origin gwa foo --quiet)"`
-works.
+`--no-color`. Commentary goes to stderr and data to stdout, so `--quiet` is
+parseable.
 
-## Layout
+Three slash commands sit on top, and they are the three places an agent has
+something to add: `/origin:pr` reads a session's work and writes the commits
+and the pull request, `/origin:sync` routes a conflict, `/origin:merge` writes
+the body that lands. `pr` has no subcommand behind it - it is git and `gh`
+directly.
 
-```
-<PARENT>/.worktrees/<branch>/<repo>
-```
+## Worktrees are not here
 
-PARENT is the directory holding the main checkout, so repositories side by side
-share one root with a directory each, and the same branch name across several
-of them groups their worktrees together. A slash in a branch name nests:
-`fix/login` lands at `.worktrees/fix/login/<repo>`.
+`gwa`, `gwr`, `gwl` and `gwm` are shell commands, from
+[shell-plugins](https://github.com/MihaiBojin/shell-plugins), and they are
+yours to run in a terminal. Both tools read the same two config keys, so they
+agree about which remote and which head branch a repository has.
 
-The same layout as the [`git-worktree`](https://github.com/MihaiBojin/shell-plugins)
-zsh plugin, which reads the same two config keys, so the two tools see one set
-of worktrees.
+## new
 
-## add
+Fetches first, so the branch starts on top of what the remote has rather than
+on top of a local copy that may be days old. Nothing has to be rebased
+afterwards.
 
-Fetches first so a new branch starts from a current head branch. Checks out an
-existing branch instead of failing. Creates new branches with `--no-track`, so
-`git push` cannot target the head branch.
+Creates with `--no-track`: a branch off `<remote>/<head>` would otherwise take
+the head branch as its upstream, and `git push` would target it.
 
-Refuses a destination that belongs to somebody else, in the three positions it
-can be wrong: the path is another repository's worktree, the path is _inside_
-one, or the path is a non-empty directory because another branch nests under
-it. None of these is visible in `git worktree list` — that lists this
-repository's worktrees, and a squatter belongs to a different one — so the
-owner is read from git directly. Without the check, `git worktree add` creates
-a worktree inside another repository's checkout, exits 0, and the host repo
-sees an untracked directory that its next `git clean -xdff` deletes.
+Refuses a name that is already a branch, naming `git switch <name>` instead,
+and a name `git check-ref-format` will not take.
 
-## remove
+With no name, this branch names the next one: `<branch>-YYYY-MM-DD_NNN`, at the
+first number free today, counting both local branches and the remote's. Three
+digits, so the sequence cannot be misread as another field of the date. A stem
+already carrying that suffix keeps one rather than gaining a second, so a day
+of continuations reads as siblings. The head branch names nothing - a branch
+off it is a new change rather than the next one - and neither does a detached
+HEAD; both ask for a name.
 
-Removes a worktree **only when its branch is finished**: git says it is merged,
-it is squash-merged, or the forge says its pull request is merged or closed.
-The squash is the case git cannot see, because it rewrites the commits; it is
-detected by replaying the branch's tree as one commit on the merge base and
-asking `git cherry` whether that patch is already upstream — a question about
-content rather than history, which is what a squash preserves.
-
-The branch is deleted on git's answer only. The forge's is enough to drop the
-checkout and no more: a merged pull request says nothing about the commits
-sitting on the local branch, and only the content comparison can say that
-deleting it loses nothing.
-
-The head branch is never deleted. A worktree can hold it while the main
-checkout is on some other branch, and a head branch the remote already has
-reaches the merged test finished, like any other branch. Its checkout goes on
-that answer; the branch does not.
-
-A worktree with a detached HEAD has no branch to be finished, so what counts
-is whether any ref already reaches the commit it sits on. One that does makes
-the removal ordinary. None at all makes this checkout the only thing pointing
-at that commit, and the removal is refused until `--force`, which prints
-`git worktree add --detach <path> <sha>` as the undo.
-
-An unfinished branch keeps its worktree, because that is where the work is. A
-stash on the branch, a lock, the main worktree and the one you are standing in
-are each refused with the reason.
-
-A worktree holding uncommitted changes is refused outright, and `--force` does
-not override that one. The command lists what is uncommitted and stops; the
-checkout is the only place that work exists, and the command that discards it
-is the user's to type.
-
-When a branch is deleted the output carries the undo:
-
-```
-deleted branch fix-login (was a1b2c3d) — squash-merged
-  restore: git branch fix-login a1b2c3d
-```
-
-`--force` removes the checkout of an unfinished branch, and never deletes a
-branch.
+The base is named as `refs/remotes/<remote>/<head>`, never `<remote>/<head>`,
+because git resolves a bare name as a tag first and a repository holding a tag
+called `origin/main` would branch from the tag.
 
 ## merge
 
@@ -148,26 +97,23 @@ so a pull request whose CI is still running is a "come back in a minute" rather
 than a wait. `gh pr merge --auto` is the queue for that, and it is the forge's to run.
 The slash command offers to sit and watch instead, when the user asks it to.
 
-## renew
+## sync
 
-Three routes, chosen by what the branch is rather than by what was typed.
+Fetch, then one of three routes, chosen by what the branch is rather than by
+what was typed.
 
 On the head branch it fast-forwards, and refuses if that would drop a local
 commit. On an unfinished branch it rebases. On a branch whose change is already
 in the head branch it does neither, because there is no move to make: a squash
 merge rewrites the branch into one commit, so git can no longer match the
 branch's patches against it and a rebase replays work the head branch already
-has, stopping on commit after commit. That branch is finished, so `--auto` or
-`--branch <name>` starts the next one from the head branch and leaves this one
-exactly where it is.
+has, stopping on commit after commit. That branch is finished, and `sync` says
+so and stops. The next change starts on a branch of its own, which is
+`origin new <name>`, and this one is left exactly where it is.
 
-`--auto` names it `<branch>-YYYY-MM-DD_NNN` at the first free number for the
-day. Three digits, so the sequence cannot be misread as another field of the
-date. Renewing a renewed branch replaces the suffix rather than adding a second
-one.
-
-`--squash` is the way through a rebase that keeps conflicting on content the
-head branch already has. It creates the new branch off the head branch and runs
+`--squash --branch <name>` is the way through a rebase that keeps conflicting
+on content the head branch already has. It creates that branch off the head
+branch and runs
 `git merge --squash` from there, so the two sides are compared as trees with
 the fork point as the base: what the head branch has already absorbed merges
 into itself and is never mentioned, and the stop — if there is one — is the
@@ -188,7 +134,7 @@ already made.
 `--push` is opt-in, and which push it sends is decided by whether there is
 anything to lease against — the remote-tracking ref, not the configured
 upstream. A branch created by hand and pushed without `-u` has the first and
-not the second, and on that shape a plain push is refused the moment `renew`
+not the second, and on that shape a plain push is refused the moment `sync`
 rebases it, which is this branch being brought up to date rather than a name
 somebody else took.
 
@@ -202,10 +148,9 @@ reachable from this branch's reflog — that this clone had those commits and
 built on them. Together they accept a branch this clone rebased and refuse one
 somebody else pushed.
 
-A branch the remote has never seen gets a plain push: nothing to lease against,
-and no force, because a generated name is a guess somebody else may have made
-first. Either refusal ends the same way — the name is taken, so take the next
-number, and the message names it.
+A branch the remote has never seen gets a plain push: nothing to lease
+against, and no force. Either refusal ends the same way — somebody else holds
+that name, so rename the branch and push again.
 
 ## What it refuses
 
@@ -217,32 +162,28 @@ commands that each have to remember:
 - No force delete of a branch — `-D`, `-d -f`, `-df`, `--delete --force` —
   unless something has proved the branch's change is already in the head
   branch.
-- No `git worktree remove --force`, under any circumstance and with no flag
-  that grants one.
+- No `git worktree remove --force`, under any circumstance. Nothing here
+  removes a worktree, and the guard outlives the command that needed it.
 - No resolving a rebase conflict.
 - Nothing reads from a terminal under `--yes`, so an agent invocation cannot
   hang on a prompt nobody is there to answer.
 
 Nothing above takes a flag. `--yes` does not reach them.
 
-## What goes, said first
+## What is replaced, said first
 
-Every step that deletes something prints it before asking, and prints it under
-`--quiet` and `--yes` too, because those lines are the record of what went:
+Nothing here deletes a branch. What a rebase and a leased push replace is
+printed before it happens, under `--quiet` and `--yes` too, because those lines
+are the record of where the branch was:
 
 ```
-This will delete:
-  the worktree at ~/.worktrees/fix-login/proj
-  1 ignored path(s) in it, which nothing tracks and nothing restores:
-    .env
-  branch fix-login (a1b2c3d) — restore with: git branch fix-login a1b2c3d
+This will replace:
+  origin/fix-login at a1b2c3d — restore with: git push origin a1b2c3d:refs/heads/fix-login
 ```
 
-Each deletion carries the command that undoes it: a local branch, a branch on a
-remote (`git push <remote> <sha>:refs/heads/<branch>`), a rebased branch
-(`git reset --keep <sha>`), a leased push. A sha that cannot be read is a
-restore command that cannot be printed, and then nothing is deleted; neither is
-a branch that has moved off the sha its restore line names.
+A rebase carries the same, with `git reset --keep <sha>` as the way back. A sha
+that cannot be read is a restore command that cannot be printed, and then the
+step does not run.
 
 Every branch is named to git as `refs/heads/<branch>` and the head branch as
 `refs/remotes/<remote>/<head>`. `git rev-parse feature` prefers a tag called
@@ -252,27 +193,16 @@ whether a branch is finished and which sha brings it back.
 
 One thing that spelling does not cover is the abbreviated sha in a restore
 line. `a1b2c3d` is a name to git before it is an object, so a branch or tag
-actually called `a1b2c3d` answers for it, and pasting
-`git branch fix-login a1b2c3d` in a repository holding one lands on the wrong
-commit. The deletion itself is safe either way: it compares whole shas, and a
-branch that no longer resolves to the one its restore line names is kept rather
-than deleted, so what is at risk is the paste and not the work.
-
-Git says so when it happens - `warning: refname 'a1b2c3d' is ambiguous` - and
-the way past it is to name the object outright:
+actually called `a1b2c3d` answers for it, and pasting it lands on the wrong
+commit. Git says so when it happens - `warning: refname 'a1b2c3d' is
+ambiguous` - and the way past it is to name the object outright:
 
 ```shell
 git rev-parse --disambiguate=a1b2c3d     # the whole sha of the object
-git branch fix-login <that sha>
 ```
 
 `a1b2c3d^{commit}` does not help. It peels whatever the name resolved to, which
 is the ref.
-
-The exception is content git never tracked, where no such command exists.
-`--yes` answers for everything above and not for that: a worktree holding
-ignored files stops, lists them, and names `--delete-ignored`, which is the
-only way through and has to be typed.
 
 ## Configuration
 
@@ -287,16 +217,16 @@ git remote set-head upstream --auto          # which branch is the default
 Both are git's own, so every other tool on the repository reads the same
 answer, and a single-remote clone answers both without either being set.
 `branch.<current>.remote` stands in for the first when nothing more deliberate
-does.
+does. The `git-worktree` shell commands read the same two.
 
-The worktree root is always `<PARENT>/.worktrees`. The forge is read from the
-remote's host, and for a host that says nothing — a GitHub Enterprise server, a
-self-hosted GitLab — from what `gh` and `glab` are signed in to.
+The forge is read from the remote's host, and for a host that says nothing — a
+GitHub Enterprise server, a self-hosted GitLab — from what `gh` and `glab` are
+signed in to.
 
 ## Requirements
 
-`git` and `bash`. `jq` and either `gh` or `glab` for `merge`; the worktree and
-rebase commands need neither and work offline.
+`git` and `bash`. `jq` and either `gh` or `glab` for `merge`; `new` and `sync`
+need neither, and work offline apart from the fetch.
 
 Written for bash 3.2, which is what a mac ships. CI runs the suite on bash 5 on
 Linux and bash 3.2 on macOS.
