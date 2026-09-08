@@ -2,6 +2,29 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.11.0
+
+- The `git-worktree-plugin.*` namespace is gone. `git config
+checkout.defaultRemote <name>` says which remote a repository belongs to, and
+  `git remote set-head <remote> --auto` records which branch is the default. A
+  repository still carrying the old keys behaves as though it did not; `git
+config --remove-section git-worktree-plugin` clears them.
+- `origin doctor` names those two commands where it used to name the keys.
+- A refusal from `git-worktree remove` no longer explains a misstated head
+  branch, because nothing states one. A dangling `<remote>/HEAD` is what the
+  case became, and `doctor` still fails on it by name.
+
+### Choices
+
+Both replacements are git's own, so every other tool on the repository reads
+the same answer and a single-remote clone needs neither. The companion
+[shell-plugins](https://github.com/MihaiBojin/shell-plugins) commands dropped
+the same namespace in the same pass, which is what keeps the two agreeing on a
+repository.
+
+`branch.<current>.remote` still stands in for `checkout.defaultRemote` when
+nothing more deliberate is set, which is most clones.
+
 ## 0.10.2
 
 - The remote a repository belongs to is no longer resolved from

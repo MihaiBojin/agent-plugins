@@ -24,7 +24,7 @@ setup() {
 
   origin_cli doctor
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"git-worktree-plugin.headBranch"* ]]
+  [[ "$stderr" == *"git remote set-head"* ]]
 }
 
 @test "an unauthenticated forge CLI names the login command" {
@@ -78,18 +78,18 @@ JSON
   [[ "$stderr" == *"not inside a git repository"* ]]
 }
 
-@test "a stated head branch that names no ref is a failure, not readiness" {
-  git config git-worktree-plugin.headBranch does-not-exist
+@test "a dangling <remote>/HEAD is a failure, not readiness" {
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/does-not-exist
 
   origin_cli doctor
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"does-not-exist is no branch here or on origin"* ]]
-  [[ "$stderr" == *"git-worktree-plugin.headBranch"* ]]
+  [[ "$stderr" == *"git remote set-head"* ]]
   [[ "$stderr" != *"ready"* ]]
 }
 
-@test "a stated head branch that does name a ref still passes" {
-  git config git-worktree-plugin.headBranch origin/main
+@test "a <remote>/HEAD that does name a ref still passes" {
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
 
   origin_cli doctor
   [ "$status" -eq 0 ]

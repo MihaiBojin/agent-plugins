@@ -85,7 +85,7 @@ doctor_repository() {
       ORIGIN_REMOTE="$remote"
       doctor_row ok "remote" "${remote} → $(repo_remote_url)"
       ;;
-    2) doctor_row no "remote" "several, and nothing says which; git config git-worktree-plugin.remote <name>" ;;
+    2) doctor_row no "remote" "several, and nothing says which; git config checkout.defaultRemote <name>" ;;
     *) doctor_row warn "remote" "none; the worktree commands still work" ;;
   esac
 
@@ -93,10 +93,10 @@ doctor_repository() {
   # `repo_head_ref_for` documents: `repo_head_branch` is not cached, and asking
   # twice can cost a second `ls-remote`.
   #
-  # A stated `git-worktree-plugin.headBranch` is taken as written, so a name
-  # that resolves to nothing reaches every other command intact - and every
+  # `<remote>/HEAD` outlives the branch it points at: a server-side rename
+  # leaves it dangling, the name reaches every other command intact, and every
   # reap then refuses with `<branch> is not merged into <name>`, forever. That
-  # is a misconfiguration, not readiness.
+  # is a stale ref, not readiness.
   local head_ref
   if head="$(repo_head_branch 2>/dev/null)"; then
     head_ref="$(repo_head_ref_for "$head")"
@@ -104,10 +104,10 @@ doctor_repository() {
       doctor_row ok "head branch" "${head} ($(ref_name "$head_ref"))"
     else
       doctor_row no "head branch" \
-        "${head} is no branch here or on ${ORIGIN_REMOTE:-the remote}; git config git-worktree-plugin.headBranch <name>"
+        "${head} is no branch here or on ${ORIGIN_REMOTE:-the remote}; git remote set-head ${ORIGIN_REMOTE:-origin} --auto"
     fi
   else
-    doctor_row no "head branch" "cannot tell; git config git-worktree-plugin.headBranch <name>"
+    doctor_row no "head branch" "cannot tell; git remote set-head ${ORIGIN_REMOTE:-origin} --auto"
   fi
 
   root="$(worktree_root)"

@@ -56,8 +56,8 @@ branch, the sha, the restore command — whatever `--quiet` and `--yes` say.
 ## Configuration
 
 ```bash
-git config git-worktree-plugin.remote upstream   # which remote this repo belongs to
-git config git-worktree-plugin.headBranch main   # which branch is the default
+git config checkout.defaultRemote upstream   # which remote this repo belongs to
+git remote set-head upstream --auto          # which branch is the default
 ```
 
 Both are shared with the `git-worktree` zsh plugin, so the two tools agree.

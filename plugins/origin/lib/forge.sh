@@ -297,7 +297,7 @@ forge_pr_field() {
 # The two refs a pull request is a range between, when this clone has both.
 #
 # Against the remote this repository belongs to, not `origin`: on the fork
-# layout the plugin itself recommends - `git config git-worktree-plugin.remote
+# layout the plugin itself recommends - `git config checkout.defaultRemote
 # upstream` - the pull request's refs live under `upstream/`, and `origin/` is
 # the fork, whose refs are a different branch of the same name or nothing.
 #

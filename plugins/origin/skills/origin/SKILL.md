@@ -200,8 +200,8 @@ yourself — that is the thing this plugin exists to stop.
 ## Configuration
 
 ```bash
-git config git-worktree-plugin.remote upstream   # which remote this repo belongs to
-git config git-worktree-plugin.headBranch main   # which branch is the default
+git config checkout.defaultRemote upstream   # which remote this repo belongs to
+git remote set-head upstream --auto          # which branch is the default
 ```
 
 Both shared with the `git-worktree` zsh plugin. Nothing else is configurable:

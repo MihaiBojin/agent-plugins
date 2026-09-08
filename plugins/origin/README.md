@@ -261,15 +261,22 @@ only way through and has to be typed.
 
 ## Configuration
 
+There is none of its own. The two questions a repository can be asked are
+asked of git:
+
 ```shell
-git config git-worktree-plugin.remote upstream   # which remote this repo belongs to
-git config git-worktree-plugin.headBranch main   # which branch is the default
+git config checkout.defaultRemote upstream   # which remote this repo belongs to
+git remote set-head upstream --auto          # which branch is the default
 ```
 
-That is all of it. The worktree root is always `<PARENT>/.worktrees`. The forge
-is read from the remote's host, and for a host that says nothing — a GitHub
-Enterprise server, a self-hosted GitLab — from what `gh` and `glab` are signed
-in to.
+Both are git's own, so every other tool on the repository reads the same
+answer, and a single-remote clone answers both without either being set.
+`branch.<current>.remote` stands in for the first when nothing more deliberate
+does.
+
+The worktree root is always `<PARENT>/.worktrees`. The forge is read from the
+remote's host, and for a host that says nothing — a GitHub Enterprise server, a
+self-hosted GitLab — from what `gh` and `glab` are signed in to.
 
 ## Requirements
 

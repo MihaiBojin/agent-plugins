@@ -27,14 +27,16 @@ setup() {
   git config --unset branch.main.remote
   run repo_remote
   [ "$status" -eq 1 ]
-  [[ "$output" == *"git config git-worktree-plugin.remote"* ]]
+  [[ "$output" == *"git config checkout.defaultRemote"* ]]
 }
 
-@test "the stated remote wins" {
+@test "the retired git-worktree-plugin.remote is ignored, not obeyed" {
   git remote add upstream "$UPSTREAM"
+  git config --unset branch.main.remote
   git config git-worktree-plugin.remote upstream
   run repo_remote
-  [ "$output" = "upstream" ]
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"git config checkout.defaultRemote"* ]]
 }
 
 @test "checkout.defaultRemote is honoured, as git's own knob for this" {
@@ -103,10 +105,17 @@ setup() {
   [ "$output" = "main" ]
 }
 
-@test "the head branch can be stated when the remote will not say" {
+@test "the head branch is whatever <remote>/HEAD points at" {
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+  run repo_head_branch
+  [ "$output" = "main" ]
+}
+
+@test "the retired git-worktree-plugin.headBranch is ignored, not obeyed" {
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
   git config git-worktree-plugin.headBranch trunk
   run repo_head_branch
-  [ "$output" = "trunk" ]
+  [ "$output" = "main" ]
 }
 
 @test "every branch's state comes back in one call" {
@@ -139,7 +148,7 @@ JSON
   run --separate-stderr "$ORIGIN_BIN" gwa feature
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"several remotes"* ]]
-  [[ "$stderr" == *"git config git-worktree-plugin.remote"* ]]
+  [[ "$stderr" == *"git config checkout.defaultRemote"* ]]
   [ ! -d "${WORKTREES}/feature/proj" ]
 }
 
@@ -156,7 +165,7 @@ JSON
 
 @test "the resolved remote is cached, not recomputed per caller" {
   # shellcheck disable=SC2030,SC2031
-  git config git-worktree-plugin.remote origin
+  git config checkout.defaultRemote origin
   repo_remote_resolve
   [ "$ORIGIN_REMOTE" = "origin" ]
 }

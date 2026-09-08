@@ -425,11 +425,11 @@ setup() {
   [[ "$stderr" != *"restore"* ]]
 }
 
-@test "remove: the head branch is whichever git-worktree-plugin.headBranch names" {
+@test "remove: the head branch is whichever <remote>/HEAD names" {
   git checkout -q -b release
   git push -q origin release
   git checkout -q main
-  git config git-worktree-plugin.headBranch release
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/release
   origin_cli gwa release
   [ "$status" -eq 0 ]
 
@@ -439,21 +439,12 @@ setup() {
   git show-ref --verify --quiet refs/heads/release
 }
 
-@test "remove: a head branch written as a remote ref is still the head branch" {
+@test "remove: an origin/HEAD written by hand is still the head branch" {
+  # Pointed at the local branch rather than at this remote's copy of it, which
+  # is what a hand-written symref usually says.
   git checkout -q -b side
   origin_cli gwa main
-  git config git-worktree-plugin.headBranch origin/main
-
-  origin_cli gwr main --yes
-  [ "$status" -eq 0 ]
-  git show-ref --verify --quiet refs/heads/main
-  [[ "$stderr" == *"branch main stays; it is the head branch"* ]]
-}
-
-@test "remove: a head branch written as a full ref is still the head branch" {
-  git checkout -q -b side
-  origin_cli gwa main
-  git config git-worktree-plugin.headBranch refs/heads/main
+  git symbolic-ref refs/remotes/origin/HEAD refs/heads/main
 
   origin_cli gwr main --yes
   [ "$status" -eq 0 ]
@@ -462,11 +453,12 @@ setup() {
 }
 
 @test "remove: a head branch with a slash in its name is matched whole" {
-  # Never pushed, so the head ref is the bare branch name: a guard that cut the
-  # name at its first slash would compare against '2.x' and miss.
+  # A guard that cut the name at its first slash would compare against '2.x'
+  # and miss.
   git checkout -q -b release/2.x
+  git push -q origin release/2.x
   git checkout -q main
-  git config git-worktree-plugin.headBranch release/2.x
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/release/2.x
   origin_cli gwa release/2.x
   [ "$status" -eq 0 ]
 
@@ -867,23 +859,9 @@ many_worktrees() {
 }
 
 # The key is set after the worktree exists, because `gwa` branches from the
-# head branch and a name resolving to nothing has nothing to branch from. The
-# work is a real file: an empty commit reaches the head branch and is finished.
-@test "remove: a refusal under a misstated head branch names the config key" {
-  origin_cli gwa feature
-  cd "${WORKTREES}/feature/proj"
-  commit_file work.txt yes "The work"
-  cd "$REPO"
-  git config git-worktree-plugin.headBranch does-not-exist
-
-  origin_cli gwr feature
-  [ "$status" -eq 1 ]
-  [[ "$stderr" == *"git-worktree-plugin.headBranch names does-not-exist"* ]]
-  [[ "$stderr" == *"no branch here or on origin"* ]]
-  [[ "$stderr" == *"origin doctor"* ]]
-}
-
-@test "remove: a refusal under a working head branch says nothing about the key" {
+# The work is a real file: an empty commit reaches the head branch and would be
+# finished.
+@test "remove: a refusal names the head branch the commits did not reach" {
   origin_cli gwa feature
   cd "${WORKTREES}/feature/proj"
   commit_file work.txt yes "The work"
@@ -892,7 +870,6 @@ many_worktrees() {
   origin_cli gwr feature
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"feature is not merged into origin/main"* ]]
-  [[ "$stderr" != *"git-worktree-plugin.headBranch"* ]]
 }
 
 # --------------------------------------------------------------------------

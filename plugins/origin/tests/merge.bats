@@ -350,7 +350,7 @@ JSON
 
 @test "the range is read from the remote this repository belongs to" {
   git remote rename origin upstream
-  git config git-worktree-plugin.remote upstream
+  git config checkout.defaultRemote upstream
   # A stale `origin` beside it, with the fork's own idea of both branches.
   git remote add origin "$UPSTREAM"
   git update-ref refs/remotes/origin/main "$(git rev-parse main)"

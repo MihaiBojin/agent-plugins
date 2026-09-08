@@ -691,9 +691,6 @@ worktree_remove() {
       say ''
       if [ -n "$branch" ]; then
         say "${branch} is not merged into $(ref_name "$head_ref")${extra}."
-        if repo_head_branch_misstated "$head_ref"; then
-          say "git-worktree-plugin.headBranch names ${head_ref}, which is no branch here or on ${ORIGIN_REMOTE:-the remote}, so nothing reaches it. 'origin doctor' has the rest."
-        fi
         die "git-worktree remove: refusing; pass --force to remove the checkout and keep the branch"
       fi
       say "no ref reaches ${sha}, so this checkout is the only thing pointing at that commit."
