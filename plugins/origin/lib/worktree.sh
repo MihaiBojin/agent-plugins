@@ -306,9 +306,13 @@ worktree_add() {
   state="$(worktree_dest_state "$path")"
   case "$state" in
     ours)
-      note "${path} is already a worktree of this repository"
-      printf '%s\n' "$path"
-      return 0
+      # The requested branch has no worktree - `existing` above settled that -
+      # so a worktree of ours at this path is on a different branch. Printing
+      # the path as a success hands `cd "$(origin gwa <branch>)"` the wrong
+      # checkout.
+      local occupant
+      occupant="$(worktree_branch_at "$path")"
+      die "git-worktree add: ${path} is already a worktree of this repository (${occupant:-detached})"
       ;;
     blocked:*) die "git-worktree add: ${state#blocked:}" ;;
   esac

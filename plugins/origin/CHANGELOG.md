@@ -2,6 +2,21 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.10.1
+
+- `gwa <branch>` refuses a destination another of this repository's worktrees
+  already holds, and names the branch there. It reported success and printed
+  the path, so `cd "$(origin gwa <branch> --quiet)"` landed in a checkout on
+  somebody else's branch and the requested one never got a worktree. A
+  directory whose name no longer matches the branch inside it was enough to
+  reach it.
+
+### Choices
+
+The refusal reads the branch out of `git worktree list --porcelain` rather than
+out of the path, which is the same source every other command uses. The path
+segment is a label; the porcelain is the fact.
+
 ## 0.10.0
 
 - `origin prune` says which worktrees are finished, and why, one verdict each.
