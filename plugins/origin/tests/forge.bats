@@ -44,6 +44,13 @@ setup() {
   [ "$output" = "upstream" ]
 }
 
+@test "remote.pushDefault names the push target, so it does not resolve the base" {
+  git remote add upstream "$UPSTREAM"
+  git config remote.pushDefault upstream
+  run repo_remote
+  [ "$output" != "upstream" ]
+}
+
 @test "github.com over https and over ssh is GitHub" {
   stub_forge https://github.com/owner/repo.git
   run forge_kind

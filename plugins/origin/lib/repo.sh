@@ -101,6 +101,11 @@ repo_ahead_behind() {
 # fork and `upstream` at the project the pull requests live on, so `origin` is
 # a convention rather than an answer.
 #
+# `remote.pushDefault` is not asked. It names where commits go, not where they
+# come from, and the two differ in exactly the case that makes this question
+# worth asking: a fork you push to, an upstream you branch from. Reading it here
+# would resolve the base to the fork.
+#
 # Prints the remote, or nothing with status 1 (there is none) or 2 (there are
 # several and nothing says which).
 repo_remote_compute() {
@@ -108,8 +113,7 @@ repo_remote_compute() {
 
   for candidate in \
     "$(git config --get git-worktree-plugin.remote 2>/dev/null || printf '')" \
-    "$(git config --get checkout.defaultRemote 2>/dev/null || printf '')" \
-    "$(git config --get remote.pushDefault 2>/dev/null || printf '')"; do
+    "$(git config --get checkout.defaultRemote 2>/dev/null || printf '')"; do
     if [ -n "$candidate" ] && git remote get-url "$candidate" >/dev/null 2>&1; then
       printf '%s\n' "$candidate"
       return 0

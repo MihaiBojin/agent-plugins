@@ -2,6 +2,20 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.10.2
+
+- The remote a repository belongs to is no longer resolved from
+  `remote.pushDefault`. That key names where commits go, and the two answers
+  differ in exactly the case that makes the question worth asking: a fork you
+  push to, an upstream you branch from. A fork checkout that set it resolved
+  its base to the fork.
+
+### Choices
+
+`checkout.defaultRemote` stays, because it is git's own key for this
+ambiguity and for nothing else. `branch.<current>.remote` stays below it. Both
+say where a branch came from; `remote.pushDefault` says where it is going.
+
 ## 0.10.1
 
 - `gwa <branch>` refuses a destination another of this repository's worktrees
