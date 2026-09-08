@@ -111,14 +111,11 @@ repo_ahead_behind() {
 repo_remote_compute() {
   local candidate branch count
 
-  for candidate in \
-    "$(git config --get git-worktree-plugin.remote 2>/dev/null || printf '')" \
-    "$(git config --get checkout.defaultRemote 2>/dev/null || printf '')"; do
-    if [ -n "$candidate" ] && git remote get-url "$candidate" >/dev/null 2>&1; then
-      printf '%s\n' "$candidate"
-      return 0
-    fi
-  done
+  candidate="$(git config --get checkout.defaultRemote 2>/dev/null || printf '')"
+  if [ -n "$candidate" ] && git remote get-url "$candidate" >/dev/null 2>&1; then
+    printf '%s\n' "$candidate"
+    return 0
+  fi
 
   branch="$(repo_current_branch)"
   if [ -n "$branch" ]; then
@@ -158,7 +155,7 @@ repo_remote_resolve() {
     2)
       say 'This repository has several remotes and nothing says which one it belongs to:'
       git remote -v | awk '$3 == "(fetch)" { printf "  %s\t%s\n", $1, $2 }' | tabulate
-      die "say which with: git config git-worktree-plugin.remote <name>"
+      die "say which with: git config checkout.defaultRemote <name>"
       ;;
     *)
       ORIGIN_REMOTE=''
@@ -212,19 +209,7 @@ repo_remote_url_raw() {
 # `ls-remote` writes nothing, so it runs under --dry-run as well, and a dry run
 # names the same branch as the run it describes.
 repo_head_branch() {
-  local remote stated head candidate
-  stated="$(git config --get git-worktree-plugin.headBranch 2>/dev/null || printf '')"
-  if [ -n "$stated" ]; then
-    # A bare branch name, whichever way it was written down. `origin/main` and
-    # `refs/heads/main` name the branch `main`, and everything that compares
-    # against this answer is comparing branch names.
-    remote="$(repo_remote 2>/dev/null || printf '')"
-    stated="${stated#refs/heads/}"
-    [ -n "$remote" ] && stated="${stated#"${remote}/"}"
-    printf '%s\n' "$stated"
-    return 0
-  fi
-
+  local remote head candidate
   remote="$(repo_remote 2>/dev/null || printf '')"
   if [ -n "$remote" ]; then
     head="$(git symbolic-ref --quiet "refs/remotes/${remote}/HEAD" 2>/dev/null || printf '')"
@@ -255,7 +240,7 @@ repo_head_branch() {
 
   case "$head" in
     '' | '?')
-      die "cannot tell which branch is the default; say which with: git config git-worktree-plugin.headBranch <name>${remote:+, or record it with: git remote set-head ${remote} --auto}"
+      die "cannot tell which branch is the default${remote:+; record it with: git remote set-head ${remote} --auto}"
       ;;
   esac
   printf '%s\n' "$head"
@@ -295,20 +280,6 @@ repo_head_ref_for() {
     # that worked into one where every command fails.
     printf '%s\n' "$head"
   fi
-}
-
-# True when the head branch was written down in
-# `git-worktree-plugin.headBranch` and names no ref.
-#
-# Every other way of arriving at a head branch checks that it exists first, so
-# a stated one is the only kind that can be a name and nothing else. Worth
-# telling apart on a refusal: nothing is ever merged into a branch that is not
-# there, and `<branch> is not merged into <name>` reads as a fact about the
-# branch rather than about the setting.
-repo_head_branch_misstated() {
-  [ -n "$(git config --get git-worktree-plugin.headBranch 2>/dev/null || printf '')" ] || return 1
-  git rev-parse --verify --quiet "${1}^{commit}" >/dev/null 2>&1 && return 1
-  return 0
 }
 
 # A ref as a person writes it: `refs/remotes/origin/main` is `origin/main`,

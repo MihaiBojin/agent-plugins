@@ -56,9 +56,8 @@ shadowed_branch() {
   run repo_head_ref_for nowhere
   [ "$output" = "nowhere" ]
 
-  # And a stated head branch still arrives as a branch name, whichever way it
-  # was written.
-  git config git-worktree-plugin.headBranch origin/main
+  # And <remote>/HEAD still arrives as a full ref.
+  git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
   run repo_head_ref
   [ "$output" = "refs/remotes/origin/main" ]
 }

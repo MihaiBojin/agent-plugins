@@ -85,8 +85,8 @@ LAYOUT
   main checkout. A slash in a branch name nests.
 
 CONFIGURATION
-  git config git-worktree-plugin.remote <name>       Which remote this repo belongs to
-  git config git-worktree-plugin.headBranch <name>   Which branch is the default
+  git config checkout.defaultRemote <name>     Which remote this repo belongs to
+  git remote set-head <remote> --auto          Record which branch is the default
 HELP
 }
 

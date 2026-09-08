@@ -292,7 +292,6 @@ push_by_hand() {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
   git remote remove origin
-  git config git-worktree-plugin.headBranch main
 
   origin_cli renew --yes --push
   [ "$status" -eq 0 ]
