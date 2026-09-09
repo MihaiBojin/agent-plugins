@@ -1,7 +1,7 @@
 {
   "name": "decisions",
   "version": "0.1.0",
-  "description": "A decision log in .claude/decisions, written as the decisions are made, in the repositories that ask for one",
+  "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",
   "author": {
     "name": "Mihai Bojin",
     "url": "https://github.com/MihaiBojin"

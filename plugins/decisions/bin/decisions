@@ -2,14 +2,14 @@
 #
 # decisions - turn the decision log on or off for one repository.
 #
-# The log is `.claude/decisions/` at the repository root, and its presence is
-# the switch: no directory, no log. A repository that has already recorded
+# The log is `.decisions/` at the repository root, and its presence is the
+# switch: no directory, no log. A repository that has already recorded
 # something turns the log off with a `.disabled` marker instead, so nothing
 # already written is removed to change a setting.
 
 set -euo pipefail
 
-LOG_DIR=".claude/decisions"
+LOG_DIR=".decisions"
 
 die() {
   printf 'decisions: %s\n' "$1" >&2
@@ -24,11 +24,11 @@ USAGE
   decisions <command>
 
 COMMANDS
-  enable     Create .claude/decisions/ and report whether git will commit it
+  enable     Create .decisions/ and report whether git will commit it
   disable    Stop logging here, keeping every file already recorded
   help       This
 
-The log is on when .claude/decisions/ exists and holds no .disabled file.
+The log is on when .decisions/ exists and holds no .disabled file.
 HELP
 }
 
@@ -37,24 +37,6 @@ HELP
 repo_root() {
   git rev-parse --show-toplevel 2>/dev/null ||
     die "not a git repository, and a decision file is committed with the work it belongs to"
-}
-
-# Where git reads the ignore rules that are not in the repository.
-ignore_file() {
-  local configured
-  configured="$(git config --get core.excludesFile || true)"
-  printf '%s\n' "${configured:-${XDG_CONFIG_HOME:-${HOME}/.config}/git/ignore}"
-}
-
-# The three lines that make the log committable everywhere. Order matters: git
-# will not re-include a path whose parent directory is excluded.
-carve_out() {
-  cat <<'IGNORE'
-## Claude
-!**/.claude/
-**/.claude/*
-!**/.claude/decisions/
-IGNORE
 }
 
 # One file per topic, so this counts topics rather than decisions.
@@ -85,11 +67,14 @@ enable() {
   [ -e "${dir}/.gitkeep" ] || : >"${dir}/.gitkeep"
   state "$dir"
 
+  # A repository that ignores dotfiles would keep the whole log out of every
+  # commit, and the first anyone hears of it is the day they look for a file
+  # that was written months ago.
   if (cd "$root" && git check-ignore -q "${LOG_DIR}/.gitkeep" 2>/dev/null); then
     {
       printf 'decisions: %s is ignored here, so nothing in it can be committed.\n' "$LOG_DIR"
-      printf 'Add these lines to %s:\n\n' "$(ignore_file)"
-      carve_out
+      printf 'Run this to see which rule does it:\n\n'
+      printf '  git check-ignore -v %s/.gitkeep\n' "$LOG_DIR"
     } >&2
   fi
 }

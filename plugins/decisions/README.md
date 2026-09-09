@@ -1,9 +1,9 @@
 # decisions
 
-A decision that was not quick and easy gets a file, written while the work
-happens rather than remembered afterwards. The file carries the question, the
-answer, the reason argued, and each rejected option with what it would have
-cost.
+A decision that stayed open across turns, and that changes what somebody would
+do later, gets a file: the question, the answer, the reason argued, and each
+rejected option with what it would have cost. Written while the work happens
+rather than remembered afterwards.
 
 ```markdown
 q: Which git should we use: system, brew, user specified
@@ -15,10 +15,10 @@ alt: a configured path — one more thing to set per machine
 
 ## The switch is a directory
 
-`.claude/decisions/` at the repository root. It exists, the log is on; it does
-not, nothing is ever written. A repository that has recorded something already
-turns the log off with a `.disabled` file inside it, so opting out costs
-nothing that was written.
+`.decisions/` at the repository root. It exists, the log is on; it does not,
+nothing is ever written. A repository that has recorded something already turns
+the log off with a `.disabled` file inside it, so opting out costs nothing that
+was written.
 
 | Command              | What it does                                                                  |
 | -------------------- | ----------------------------------------------------------------------------- |
@@ -28,23 +28,21 @@ nothing that was written.
 Both run `bin/decisions`, which is also a CLI: `decisions enable`,
 `decisions disable`, `decisions help`.
 
-## Committing the log
+## The reminder at the end
 
-`**/.claude/` is excluded on many machines, which would leave every decision
-untracked. `enable` runs `git check-ignore` and prints the carve-out when the
-path is ignored:
+A `Stop` hook fires once per session, and only when three things are true at
+the same time: the log is on here, the session ran longer than a single turn,
+and nothing reached `.decisions/`. Whether anything in the session earned a
+file is the judgement it hands back to the agent, which answers by writing one
+or by saying in a line why nothing qualifies.
 
-```gitignore
-## Claude
-!**/.claude/
-**/.claude/*
-!**/.claude/decisions/
-```
+## Where the log lives
 
-Order matters. Git will not re-include a path whose parent directory is
-excluded, so `.claude/` comes back before `.claude/decisions/` can. Those lines
-live in the machine's own ignore file, not in the repository, so a second
-machine needs them too.
+`.decisions/` sits at the repository root rather than inside `.claude/`,
+because the record belongs to the repository rather than to one agent. It needs
+no ignore rules to be committable. `enable` runs `git check-ignore` anyway and
+says so when a repository excludes it, since a log nothing can commit looks
+exactly like a log nobody wrote.
 
 ## Install
 

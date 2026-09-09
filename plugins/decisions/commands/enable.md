@@ -8,10 +8,10 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/decisions *)
 "${CLAUDE_PLUGIN_ROOT}/bin/decisions" enable
 ```
 
-It creates `.claude/decisions/` with a `.gitkeep`, drops any `.disabled`
-marker, and prints the state it left behind.
+It creates `.decisions/` at the repository root with a `.gitkeep`, drops any
+`.disabled` marker, and prints the state it left behind.
 
 Report that line. If the command also printed an ignore warning, the log
-exists but nothing in it can be committed on this machine: give the user the
-lines it printed and the file to put them in, and say that decisions written
-before that is fixed stay untracked.
+exists but nothing in it can be committed here: pass on the `git check-ignore`
+command it named, and say that decisions written before the rule is fixed stay
+untracked.

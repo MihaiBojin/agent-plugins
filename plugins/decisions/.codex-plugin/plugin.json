@@ -1,7 +1,7 @@
 {
   "name": "decisions",
   "version": "0.1.0",
-  "description": "A decision log in .claude/decisions, written as the decisions are made, in the repositories that ask for one",
+  "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",
   "author": {
     "name": "Mihai Bojin",
     "url": "https://github.com/MihaiBojin"
@@ -22,13 +22,14 @@
   "interface": {
     "displayName": "decisions",
     "shortDescription": "Decisions, recorded as they are made",
-    "longDescription": "A repository that opts in gets .claude/decisions/, one file per topic, and the agent appends to it while it works: the question, the answer, the reason argued, and each rejected option with what killed it. The directory is the switch, so a repository without one is never written to, and turning the log off leaves everything already recorded where it is.",
+    "longDescription": "A repository that opts in gets .decisions/ at its root, one file per topic, and the agent appends to it while it works: the question, the answer, the reason argued, and each rejected option with what killed it. The directory is the switch, so a repository without one is never written to, and turning the log off leaves everything already recorded where it is. A Stop hook says once when a session settled something and wrote none of it down.",
     "developerName": "Mihai Bojin",
     "category": "Developer Tools",
     "capabilities": [
       "Turn the decision log on for a repository, and say whether git will commit it",
       "Turn it off without deleting anything already recorded",
-      "Append a decision to the file for its topic while the work happens"
+      "Append a decision to the file for its topic while the work happens",
+      "Notice at the end of a session that nothing was recorded, and say so once"
     ],
     "websiteURL": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/decisions#readme",
     "defaultPrompt": [

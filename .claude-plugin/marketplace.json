@@ -53,7 +53,7 @@
     {
       "name": "decisions",
       "source": "./plugins/decisions",
-      "description": "A decision log in .claude/decisions, written as the decisions are made, in the repositories that ask for one",
+      "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",
       "version": "0.1.0",
       "author": {
         "name": "Mihai Bojin",

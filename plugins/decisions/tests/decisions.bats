@@ -20,17 +20,17 @@ setup() {
   run "$DECISIONS" enable
   [ "$status" -eq 0 ]
   [[ "$output" == on:* ]]
-  [ -f .claude/decisions/.gitkeep ]
-  run git check-ignore -q .claude/decisions/.gitkeep
+  [ -f .decisions/.gitkeep ]
+  run git check-ignore -q .decisions/.gitkeep
   [ "$status" -eq 1 ]
 }
 
-@test "enable warns when the log is ignored, and names the lines to add" {
-  printf '.claude/\n' >.gitignore
+@test "enable warns when the repository ignores the log, and names the diagnostic" {
+  printf '.decisions/\n' >.gitignore
   run --separate-stderr "$DECISIONS" enable
   [ "$status" -eq 0 ]
   [[ "$stderr" == *"nothing in it can be committed"* ]]
-  [[ "$stderr" == *'!**/.claude/decisions/'* ]]
+  [[ "$stderr" == *"git check-ignore -v .decisions/.gitkeep"* ]]
 }
 
 @test "disable removes a log that recorded nothing" {
@@ -38,28 +38,28 @@ setup() {
   run "$DECISIONS" disable
   [ "$status" -eq 0 ]
   [[ "$output" == off:* ]]
-  [ ! -d .claude/decisions ]
+  [ ! -d .decisions ]
 }
 
 @test "disable keeps every decision file, and marks the log off" {
   "$DECISIONS" enable
-  printf '# a topic\n' >.claude/decisions/1788889263-a-topic.md
+  printf '# a topic\n' >.decisions/1788889263-a-topic.md
   run "$DECISIONS" disable
   [ "$status" -eq 0 ]
   [[ "$output" == *"1 topic file(s) kept"* ]]
-  [ -f .claude/decisions/1788889263-a-topic.md ]
-  [ -f .claude/decisions/.disabled ]
+  [ -f .decisions/1788889263-a-topic.md ]
+  [ -f .decisions/.disabled ]
 }
 
 @test "enable clears the marker and leaves the files alone" {
   "$DECISIONS" enable
-  printf '# a topic\n' >.claude/decisions/1788889263-a-topic.md
+  printf '# a topic\n' >.decisions/1788889263-a-topic.md
   "$DECISIONS" disable
   run "$DECISIONS" enable
   [ "$status" -eq 0 ]
-  [[ "$output" == "on: .claude/decisions, 1 topic file(s)" ]]
-  [ ! -e .claude/decisions/.disabled ]
-  [ -f .claude/decisions/1788889263-a-topic.md ]
+  [[ "$output" == "on: .decisions, 1 topic file(s)" ]]
+  [ ! -e .decisions/.disabled ]
+  [ -f .decisions/1788889263-a-topic.md ]
 }
 
 @test "the log needs a repository, and says so" {
