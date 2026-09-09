@@ -93,8 +93,8 @@ worktrees are a terminal activity, and an agent that needs one says so.
 
 `doctor` went with them. Half its table was worktree rows, and the half that
 was not existed so `pr` could read the head branch and the remote out of a
-diagnostic. Both come from `git config git-worktree-plugin.remote` and
-`.headBranch`, with `<remote>/HEAD` behind them, which is what every command
+diagnostic. Both are git's own now - `checkout.defaultRemote`,
+`branch.<name>.remote`, and `<remote>/HEAD` - which is what every command
 already reads and what the command files now read directly.
 
 alt: keep `doctor` for `gh auth` diagnosis. `gh auth status` says it, and a
@@ -154,6 +154,7 @@ success message, and a `--help` that printed the wrong line range.
 alt: keep `install.sh` for `--prefix` and `--uninstall`. Both are one command
 each at a shell, against a file with a tested-but-real capacity to delete the
 wrong link.
+
 ## 0.11.0
 
 - The `git-worktree-plugin.*` namespace is gone. `git config

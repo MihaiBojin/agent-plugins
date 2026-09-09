@@ -219,6 +219,7 @@ git config checkout.defaultRemote upstream   # which remote this repo belongs to
 git remote set-head upstream --auto          # which branch is the default
 ```
 
-Both shared with the `git-worktree` shell commands. Nothing else is
-configurable: the forge is read from the remote's host and, failing that, from
-what `gh` and `glab` are signed in to.
+Both are git's own, so the `git-worktree` shell commands read the same answer,
+and a single-remote clone needs neither. Nothing else is configurable: the
+forge is read from the remote's host and, failing that, from what `gh` and
+`glab` are signed in to.

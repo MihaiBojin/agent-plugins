@@ -50,14 +50,14 @@ one-line subject of each layer, in order. Let the user change it.
 
 ```bash
 git rev-parse --abbrev-ref HEAD
-git config --get git-worktree-plugin.remote          # or: origin
-git config --get git-worktree-plugin.headBranch      # or the line below
+git config --get checkout.defaultRemote              # which remote, if it says
+git config --get branch.<branch>.remote              # ...otherwise this
 git symbolic-ref --short refs/remotes/<remote>/HEAD  # <remote>/<head branch>
 ```
 
-Those two config keys are what `origin` itself reads, so an answer taken from
-them is the answer every other command will use. Neither is usually set, and
-the fallbacks are `origin` and whatever `<remote>/HEAD` points at.
+Those are git's own keys, and they are what `origin` itself reads, so an answer
+taken from them is the answer every other command will use. A single-remote
+clone answers both without either being set.
 
 `--no-branch` skips this step: you commit where you are.
 
@@ -120,9 +120,8 @@ pass over somebody else's commits; `--force-if-includes` additionally requires
 what is being replaced to be reachable from this branch's reflog. Together they
 accept a branch this clone rebased and refuse one somebody else pushed.
 
-The remote is what `doctor` named, which is `git-worktree-plugin.remote` when
-that is set and `origin` otherwise. A refused first push means the name is
-taken by somebody else's branch: rename with `git branch -m <name>` and push
+The remote is the one resolved in step 2. A refused first push means the name
+is taken by somebody else's branch: rename with `git branch -m <name>` and push
 again. A refused leased push means the branch on the remote carries commits
 this clone never had. Do not widen the flags. Say what it said, and stop.
 

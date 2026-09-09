@@ -61,4 +61,5 @@ git config checkout.defaultRemote upstream   # which remote this repo belongs to
 git remote set-head upstream --auto          # which branch is the default
 ```
 
-Both are shared with the `git-worktree` shell commands, so the two tools agree.
+Both are git's own, so the `git-worktree` shell commands read the same answer
+and a single-remote clone needs neither.

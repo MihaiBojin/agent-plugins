@@ -1,6 +1,6 @@
 {
   "name": "origin",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Git worktrees, pull request merges, and keeping a branch on top of the head branch, from one tested CLI.",
   "author": {
     "name": "Mihai Bojin",
