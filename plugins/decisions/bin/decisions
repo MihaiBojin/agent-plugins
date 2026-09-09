@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+#
+# decisions - turn the decision log on or off for one repository.
+#
+# The log is `.claude/decisions/` at the repository root, and its presence is
+# the switch: no directory, no log. A repository that has already recorded
+# something turns the log off with a `.disabled` marker instead, so nothing
+# already written is removed to change a setting.
+
+set -euo pipefail
+
+LOG_DIR=".claude/decisions"
+
+die() {
+  printf 'decisions: %s\n' "$1" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'HELP'
+decisions - a repository's decision log, on or off
+
+USAGE
+  decisions <command>
+
+COMMANDS
+  enable     Create .claude/decisions/ and report whether git will commit it
+  disable    Stop logging here, keeping every file already recorded
+  help       This
+
+The log is on when .claude/decisions/ exists and holds no .disabled file.
+HELP
+}
+
+# The repository root, which is where the log lives whatever directory the
+# caller is standing in.
+repo_root() {
+  git rev-parse --show-toplevel 2>/dev/null ||
+    die "not a git repository, and a decision file is committed with the work it belongs to"
+}
+
+# Where git reads the ignore rules that are not in the repository.
+ignore_file() {
+  local configured
+  configured="$(git config --get core.excludesFile || true)"
+  printf '%s\n' "${configured:-${XDG_CONFIG_HOME:-${HOME}/.config}/git/ignore}"
+}
+
+# The three lines that make the log committable everywhere. Order matters: git
+# will not re-include a path whose parent directory is excluded.
+carve_out() {
+  cat <<'IGNORE'
+## Claude
+!**/.claude/
+**/.claude/*
+!**/.claude/decisions/
+IGNORE
+}
+
+# One file per topic, so this counts topics rather than decisions.
+topics() {
+  find "$1" -maxdepth 1 -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' '
+}
+
+state() {
+  local dir="$1"
+  if [ ! -d "$dir" ]; then
+    printf 'off: %s does not exist\n' "$LOG_DIR"
+  elif [ -e "${dir}/.disabled" ]; then
+    printf 'off: %s/.disabled is present, %s topic file(s) kept\n' "$LOG_DIR" "$(topics "$dir")"
+  else
+    printf 'on: %s, %s topic file(s)\n' "$LOG_DIR" "$(topics "$dir")"
+  fi
+}
+
+enable() {
+  local root dir
+  root="$(repo_root)"
+  dir="${root}/${LOG_DIR}"
+
+  mkdir -p "$dir"
+  rm -f "${dir}/.disabled"
+  # An empty directory is not a thing git can commit, so the opt-in itself
+  # needs a file to travel on.
+  [ -e "${dir}/.gitkeep" ] || : >"${dir}/.gitkeep"
+  state "$dir"
+
+  if (cd "$root" && git check-ignore -q "${LOG_DIR}/.gitkeep" 2>/dev/null); then
+    {
+      printf 'decisions: %s is ignored here, so nothing in it can be committed.\n' "$LOG_DIR"
+      printf 'Add these lines to %s:\n\n' "$(ignore_file)"
+      carve_out
+    } >&2
+  fi
+}
+
+disable() {
+  local root dir
+  root="$(repo_root)"
+  dir="${root}/${LOG_DIR}"
+
+  if [ ! -d "$dir" ]; then
+    state "$dir"
+    return 0
+  fi
+
+  if [ "$(topics "$dir")" -gt 0 ]; then
+    printf 'Decision logging is off for this repository. The files beside this one stay.\n' \
+      >"${dir}/.disabled"
+  else
+    rm -f "${dir}/.gitkeep"
+    rmdir "$dir" 2>/dev/null ||
+      die "${LOG_DIR} holds files this command will not remove; empty it first"
+  fi
+  state "$dir"
+}
+
+case "${1:-help}" in
+  enable) enable ;;
+  disable) disable ;;
+  help | -h | --help) usage ;;
+  *)
+    usage >&2
+    exit 1
+    ;;
+esac

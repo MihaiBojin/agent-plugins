@@ -1,0 +1,20 @@
+{
+  "name": "decisions",
+  "version": "0.1.0",
+  "description": "A decision log in .claude/decisions, written as the decisions are made, in the repositories that ask for one",
+  "author": {
+    "name": "Mihai Bojin",
+    "url": "https://github.com/MihaiBojin"
+  },
+  "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/decisions#readme",
+  "repository": "https://github.com/MihaiBojin/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "decisions",
+    "decision-log",
+    "rationale",
+    "adr",
+    "provenance",
+    "agent-rules"
+  ]
+}
