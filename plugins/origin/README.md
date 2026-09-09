@@ -99,11 +99,28 @@ The slash command offers to sit and watch instead, when the user asks it to.
 
 ## sync
 
-Fetch, then one of three routes, chosen by what the branch is rather than by
+Fetch, then one of four routes, chosen by what the branch is rather than by
 what was typed.
 
 On the head branch it fast-forwards, and refuses if that would drop a local
-commit. On an unfinished branch it rebases. On a branch whose change is already
+commit. On an unfinished branch it rebases.
+
+On a branch the head branch has only part of, it stops and offers the two ways
+on. That branch had its pull request squash-merged and then kept growing, so
+the head branch holds its first commits as one commit nothing matches: a rebase
+replays those and stops on each. How far the absorption reaches is read by
+replaying the branch's tree at each commit as a single commit on the merge base
+and asking `git cherry` whether that patch is upstream — the question a squash
+merge answers, where a per-commit patch-id does not. The scan runs from the tip
+down and takes the highest commit that says yes, because the predicate is not
+monotone: the first commit of a squashed pair is not upstream on its own while
+the pair is. Past `MERGED_BOUNDARY_LIMIT` commits (50) it is not scanned, and
+the rebase runs as it always did.
+
+`--branch <name>` then cherry-picks the commits after the boundary onto a new
+branch off the head branch, keeping them as they are; `--squash --branch <name>`
+carries the whole difference as one commit. The branch they come from is never
+moved. On a branch whose change is already
 in the head branch it does neither, because there is no move to make: a squash
 merge rewrites the branch into one commit, so git can no longer match the
 branch's patches against it and a rebase replays work the head branch already
@@ -122,6 +139,19 @@ never moved, so a stop costs nothing.
 
 `git merge --squash` writes no `MERGE_HEAD`, so `git merge --abort` cannot back
 one out. The message says `git reset --merge`, which can.
+
+A dirty tree stops `sync` unless it is told what to do with it. `--autostash`
+carries it across with git's own stash, and `--commit` commits the tracked
+changes first, asking for the message at the terminal; `--message <text>`
+supplies one instead, which is the only form that works with `--yes`, because
+nothing here invents a commit message. Untracked files are listed and left:
+staging one is how a `.env` or a build directory ends up in a commit, and
+nothing can tell that from a file somebody meant to add.
+
+A rebase, a merge, a cherry-pick or a revert already in progress is refused by
+name, with the command that finishes or abandons it. Each leaves a half-applied
+tree that reads as an ordinary dirty one, and `--autostash` on that would stash
+a conflict.
 
 `--squash --probe` answers whether the carry would apply cleanly and stops.
 `git merge-tree --write-tree` performs the merge in the object database and

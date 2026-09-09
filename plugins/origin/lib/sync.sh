@@ -28,8 +28,10 @@ origin sync [flags]
   it. That one is finished: `origin new <name>` starts the next change, and
   this branch is left where it is.
 
-  --branch <name>   With --squash: the branch to carry onto
+  --branch <name>   The branch to carry or cherry-pick onto
   --squash          Do not rebase; carry the whole change onto a new branch
+  --commit          Commit what is in the tree first, asking for the message
+  --message <text>  The same, with the message given rather than asked for
   --probe           With --squash: say whether it would apply cleanly, and stop
   --autostash       Stash before and re-apply after, via git's own
   --push            Push afterwards: plain for a new branch, leased for a known one
@@ -39,7 +41,7 @@ USAGE
 }
 
 sync_main() {
-  local autostash=0 push=0 squash=0 probe=0 name='' arg
+  local autostash=0 push=0 squash=0 probe=0 name='' message='' commit=0 arg
   while [ "$#" -gt 0 ]; do
     arg="$1"
     if parse_common_flag "$arg"; then
@@ -64,6 +66,16 @@ sync_main() {
         autostash=1
         shift
         ;;
+      --commit)
+        commit=1
+        shift
+        ;;
+      --message)
+        require_value --message "${@:2}"
+        message="$2"
+        commit=1
+        shift 2
+        ;;
       --push)
         push=1
         shift
@@ -83,14 +95,29 @@ sync_main() {
   if [ -d "${gitdir}/rebase-merge" ] || [ -d "${gitdir}/rebase-apply" ]; then
     die "a rebase is already in progress; finish it with 'git rebase --continue' or 'git rebase --abort'"
   fi
+  # Each of these leaves a half-applied tree that reads as an ordinary dirty
+  # one, and --autostash on that state stashes a conflict.
+  if [ -f "${gitdir}/CHERRY_PICK_HEAD" ]; then
+    die "a cherry-pick is already in progress; finish it with 'git cherry-pick --continue' or 'git cherry-pick --abort'"
+  fi
+  if [ -f "${gitdir}/REVERT_HEAD" ]; then
+    die "a revert is already in progress; finish it with 'git revert --continue' or 'git revert --abort'"
+  fi
+  if [ -f "${gitdir}/MERGE_HEAD" ]; then
+    die "a merge is already in progress; finish it with 'git commit' or 'git merge --abort'"
+  fi
 
   local branch
   branch="$(repo_current_branch)"
   [ -n "$branch" ] || die "HEAD is detached; check out a branch first"
 
-  if repo_is_dirty && [ "$autostash" = 0 ]; then
-    git status --short >&2
-    die "the working tree is dirty; commit it, or pass --autostash"
+  if repo_is_dirty; then
+    if [ "$commit" = 1 ]; then
+      sync_commit_tree "$message"
+    elif [ "$autostash" = 0 ]; then
+      git status --short >&2
+      die "the working tree is dirty; --commit commits it, --autostash carries it across"
+    fi
   fi
 
   repo_fetch
@@ -135,10 +162,19 @@ sync_main() {
   [ "${ahead:-0}" -gt 0 ] &&
     reason="$(merged_reason "$branch" "$head_ref" 2>/dev/null || printf '')"
 
+  # How much of the branch the head branch already has. A squash merge of the
+  # first few commits leaves the rest to move, and a rebase would replay all of
+  # them and stop on the ones that are upstream in rewritten form.
+  local boundary=''
+  [ "${ahead:-0}" -gt 0 ] &&
+    boundary="$(merged_absorbed_boundary "$branch" "$head_ref" 2>/dev/null || printf '')"
+
   if [ -n "$reason" ]; then
     sync_finished "$branch" "$head_ref" "$reason"
   elif [ "$squash" = 1 ]; then
     sync_carry_onto "$branch" "$head_ref" "$name" "$autostash"
+  elif [ -n "$boundary" ]; then
+    sync_pick_onto "$branch" "$head_ref" "$boundary" "$name"
   else
     [ -n "$name" ] &&
       die "${branch} is unfinished, so it is rebased in place and no new branch is named; pass --squash to carry it onto one"
@@ -183,6 +219,139 @@ sync_resolve_name() {
     die "there is already a branch called ${name}"
   fi
   SYNC_NAME="$name"
+}
+
+# --------------------------------------------------------------------------
+# Committing what is in the tree
+# --------------------------------------------------------------------------
+
+# Tracked changes only, with a message somebody wrote.
+#
+# Staging an untracked file is how a .env or a build directory ends up in a
+# commit, and nothing here can tell one of those from a file somebody meant to
+# add. They are listed and left where they are.
+sync_commit_tree() {
+  local message="$1" tracked untracked
+  tracked="$(git status --porcelain --untracked-files=no 2>/dev/null || printf '')"
+  untracked="$(git ls-files --others --exclude-standard 2>/dev/null || printf '')"
+
+  if [ -z "$tracked" ]; then
+    if [ -n "$untracked" ]; then
+      say 'Untracked, and left alone:'
+      printf '%s\n' "$untracked" | indent_lines
+      die "nothing tracked has changed; git add what you meant to keep"
+    fi
+    return 0
+  fi
+
+  say ''
+  say 'To commit:'
+  printf '%s\n' "$tracked" | indent_lines
+  if [ -n "$untracked" ]; then
+    say 'Untracked, and left alone:'
+    printf '%s\n' "$untracked" | indent_lines
+  fi
+
+  [ -n "$message" ] || message="$(sync_ask_message)"
+  [ -n "$message" ] || die "a commit needs a message"
+
+  git_run commit --all --message "$message" || die "could not commit"
+  [ "$ORIGIN_DRY_RUN" = 1 ] || good "committed $(git rev-parse --short HEAD)"
+}
+
+# The message, from the person at the terminal.
+#
+# `--yes` answers a question with a known answer, and this is not one. Nothing
+# invents a commit message, so a run with no terminal says which flag carries
+# one instead.
+sync_ask_message() {
+  local line
+  if [ "$ORIGIN_ASSUME_YES" = 1 ] || ! have_tty; then
+    die "a commit message cannot be asked for here; pass --message <text>"
+  fi
+  printf '\n%sMessage:%s ' "$C_BOLD" "$C_OFF" >&2
+  IFS= read -r line </dev/tty || line=''
+  printf '%s\n' "$line"
+}
+
+# --------------------------------------------------------------------------
+# The rest of a partly absorbed branch
+# --------------------------------------------------------------------------
+
+# The head branch has the first commits of this branch already, in the one
+# commit a squash merge made of them. The rest moves onto a new branch as
+# itself: a cherry-pick keeps the commits, where a carry would flatten them.
+#
+# The branch it comes from is never moved, so a stop costs nothing.
+sync_pick_onto() {
+  local branch="$1" head_ref="$2" boundary="$3" name="$4"
+  local base absorbed left status=0 empty=''
+
+  base="$(git merge-base "$head_ref" "refs/heads/${branch}" 2>/dev/null || printf '')"
+  absorbed="$(git rev-list --count "${base}..${boundary}" 2>/dev/null || printf '0')"
+  left="$(git rev-list --count "${boundary}..refs/heads/${branch}" 2>/dev/null || printf '0')"
+
+  if [ -z "$name" ]; then
+    say ''
+    note "$(ref_name "$head_ref") already has ${absorbed} commit(s) of ${branch}, squashed into one"
+    say "  ${left} commit(s) after $(git rev-parse --short "$boundary") are not in it"
+    say "  a rebase replays all $((absorbed + left)) and stops on the first ${absorbed}"
+    say ''
+    say 'Take the rest onto a new branch, commits kept:'
+    say '  origin sync --branch <name>'
+    say ''
+    say 'Or as one commit:'
+    say '  origin sync --squash --branch <name>'
+    exit 1
+  fi
+
+  repo_is_dirty &&
+    die "the working tree is dirty, and a cherry-pick has nowhere to put it; --commit commits it first"
+
+  sync_resolve_name "$name" "the rest of ${branch} lands on a branch of its own"
+  name="$SYNC_NAME"
+
+  # An old git has no --empty, and a commit that turns out to add nothing stops
+  # the pick there rather than being dropped.
+  git cherry-pick -h 2>&1 | grep -q -- '--empty=' && empty='--empty=drop'
+
+  confirm "Start ${name} from $(ref_name "$head_ref") and cherry-pick ${left} commit(s)?" \
+    "git switch --create ${name} --no-track ${head_ref}" \
+    "git cherry-pick ${empty:+${empty} }${boundary}..refs/heads/${branch}"
+
+  git_run switch --create "$name" --no-track "$head_ref" ||
+    die "could not create ${name} from $(ref_name "$head_ref")"
+
+  if [ -n "$empty" ]; then
+    git_run cherry-pick "$empty" "${boundary}..refs/heads/${branch}" || status=$?
+  else
+    git_run cherry-pick "${boundary}..refs/heads/${branch}" || status=$?
+  fi
+  [ "$status" = 0 ] || sync_report_pick_conflict "$branch" "$name"
+
+  good "on ${name}, with ${left} commit(s) from ${branch}"
+  say "  ${branch} is untouched, at $(git rev-parse --short "refs/heads/${branch}")"
+}
+
+# A cherry-pick that stopped. Every hunk in it is a genuine disagreement: the
+# commits that were already upstream are behind the boundary and were never
+# replayed.
+sync_report_pick_conflict() {
+  local branch="$1" name="$2" conflicted
+  conflicted="$(git diff --name-only --diff-filter=U 2>/dev/null || printf '')"
+  say ''
+  warn "the cherry-pick onto ${name} stopped on a conflict"
+  if [ -n "$conflicted" ]; then
+    say 'Conflicted:'
+    printf '%s\n' "$conflicted" | indent_lines
+  fi
+  say ''
+  say 'Resolve them, then:'
+  say '  git add <paths> && git cherry-pick --continue'
+  say '  git cherry-pick --abort     put everything back'
+  say ''
+  say "${branch} has not moved, so nothing is at risk while you work."
+  exit 1
 }
 
 # --------------------------------------------------------------------------
@@ -386,7 +555,7 @@ sync_offer_carry() {
       say "$(ref_name "$head_ref") already has some of this, which is what the replay keeps"
       say "stopping on. The whole change applies to $(ref_name "$head_ref") cleanly as one"
       say "commit, at the cost of the ${count} commit(s) on ${branch} becoming one:"
-      say '  git rebase --abort && origin sync --squash --auto'
+      say '  git rebase --abort && origin sync --squash --branch <name>'
       ;;
     conflicts)
       say ''

@@ -92,3 +92,46 @@ merged_unpushed_count() {
   # pushed anywhere is entirely unpushed, not zero commits behind nothing.
   git rev-list --count "refs/heads/${branch}" --not --remotes 2>/dev/null || printf '0\n'
 }
+
+# How far up the branch the head branch has already absorbed.
+#
+# A squash merge lands the branch's first N commits as one commit upstream, so
+# no individual patch-id matches and `git cherry` marks every commit on the
+# branch as new. What does match is the tree: replaying the branch's tree at
+# commit i as a single commit on the merge base produces the patch the squash
+# merge made, and `git cherry` recognises that one.
+#
+# Scanned from the tip down, taking the highest commit that answers yes. The
+# predicate is not monotone - the first commit of a squashed pair is not
+# upstream on its own, while the pair is - so a binary search would land in the
+# wrong place.
+#
+# Prints the boundary commit, or nothing. A branch whose tip answers yes is
+# finished rather than partly absorbed, and `merged_reason` has already said so
+# before this is asked.
+MERGED_BOUNDARY_LIMIT="${MERGED_BOUNDARY_LIMIT:-50}"
+merged_absorbed_boundary() {
+  local branch="$1" head_ref="$2" base count commit tree synth verdict
+  base="$(git merge-base "$head_ref" "refs/heads/${branch}" 2>/dev/null || printf '')"
+  [ -n "$base" ] || return 1
+  count="$(git rev-list --count "${base}..refs/heads/${branch}" 2>/dev/null || printf '0')"
+  [ "${count:-0}" -gt 0 ] || return 1
+  # One commit-tree and one cherry per commit, so a branch long enough for that
+  # to be felt is left alone and rebased the ordinary way.
+  [ "${count:-0}" -le "$MERGED_BOUNDARY_LIMIT" ] || return 1
+
+  for commit in $(git rev-list "${base}..refs/heads/${branch}" 2>/dev/null); do
+    tree="$(git rev-parse "${commit}^{tree}" 2>/dev/null || printf '')"
+    [ -n "$tree" ] || continue
+    synth="$(env "${MERGED_IDENTITY[@]}" git commit-tree "$tree" -p "$base" -m _ 2>/dev/null || printf '')"
+    [ -n "$synth" ] || continue
+    verdict="$(git cherry "$head_ref" "$synth" 2>/dev/null || printf '')"
+    case "$verdict" in
+      '-'*)
+        printf '%s\n' "$commit"
+        return 0
+        ;;
+    esac
+  done
+  return 1
+}

@@ -89,7 +89,9 @@ second run on a branch whose pull request is open does nothing.
    branches off the head branch, each later one off the branch before it, and
    each pull request is based on its parent. Take one layer all the way to an
    open pull request before starting the next.
-4. Stage by path and commit per layer. The message says what the change does,
+4. Stage by path and commit per layer. `origin sync --message <text>` commits
+   a dirty tree when that is all that is in the way; it takes tracked changes
+   only and never stages an untracked file. The message says what the change does,
    not how the session went. A decision file under `.claude/decisions/` goes in
    with the work it explains.
 5. Push the way `sync` does: `git push --set-upstream <remote>
@@ -145,6 +147,7 @@ when the user asked for it.
 
 ```bash
 origin sync                              # rebase onto the head branch
+origin sync --branch <name>              # ...or take the unabsorbed rest onto a new branch
 origin sync --squash --probe             # would the carry apply cleanly? changes nothing
 origin sync --squash --branch <name>     # carry the whole change onto a new branch
 origin sync --push                       # plain the first time, leased after
@@ -156,6 +159,12 @@ onto it**. A squash merge rewrites the branch into a single commit, so git has
 no patch left to match, and a rebase replays work the head branch already has
 and stops on it commit after commit. Those conflicts are not real and resolving
 them is guesswork.
+
+When `sync` says the head branch already has part of the branch, it has found
+a squash-merged pull request with work added after it. A rebase would replay
+the absorbed commits and stop on each one. `origin sync --branch <name>`
+cherry-picks what is left onto a new branch and keeps the commits;
+`--squash --branch <name>` makes it one commit. The old branch never moves.
 
 When `sync` says a branch is finished, do not reach for git. The next change
 starts on a branch of its own: `origin new <name>`, with a name the user picks,

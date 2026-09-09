@@ -11,8 +11,19 @@ person does in a terminal has left it.
   `--no-track`. `nb` too. Same shape as the `gnb` shell function. With no name
   it takes `<branch>-YYYY-MM-DD_NNN` from the branch you are on, at the first
   number free today.
-- `origin renew` is `origin sync`, and does one thing: fetch, fast-forward the
-  head branch or rebase this branch onto it, and push with a lease when asked.
+- `origin sync` reads how much of the branch the head branch already has. A
+  pull request squash-merged with work added after it leaves the first commits
+  upstream in a form no patch-id matches, and a rebase replays them and stops
+  on each. `--branch <name>` cherry-picks the rest onto a new branch, keeping
+  the commits; `--squash --branch <name>` makes it one.
+- `origin sync --commit` commits the tracked changes first, asking for the
+  message at the terminal. `--message <text>` gives one instead, and is the
+  only form `--yes` accepts. Untracked files are listed and left.
+- A merge, cherry-pick or revert in progress is refused by name, as a rebase
+  already was.
+- `origin renew` is `origin sync`, and its own job is one thing: fetch,
+  fast-forward the head branch or rebase this branch onto it, and push with a
+  lease when asked.
   A finished branch is refused, naming `origin new`. `--auto` is gone, and the
   generated names moved to `new`; a carry takes `--branch <name>`.
 - `/origin:pr` reads what a session changed, splits it into layers when it has
@@ -33,6 +44,40 @@ person does in a terminal has left it.
   `claude plugin update` keeps current.
 
 ### Choices
+
+The head branch having _part_ of a branch is the state that had no name here.
+Fully merged was caught, and nothing upstream was caught; between them sat the
+common one - a pull request merged, then more work - which took the rebase
+route and stopped on commit after commit that the head branch already had in
+rewritten form.
+
+Reading it needs no forge. `git cherry` compares patch-ids, and a squash merge
+rewrites N commits into one patch that matches none of them, so per-commit
+questions all answer "new". The tree answers: replaying the branch's tree at
+commit i as one commit on the merge base produces exactly the patch the squash
+made, and `git cherry` recognises that. Scanned from the tip down, taking the
+highest yes, because the first commit of a squashed pair is not upstream alone
+while the pair is - which also rules out a binary search.
+
+alt: ask the forge for the merged pull request's head sha. One API call, a
+signed-in CLI, no answer on GitLab-without-glab or offline, and wrong on a
+branch reused for a second pull request. The forge is still worth a sentence in
+the message; it is not worth the detection.
+
+The remedy keeps the commits. A carry flattens the branch into one commit
+because it has no boundary to work from; with a boundary there is one, so the
+commits after it cherry-pick onto a fresh branch as themselves. Both routes
+leave the branch they came from where it is.
+
+A cost this carries: one `commit-tree` and one `git cherry` per commit on the
+rebase route, so a long branch pays for a scan that will find nothing.
+`MERGED_BOUNDARY_LIMIT` stops it at 50 and the rebase runs as before.
+
+Nothing invents a commit message. `--commit` asks at a terminal and `--message`
+takes one, and `--yes` answers neither: a yes-or-no default is a different kind
+of thing from prose somebody has to write. Untracked files are never staged,
+for the reason `pr` gives: `.env` and a build directory look exactly like a
+file somebody meant to add.
 
 A command file earns its place by holding something the model has to decide.
 `merge` writes a body from the change; `sync` routes a conflict and asks which

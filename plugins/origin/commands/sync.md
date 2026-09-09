@@ -1,7 +1,7 @@
 ---
 name: sync
 description: Fetch, put this branch back on top of the head branch, and push it with a lease
-argument-hint: "[--squash --branch <name>] [--autostash] [--push]"
+argument-hint: "[--branch <name>] [--squash] [--commit | --message <text>] [--push]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*), Bash(git rebase --continue), Bash(git rebase --abort), Bash(git reset --merge), Bash(git branch:*), Read, Edit, AskUserQuestion
 ---
 
@@ -11,17 +11,35 @@ Bring the current branch up to date. Arguments: `$ARGUMENTS`
 ${CLAUDE_PLUGIN_ROOT}/bin/origin sync $ARGUMENTS --yes
 ```
 
-It fetches, resolves the head branch, and either fast-forwards the head branch
-or rebases this one onto it. Nothing here runs `git reset --hard`.
+It fetches, resolves the head branch, and picks a route from what the branch
+is. Nothing here runs `git reset --hard`.
 
 ## What it comes back with
 
 - **Succeeded.** Say so in one line, and name the branch you are now on.
 - **Refuses because the tree is dirty.** List what is uncommitted in your
-  reply, since the user does not see command output. Offer `--autostash`. Do
-  not commit on the user's behalf.
+  reply, since the user does not see command output. Two ways on, and both are
+  the user's to pick: `--autostash` carries it across, and
+  `--message <text>` commits the tracked changes first. Write the message
+  yourself from the diff, show it, and pass it only once they agree. Untracked
+  files are never staged; the command lists them and leaves them.
 - **Refuses because the head branch has local commits.** Those commits are the
   finding. Write them out in your reply and ask. Do not discard them.
+- **Refuses because part of the branch is already upstream.** Its pull request
+  was merged and work carried on afterwards, so the head branch holds the first
+  commits in squashed form. It names how many are absorbed and how many are
+  left, and stops before a rebase that would replay the absorbed ones. Put the
+  choice to the user and give it a name:
+
+  - `origin sync --branch <name> --yes` cherry-picks the commits after the
+    boundary onto a new branch, keeping them as they are.
+  - `origin sync --squash --branch <name> --yes` carries the whole difference
+    as one commit instead.
+
+  Either way the old branch does not move. A stopped cherry-pick is yours to
+  resolve, and every hunk in it is genuine: the absorbed commits were never
+  replayed.
+
 - **Refuses because the branch is finished.** Its change is already in the head
   branch, so its commits cannot go back on top of it. The next change starts on
   a branch of its own: `origin new <name>`, with a name the user chooses or

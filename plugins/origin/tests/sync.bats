@@ -449,13 +449,37 @@ setup_replay_conflict() {
   upstream_moves
 }
 
-@test "a rebase conflict offers the carry when the carry would work" {
+@test "the replay conflict is caught before the rebase, not during it" {
+  # Two commits squash-merged and one added after: the shape the boundary scan
+  # exists for. The rebase that would stop on the first two never starts.
   setup_replay_conflict
 
   origin_cli sync --yes
   [ "$status" -eq 1 ]
+  [[ "$stderr" == *"squashed into one"* ]]
+  [[ "$stderr" == *"origin sync --branch <name>"* ]]
+  run git rev-parse --absolute-git-dir
+  [ ! -d "${output}/rebase-merge" ]
+  [ ! -d "${output}/rebase-apply" ]
+}
+
+@test "the rest of a replay-conflicting branch keeps its own commits" {
+  setup_replay_conflict
+
+  origin_cli sync --yes --branch the-rest
+  [ "$status" -eq 0 ]
+  [ "$(git rev-list --count refs/remotes/origin/main..HEAD)" = "1" ]
+  run git log --format=%s -1
+  [ "$output" = "Three" ]
+}
+
+@test "a branch too long to scan falls back to the rebase and its offer" {
+  setup_replay_conflict
+
+  MERGED_BOUNDARY_LIMIT=0 origin_cli sync --yes
+  [ "$status" -eq 1 ]
   [[ "$stderr" == *"stopped on a conflict"* ]]
-  [[ "$stderr" == *"origin sync --squash --auto"* ]]
+  [[ "$stderr" == *"origin sync --squash --branch <name>"* ]]
   # And it says what the offer costs.
   [[ "$stderr" == *"becoming one"* ]]
   git rebase --abort
@@ -564,3 +588,196 @@ setup_replay_conflict() {
   [[ "$stderr" == *"head branch"* ]]
 }
 
+
+# --------------------------------------------------------------------------
+# A branch the head branch has only part of
+# --------------------------------------------------------------------------
+
+# Two commits squash-merged, two added afterwards. `git cherry` marks all four
+# as new, because a squash rewrites them into one patch nothing matches.
+partly_absorbed() {
+  git checkout -qb feature
+  commit_file a.txt yes "A"
+  commit_file b.txt yes "B"
+  git checkout -q main
+  git merge -q --squash feature
+  git commit -qm "A and B, squashed (#1)"
+  git push -q origin main
+  git checkout -q feature
+  commit_file c.txt yes "C"
+  commit_file d.txt yes "D"
+  git fetch -q origin
+}
+
+@test "a partly absorbed branch is named rather than rebased" {
+  partly_absorbed
+
+  origin_cli sync --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"2 commit(s) of feature"* ]]
+  [[ "$stderr" == *"origin sync --branch <name>"* ]]
+  [[ "$stderr" == *"--squash --branch <name>"* ]]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature" ]
+}
+
+@test "the rest goes onto a new branch as its own commits" {
+  partly_absorbed
+  local before
+  before="$(git rev-parse feature)"
+
+  origin_cli sync --yes --branch the-rest
+  [ "$status" -eq 0 ]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "the-rest" ]
+
+  # C and D, still two commits, on top of the squashed one.
+  [ "$(git rev-list --count refs/remotes/origin/main..HEAD)" = "2" ]
+  run git log --format=%s refs/remotes/origin/main..HEAD
+  [[ "$output" == *"D"* ]]
+  [[ "$output" == *"C"* ]]
+  # Everything is there: a.txt and b.txt from the squash, c.txt and d.txt from
+  # the pick.
+  [ -f a.txt ] && [ -f b.txt ] && [ -f c.txt ] && [ -f d.txt ]
+  # And the branch it came from has not moved.
+  [ "$(git rev-parse feature)" = "$before" ]
+}
+
+@test "the new branch does not take the head branch as its upstream" {
+  partly_absorbed
+
+  origin_cli sync --yes --branch the-rest
+  [ "$status" -eq 0 ]
+  run git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}'
+  [ "$status" -ne 0 ]
+}
+
+@test "a name already in use is refused before anything is created" {
+  partly_absorbed
+  git branch the-rest
+
+  origin_cli sync --yes --branch the-rest
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"already a branch called the-rest"* ]]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature" ]
+}
+
+@test "a dirty tree is refused rather than carried into the pick" {
+  partly_absorbed
+  printf 'work in progress\n' >>README.md
+
+  origin_cli sync --yes --branch the-rest
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"--commit"* ]]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature" ]
+}
+
+@test "a fully absorbed branch is still finished, not partly absorbed" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  squash_merge_branch feature
+  git checkout -q feature
+
+  origin_cli sync --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"squash-merged"* ]]
+  [[ "$stderr" == *"origin new <name>"* ]]
+}
+
+@test "a branch with nothing of it upstream is rebased as before" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  upstream_moves
+
+  origin_cli sync --yes
+  [ "$status" -eq 0 ]
+  run git merge-base --is-ancestor refs/remotes/origin/main refs/heads/feature
+  [ "$status" -eq 0 ]
+}
+
+# --------------------------------------------------------------------------
+# Committing what is in the tree
+# --------------------------------------------------------------------------
+
+@test "--message commits the tracked changes and then syncs" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  upstream_moves
+  printf 'more\n' >>mine.txt
+
+  origin_cli sync --yes --message "Say more"
+  [ "$status" -eq 0 ]
+  run git log --format=%s -1 feature
+  [ "$output" = "Say more" ]
+  run git status --porcelain
+  [ -z "$output" ]
+  run git merge-base --is-ancestor refs/remotes/origin/main refs/heads/feature
+  [ "$status" -eq 0 ]
+}
+
+@test "untracked files are listed and left where they are" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  printf 'more\n' >>mine.txt
+  printf 'secret\n' >.env
+
+  origin_cli sync --yes --message "Say more"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"Untracked, and left alone"* ]]
+  [[ "$stderr" == *".env"* ]]
+  run git ls-files --error-unmatch .env
+  [ "$status" -ne 0 ]
+}
+
+@test "--commit with no terminal says which flag carries the message" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  printf 'more\n' >>mine.txt
+
+  origin_cli sync --yes --commit
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"--message <text>"* ]]
+  run git status --porcelain
+  [ -n "$output" ]
+}
+
+@test "a dirty tree with neither flag names both of them" {
+  git checkout -qb feature
+  commit_file mine.txt yes "My work"
+  printf 'more\n' >>mine.txt
+
+  origin_cli sync --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"--commit"* ]]
+  [[ "$stderr" == *"--autostash"* ]]
+}
+
+# --------------------------------------------------------------------------
+# Half-finished operations
+# --------------------------------------------------------------------------
+
+@test "a cherry-pick in progress is refused by name" {
+  git checkout -qb feature
+  commit_file shared.txt theirs "Theirs"
+  git checkout -q main
+  commit_file shared.txt ours "Ours"
+  run git cherry-pick feature
+  [ -f "$(git rev-parse --absolute-git-dir)/CHERRY_PICK_HEAD" ]
+
+  origin_cli sync --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"cherry-pick is already in progress"* ]]
+  [[ "$stderr" == *"git cherry-pick --abort"* ]]
+}
+
+@test "a merge in progress is refused by name" {
+  git checkout -qb feature
+  commit_file shared.txt theirs "Theirs"
+  git checkout -q main
+  commit_file shared.txt ours "Ours"
+  run git merge feature
+  [ -f "$(git rev-parse --absolute-git-dir)/MERGE_HEAD" ]
+
+  origin_cli sync --yes
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"merge is already in progress"* ]]
+  [[ "$stderr" == *"git merge --abort"* ]]
+}
