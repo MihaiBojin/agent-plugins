@@ -18,8 +18,6 @@ setup() {
   . "${BATS_TEST_DIRNAME}/../lib/repo.sh"
   # shellcheck source=../lib/merged.sh
   . "${BATS_TEST_DIRNAME}/../lib/merged.sh"
-  # shellcheck source=../lib/worktree.sh
-  . "${BATS_TEST_DIRNAME}/../lib/worktree.sh"
 }
 
 # A branch carrying a commit nobody merged, with a tag of the same name left on
@@ -121,46 +119,3 @@ shadowed_branch() {
   [ "$output" = "1" ]
 }
 
-@test "a branch no longer at the recorded sha is not deleted" {
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  git checkout -q main
-
-  run worktree_delete_branch feature deadbee merged "$(git rev-parse main)"
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"not deleting feature"* ]]
-  git show-ref --verify --quiet refs/heads/feature
-}
-
-@test "a branch whose short sha is also a ref name is still deleted" {
-  # `git rev-parse a1b2c3d` reads a branch or tag called `a1b2c3d` before it
-  # reads the object, so the guard is given the whole sha rather than the
-  # spelling the restore line carries.
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  git checkout -q main
-  git merge -q --no-ff feature -m "Merge feature"
-  local sha
-  sha="$(git rev-parse --short refs/heads/feature)"
-  git tag "$sha" main
-
-  run worktree_delete_branch feature "$sha" merged "$(git rev-parse refs/heads/feature)"
-  [ "$status" -eq 0 ]
-  [[ "$output" != *"not deleting"* ]]
-  run git show-ref --verify --quiet refs/heads/feature
-  [ "$status" -ne 0 ]
-}
-
-@test "a branch at the recorded sha is deleted, so the guard is not a refusal" {
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  git checkout -q main
-  git merge -q --no-ff feature -m "Merge feature"
-  local sha
-  sha="$(git rev-parse --short refs/heads/feature)"
-
-  run worktree_delete_branch feature "$sha" merged "$(git rev-parse refs/heads/feature)"
-  [ "$status" -eq 0 ]
-  run git show-ref --verify --quiet refs/heads/feature
-  [ "$status" -ne 0 ]
-}

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# origin - git worktrees, pull request merges, and keeping a branch on top of
-# the head branch, from one CLI that both a person and an agent can run.
+# origin - starting a branch, keeping it on top of the head branch, and merging
+# its pull request, from one CLI that both a person and an agent can run.
 
 set -euo pipefail
 
@@ -33,36 +33,24 @@ export ORIGIN_ROOT
 . "${ORIGIN_ROOT}/lib/forge.sh"
 # shellcheck source=SCRIPTDIR/../lib/merged.sh
 . "${ORIGIN_ROOT}/lib/merged.sh"
-# shellcheck source=SCRIPTDIR/../lib/worktree.sh
-. "${ORIGIN_ROOT}/lib/worktree.sh"
 # shellcheck source=SCRIPTDIR/../lib/merge.sh
 . "${ORIGIN_ROOT}/lib/merge.sh"
-# shellcheck source=SCRIPTDIR/../lib/renew.sh
-. "${ORIGIN_ROOT}/lib/renew.sh"
-# shellcheck source=SCRIPTDIR/../lib/doctor.sh
-. "${ORIGIN_ROOT}/lib/doctor.sh"
+# shellcheck source=SCRIPTDIR/../lib/sync.sh
+. "${ORIGIN_ROOT}/lib/sync.sh"
+# shellcheck source=SCRIPTDIR/../lib/new.sh
+. "${ORIGIN_ROOT}/lib/new.sh"
 
 usage() {
   cat >&2 <<'HELP'
-origin - git worktrees, pull requests, and staying on top of the head branch
+origin - a branch, on top of the head branch, and the pull request it becomes
 
 USAGE
   origin <command> [flags]
 
-WORKTREES
-  git-worktree add <branch>      Create a worktree and print its path
-  git-worktree remove <what>     Remove a finished worktree, delete a merged branch
-  git-worktree list [--json]     Every worktree: branch, drift, state, pull request
-  git-worktree path <branch>     Print where that branch's worktree is
-  git-worktree move <new>        Rename this worktree's branch, and move it to match
-
-  Each takes `gw <sub>` and a two-letter form: gwa, gwr, gwl, gwp, gwm.
-
-EVERYTHING ELSE
-  prune                          Say which worktrees are finished, and why
+COMMANDS
+  new <name>                     Fetch, then branch <name> off the head branch
+  sync                           Fetch, rebase onto the head branch, push with a lease
   merge [<number>]               Merge a pull request with a written body
-  renew                          Put this branch back on top of the head branch
-  doctor                         Check git, jq, the remote, the forge, permissions
   help                           This
 
 EVERYWHERE
@@ -72,36 +60,19 @@ EVERYWHERE
   --verbose    Print each command before running it
   --no-color   Plain text
 
-  `git-worktree list` also takes --json; it is the only output anything parses.
+WHAT IT WILL NOT DO
+  No `git reset --hard`, no `git clean --force`, no bare `--force` push, no
+  force delete of a branch nothing has proved merged. No flag reaches these,
+  `--yes` included, and nothing here resolves a conflict for you.
 
-WHAT GOES
-  Anything about to be deleted is printed first, with the command that puts it
-  back, whatever --quiet and --yes say. --yes answers for what git can restore.
-  It does not answer for what git never tracked: that stops and asks, or takes
-  a flag typed on purpose.
-
-LAYOUT
-  Worktrees live at <PARENT>/.worktrees/<branch>/<repo>, where PARENT holds the
-  main checkout. A slash in a branch name nests.
+WORKTREES
+  Not here. `gwa`, `gwr`, `gwl` and `gwm` are shell commands, from
+  https://github.com/MihaiBojin/shell-plugins
 
 CONFIGURATION
   git config checkout.defaultRemote <name>     Which remote this repo belongs to
   git remote set-head <remote> --auto          Record which branch is the default
 HELP
-}
-
-worktree_dispatch() {
-  local subcommand="${1:-}"
-  [ "$#" -gt 0 ] && shift
-  case "$subcommand" in
-    add) worktree_add "$@" ;;
-    remove | rm) worktree_remove "$@" ;;
-    list | ls) worktree_list "$@" ;;
-    path) worktree_path "$@" ;;
-    move | mv) worktree_move "$@" ;;
-    '' | -h | --help) usage ;;
-    *) die "git-worktree ${subcommand} is not a thing; try add, remove, list, path or move" ;;
-  esac
 }
 
 main() {
@@ -114,16 +85,9 @@ main() {
   shift
 
   case "$command" in
-    git-worktree | worktree | gw) worktree_dispatch "$@" ;;
-    gwa) worktree_add "$@" ;;
-    gwr) worktree_remove "$@" ;;
-    gwl) worktree_list "$@" ;;
-    gwp) worktree_path "$@" ;;
-    gwm) worktree_move "$@" ;;
-    prune) worktree_prune "$@" ;;
+    new | nb) new_main "$@" ;;
+    sync) sync_main "$@" ;;
     merge) merge_main "$@" ;;
-    renew) renew_main "$@" ;;
-    doctor) doctor "$@" ;;
     help | -h | --help) usage ;;
     version | -V | --version) printf 'origin %s\n' "$(origin_version)" ;;
     *) die "there is no '${command}' command; run 'origin --help'" ;;

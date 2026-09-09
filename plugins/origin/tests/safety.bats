@@ -151,7 +151,7 @@ setup() {
 # Global options come before the subcommand. A guard that reads $1 as the
 # subcommand reads `-C` as one, matches nothing, and lets the command through -
 # so every rule above had a one-flag bypass until `git_guard` learned to skip
-# them. `gwm` is the first command here that needs `git -C`, which is what
+# them. A rename needed `git -C`, which is what
 # turned a latent hole into a reachable one.
 @test "a leading -C does not carry a command past the guard" {
   run git_guard -C /tmp reset --hard HEAD
@@ -177,7 +177,7 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
-@test "the globals gwm needs do not refuse the commands it runs" {
+@test "the globals a rename needs do not refuse the commands it runs" {
   run git_guard -C /tmp branch -m old new
   [ "$status" -eq 0 ]
 

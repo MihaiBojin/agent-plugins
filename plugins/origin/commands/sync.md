@@ -1,32 +1,49 @@
 ---
-name: renew
-description: Put this branch back on top of the head branch, or start the next one
-argument-hint: "[--squash] [--auto | --branch <name>] [--autostash] [--push]"
+name: sync
+description: Fetch, put this branch back on top of the head branch, and push it with a lease
+argument-hint: "[--branch <name>] [--squash] [--commit | --message <text>] [--push]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*), Bash(git rebase --continue), Bash(git rebase --abort), Bash(git reset --merge), Bash(git branch:*), Read, Edit, AskUserQuestion
 ---
 
 Bring the current branch up to date. Arguments: `$ARGUMENTS`
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/bin/origin renew $ARGUMENTS --yes
+${CLAUDE_PLUGIN_ROOT}/bin/origin sync $ARGUMENTS --yes
 ```
 
-It fetches, resolves the head branch, and takes one of three routes depending
-on what the branch is. Nothing here runs `git reset --hard`.
+It fetches, resolves the head branch, and picks a route from what the branch
+is. Nothing here runs `git reset --hard`.
 
 ## What it comes back with
 
 - **Succeeded.** Say so in one line, and name the branch you are now on.
 - **Refuses because the tree is dirty.** List what is uncommitted in your
-  reply, since the user does not see command output. Offer
-  `--autostash`. Do not commit on the user's behalf.
+  reply, since the user does not see command output. Two ways on, and both are
+  the user's to pick: `--autostash` carries it across, and
+  `--message <text>` commits the tracked changes first. Write the message
+  yourself from the diff, show it, and pass it only once they agree. Untracked
+  files are never staged; the command lists them and leaves them.
 - **Refuses because the head branch has local commits.** Those commits are the
   finding. Write them out in your reply and ask. Do not discard them.
+- **Refuses because part of the branch is already upstream.** Its pull request
+  was merged and work carried on afterwards, so the head branch holds the first
+  commits in squashed form. It names how many are absorbed and how many are
+  left, and stops before a rebase that would replay the absorbed ones. Put the
+  choice to the user and give it a name:
+
+  - `origin sync --branch <name> --yes` cherry-picks the commits after the
+    boundary onto a new branch, keeping them as they are.
+  - `origin sync --squash --branch <name> --yes` carries the whole difference
+    as one commit instead.
+
+  Either way the old branch does not move. A stopped cherry-pick is yours to
+  resolve, and every hunk in it is genuine: the absorbed commits were never
+  replayed.
+
 - **Refuses because the branch is finished.** Its change is already in the head
-  branch, so its commits cannot go back on top of it and the next change needs
-  a branch of its own. Re-run with `--auto`, or with `--branch <name>` if the
-  user has a name in mind. Say which branch you started and that the old one is
-  untouched.
+  branch, so its commits cannot go back on top of it. The next change starts on
+  a branch of its own: `origin new <name>`, with a name the user chooses or
+  agrees to. Say that this branch is untouched.
 - **Stopped on a conflict.** Below.
 
 ## A conflict is yours to try
@@ -40,7 +57,7 @@ wasted work on content that is already upstream:
 
 ```bash
 git rebase --abort
-${CLAUDE_PLUGIN_ROOT}/bin/origin renew --squash --probe --yes
+${CLAUDE_PLUGIN_ROOT}/bin/origin sync --squash --probe --yes
 ```
 
 It prints one word and changes nothing.
@@ -55,11 +72,12 @@ It prints one word and changes nothing.
 
   Say what is behind the choice: the head branch already has some of this, so
   the rebase is replaying work that is upstream and will keep stopping on it.
-  On **Carry**, run `origin renew --squash --auto --yes`. On **Resolve**, re-run
-  `origin renew --yes` to get back to the conflict and work through it.
+  On **Carry**, ask for a name and run
+  `origin sync --squash --branch <name> --yes`. On **Resolve**, re-run
+  `origin sync --yes` to get back to the conflict and work through it.
 
 - **`conflicts`** — no route avoids it. Say so and resolve the rebase by hand:
-  re-run `origin renew --yes`, resolve, `git add` the paths,
+  re-run `origin sync --yes`, resolve, `git add` the paths,
   `git rebase --continue`, and keep going through any further stops.
 
 - **`unknown`** — git here is too old to answer. Say so and resolve by hand.
@@ -76,27 +94,23 @@ what the two sides were trying to do, and what you could not decide between.
 
 ## Naming
 
-`--auto` names the next branch `<branch>-YYYY-MM-DD_NNN`, taking the first free
-number for today. Renewing an already-renewed branch replaces the suffix rather
-than adding a second one. Pass `--branch <name>` when the user gives a name.
+A carry lands on a branch the user names, and `--branch <name>` is the only way
+to give it one. Nothing here invents a branch name.
 
 ## Pushing
 
 `--push` is opt-in and picks its own push. A branch the remote already has goes
 with `--force-with-lease --force-if-includes`, and the output carries the sha
 it replaced beside the command that puts it back. Copy both into your reply. A
-branch the
-remote has never seen goes plainly.
+branch the remote has never seen goes plainly.
 
 Neither is refused for ordinary reasons: a branch pushed by hand without `-u`,
-or one `renew` has just rebased, pushes. A refusal means the branch on the
-remote carries commits this clone never had, and the output names the next free
-number. Do exactly what it says:
+or one `sync` has just rebased, pushes. A refusal means the branch on the
+remote carries commits this clone never had. Do exactly what it says:
 
 ```bash
-git branch -m <the name it named>
-${CLAUDE_PLUGIN_ROOT}/bin/origin renew --push --yes
+git branch -m <another name>
+${CLAUDE_PLUGIN_ROOT}/bin/origin sync --push --yes
 ```
 
-Repeat if that is refused too, and tell the user which name the branch ended up
-with.
+Tell the user which name the branch ended up with.

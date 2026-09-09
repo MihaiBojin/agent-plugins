@@ -1,6 +1,8 @@
 ---
 name: origin
-description: Create, list and remove git worktrees; merge a pull request or merge request with a written body; put a branch back on top of the head branch, or start the next one when it cannot go back. Use when adding or cleaning up worktrees, merging a PR/MR, rebasing onto main, catching a branch up, starting the next branch after one was merged, deciding whether a branch is safe to delete, or diagnosing gh/glab authentication. Covers GitHub via gh and GitLab via glab; the worktree commands need neither.
+description: Start a branch off a freshly fetched head branch; commit a session's work and open the pull request, stacked when it has layers; put a branch back on top of the head branch and push it with a lease; merge a pull request or merge request with a body written from the change. Use when starting a branch, opening or stacking a PR/MR, rebasing onto main, catching a branch up, or merging. Covers GitHub via gh and GitLab via glab. Worktrees are not here: gwa, gwr, gwl and gwm are shell commands the user runs.
+user-invocable: false
+allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git worktree list:*), Bash(git status:*), Bash(git branch:*)
 ---
 
 # origin
@@ -13,10 +15,13 @@ they have already been handled.
 ${CLAUDE_PLUGIN_ROOT}/bin/origin --help
 ```
 
-Every subcommand takes `--dry-run`, `--yes`, `--quiet` and `--verbose`; `gwl`
-adds `--json`, and it is the only subcommand with machine-readable output.
-Nothing reads from a terminal under `--yes`, so it never hangs. Commentary goes
-to stderr and data to stdout, so `--json` and `--quiet` are always parseable.
+Every subcommand takes `--dry-run`, `--yes`, `--quiet` and `--verbose`. Nothing
+reads from a terminal under `--yes`, so it never hangs. Commentary goes to
+stderr and data to stdout, so `--quiet` is always parseable.
+
+Worktrees are not here. `gwa`, `gwr`, `gwl` and `gwm` are shell commands the
+user runs in a terminal; if a session needs one, say so rather than reaching
+for `git worktree` yourself.
 
 ## Printing means writing it in your own reply
 
@@ -29,74 +34,77 @@ So reproduce the lines. Never write "as above", "as printed above", or "see
 the output" — there is nothing above from where the user is sitting. Somebody
 asked to approve what they cannot see has not been asked.
 
-## Before anything is deleted
+## Before anything is replaced
 
-Every destructive step prints a `This will delete:` block first — the path, the
-files, the branch, the sha, and the command that puts each back. It prints
-under `--yes` and `--quiet` as well. **Copy it into your reply.** It is the
-only record of what went.
+Nothing here deletes a branch or a worktree. What it does replace, it prints
+first: a rebase moves the branch off the commits it was on, and a leased push
+replaces what the remote holds. Both print a `This will replace:` block naming
+the sha and the command that puts it back, under `--yes` and `--quiet` as well.
+**Copy it into your reply.** It is the only record of where the branch was.
 
-`--yes` answers for what git can restore: a branch delete that printed its
-restore command, a rebase that is in the reflog, a merge that lives on the
-forge. It does not answer for content git never tracked. A worktree holding
-ignored files — `.env`, `node_modules/`, a build directory — stops even under
-`--yes`, lists them, and names `--delete-ignored`. Show the user that list and
-pass the flag only after they have agreed to those exact paths.
+`--yes` answers for what git can restore: a rebase that is in the reflog, a
+push whose old sha was printed, a merge that lives on the forge. Say what it
+answered for.
 
 ## Which one
 
 | Wanted                      | Command                   |
 | --------------------------- | ------------------------- |
-| A worktree for a branch     | `origin gwa <branch>`     |
-| What worktrees exist        | `origin gwl --json`       |
-| Get rid of a finished one   | `origin gwr <branch>`     |
+| A branch for new work       | `origin new [<name>]`     |
+| Open a pull request         | below, and `/origin:pr`   |
+| Catch a branch up with main | `origin sync`             |
+| Push it afterwards          | `origin sync --push`      |
 | Merge a pull request        | `origin merge [<number>]` |
-| Catch a branch up with main | `origin renew`            |
-| Start the next branch       | `origin renew --auto`     |
-| Something is misconfigured  | `origin doctor`           |
 
-`gwa`/`gwr`/`gwl` also spell out as `origin git-worktree add|remove|list` and
-`origin gw add|remove|list`.
-
-## Worktrees
-
-They live at `<PARENT>/.worktrees/<branch>/<repo>`, where PARENT holds the main
-checkout. Repositories side by side share the root, one directory each. A slash
-in a branch name nests.
-
-`gwa` fetches first, checks out an existing branch rather than failing, creates
-new branches with `--no-track`, and refuses a destination owned by another
-repository. Its last line of stdout is the path:
+## Starting a branch
 
 ```bash
-cd "$(origin gwa my-branch --quiet)"
+origin new <name>
 ```
 
-`gwr` takes the branch or path to remove — there is no default — and removes it
-**only when its branch is finished**: merged, squash-merged, or with a pull
-request the forge calls merged or closed. A squash is the case git cannot see,
-because it rewrites the commits; the script detects it by replaying the
-branch's tree as one commit on the merge base and asking `git cherry` whether
-that patch is upstream. An unfinished branch means the checkout stays, because
-that is where the work is.
+It fetches, then branches off the head branch as the remote has it, with
+`--no-track` so `git push` cannot target the head branch. It refuses a name
+that is already a branch and a name git will not take.
 
-The branch is deleted only on git's own answer. The forge's is enough to drop
-the checkout and no more, because a pull request says nothing about the commits
-sitting on the local branch. The head branch is never deleted. A worktree
-holding it is removed on the ordinary rules, and the branch stays.
+Give it a name whenever the work has one - that is the name the user and every
+reviewer will see. With no name it derives `<branch>-YYYY-MM-DD_NNN` from the
+branch you are standing on, which is the continuation case: this branch is
+finished and the next change carries on from it. From the head branch it asks
+for a name instead.
 
-When it does delete a branch it prints `restore: git branch <name> <sha>`.
-Relay that line. It is the undo, and it is the reason no flag is needed to
-protect the branch.
+## Opening one
 
-A worktree with a detached HEAD has no branch. It goes when some ref already
-reaches the commit it sits on, and is refused when none does; `--force` removes
-it and prints `git worktree add --detach <path> <sha>`.
+There is no subcommand for this. It is git and the forge CLI, so nothing
+refuses on your behalf and `--force` is never the answer to a step that failed.
+It is repeatable: check what has already happened before each step, and a
+second run on a branch whose pull request is open does nothing.
 
-`--force` removes the checkout of an unfinished branch, and **never deletes a
-branch**. Do not pass it on your own initiative. It does not cover a worktree
-holding uncommitted work: that is refused outright, with the uncommitted files
-listed, because the checkout is the only place they exist.
+1. Read `git status --short` and `git diff`. Say what the change does, and
+   whether it is one change or several. Anything the session did not touch is
+   somebody else's: list those paths and ask before staging one. Never
+   `git add -A`.
+2. On the head branch, `git switch --create <name>`, named after the change.
+   On any other branch, that is the branch.
+3. Several layers stack by their base branches and nothing else: the first
+   branches off the head branch, each later one off the branch before it, and
+   each pull request is based on its parent. Take one layer all the way to an
+   open pull request before starting the next.
+4. Stage by path and commit per layer. `origin sync --message <text>` commits
+   a dirty tree when that is all that is in the way; it takes tracked changes
+   only and never stages an untracked file. The message says what the change does,
+   not how the session went. A decision file under `.claude/decisions/` goes in
+   with the work it explains.
+5. Push the way `sync` does: `git push --set-upstream <remote>
+refs/heads/<branch>` when the remote-tracking ref does not exist, and
+   `git push --force-with-lease --force-if-includes --set-upstream ...` when it
+   does. A refused first push means the name is taken: rename and push. A
+   refused leased push means somebody else's commits are there; stop.
+6. Write the title and body in your reply, ask, then `gh pr create --base
+<parent>` or `glab mr create --target-branch <parent>`.
+7. On GitHub, once every one is open,
+   `gh extension list | grep -q gh-stack && gh stack link` teaches GitHub the
+   chain. Best effort: never install the extension, never mention it on GitLab
+   or where it does not work, and never let it failing change what was filed.
 
 ## Merging
 
@@ -135,14 +143,14 @@ never waits: re-run `--gather` every 30 seconds until `refusals` empties, then
 merge the body they already approved. Stop the moment a check fails. Poll only
 when the user asked for it.
 
-## Renewing a branch
+## Catching a branch up
 
 ```bash
-origin renew                      # rebase onto the head branch
-origin renew --auto               # ...or start the next branch, when this one is finished
-origin renew --squash --probe     # would the carry apply cleanly? changes nothing
-origin renew --squash --auto      # carry the whole change onto a new branch
-origin renew --push               # plain the first time, leased after
+origin sync                              # rebase onto the head branch
+origin sync --branch <name>              # ...or take the unabsorbed rest onto a new branch
+origin sync --squash --probe             # would the carry apply cleanly? changes nothing
+origin sync --squash --branch <name>     # carry the whole change onto a new branch
+origin sync --push                       # plain the first time, leased after
 ```
 
 The route is decided by what the branch is. The one worth understanding is the
@@ -152,12 +160,19 @@ no patch left to match, and a rebase replays work the head branch already has
 and stops on it commit after commit. Those conflicts are not real and resolving
 them is guesswork.
 
-When `renew` says a branch is finished, do not reach for git. Re-run with
-`--auto`, or `--branch <name>` if the user has a name. The old branch is left
-exactly where it is.
+When `sync` says the head branch already has part of the branch, it has found
+a squash-merged pull request with work added after it. A rebase would replay
+the absorbed commits and stop on each one. `origin sync --branch <name>`
+cherry-picks what is left onto a new branch and keeps the commits;
+`--squash --branch <name>` makes it one commit. The old branch never moves.
+
+When `sync` says a branch is finished, do not reach for git. The next change
+starts on a branch of its own: `origin new <name>`, with a name the user picks,
+or a bare `origin new` to take `<branch>-YYYY-MM-DD_NNN`. The old branch is
+left exactly where it is.
 
 When a **rebase** conflict stops you, do not start resolving. Ask which route
-works first — `git rebase --abort` then `origin renew --squash --probe`, which
+works first — `git rebase --abort` then `origin sync --squash --probe`, which
 prints one word and changes nothing:
 
 - `clean` — the carry works. **Put it to the user**: carry the change as one
@@ -204,6 +219,7 @@ git config checkout.defaultRemote upstream   # which remote this repo belongs to
 git remote set-head upstream --auto          # which branch is the default
 ```
 
-Both shared with the `git-worktree` zsh plugin. Nothing else is configurable:
-the worktree root is always `<PARENT>/.worktrees`, and the forge is read from
-the remote's host and, failing that, from what `gh` and `glab` are signed in to.
+Both are git's own, so the `git-worktree` shell commands read the same answer,
+and a single-remote clone needs neither. Nothing else is configurable: the
+forge is read from the remote's host and, failing that, from what `gh` and
+`glab` are signed in to.

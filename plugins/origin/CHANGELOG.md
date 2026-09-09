@@ -2,6 +2,159 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.12.0
+
+The plugin is a branch, a pull request, and the two moves between them. What a
+person does in a terminal has left it.
+
+- `origin new [<name>]` fetches and branches off the head branch, with
+  `--no-track`. `nb` too. Same shape as the `gnb` shell function. With no name
+  it takes `<branch>-YYYY-MM-DD_NNN` from the branch you are on, at the first
+  number free today.
+- `origin sync` reads how much of the branch the head branch already has. A
+  pull request squash-merged with work added after it leaves the first commits
+  upstream in a form no patch-id matches, and a rebase replays them and stops
+  on each. `--branch <name>` cherry-picks the rest onto a new branch, keeping
+  the commits; `--squash --branch <name>` makes it one.
+- `origin sync --commit` commits the tracked changes first, asking for the
+  message at the terminal. `--message <text>` gives one instead, and is the
+  only form `--yes` accepts. Untracked files are listed and left.
+- A merge, cherry-pick or revert in progress is refused by name, as a rebase
+  already was.
+- `origin renew` is `origin sync`, and its own job is one thing: fetch,
+  fast-forward the head branch or rebase this branch onto it, and push with a
+  lease when asked.
+  A finished branch is refused, naming `origin new`. `--auto` is gone, and the
+  generated names moved to `new`; a carry takes `--branch <name>`.
+- `/origin:pr` reads what a session changed, splits it into layers when it has
+  them, and takes each one from branch to open pull request before starting the
+  next: branch off the layer below, stage by path, commit, push, open the pull
+  request based on its parent. `--no-branch`, `--no-push` and `--draft` control
+  it, and it is repeatable - a second run does only what is left. On GitHub,
+  `gh stack link` joins the pull requests into a stack afterwards when the
+  extension happens to be installed, best effort. The push is `sync`'s: plain
+  the first time, `--force-with-lease --force-if-includes` once the remote has
+  the branch.
+- Three slash commands, plus `help`: `pr`, `sync` and `merge`. The skill is
+  `user-invocable: false`, so it stops answering as a slash command beside
+  them, and carries the `allowed-tools` the removed command files had.
+- Worktrees are gone: `git-worktree add|remove|list|path|move`, `prune` and
+  their `gw*` spellings. So is `doctor`, and so is `install.sh`. `bin/` goes on
+  PATH from a line in a shell config pointing at the marketplace clone, which
+  `claude plugin update` keeps current.
+
+### Choices
+
+The head branch having _part_ of a branch is the state that had no name here.
+Fully merged was caught, and nothing upstream was caught; between them sat the
+common one - a pull request merged, then more work - which took the rebase
+route and stopped on commit after commit that the head branch already had in
+rewritten form.
+
+Reading it needs no forge. `git cherry` compares patch-ids, and a squash merge
+rewrites N commits into one patch that matches none of them, so per-commit
+questions all answer "new". The tree answers: replaying the branch's tree at
+commit i as one commit on the merge base produces exactly the patch the squash
+made, and `git cherry` recognises that. Scanned from the tip down, taking the
+highest yes, because the first commit of a squashed pair is not upstream alone
+while the pair is - which also rules out a binary search.
+
+alt: ask the forge for the merged pull request's head sha. One API call, a
+signed-in CLI, no answer on GitLab-without-glab or offline, and wrong on a
+branch reused for a second pull request. The forge is still worth a sentence in
+the message; it is not worth the detection.
+
+The remedy keeps the commits. A carry flattens the branch into one commit
+because it has no boundary to work from; with a boundary there is one, so the
+commits after it cherry-pick onto a fresh branch as themselves. Both routes
+leave the branch they came from where it is.
+
+A cost this carries: one `commit-tree` and one `git cherry` per commit on the
+rebase route, so a long branch pays for a scan that will find nothing.
+`MERGED_BOUNDARY_LIMIT` stops it at 50 and the rebase runs as before.
+
+Nothing invents a commit message. `--commit` asks at a terminal and `--message`
+takes one, and `--yes` answers neither: a yes-or-no default is a different kind
+of thing from prose somebody has to write. Untracked files are never staged,
+for the reason `pr` gives: `.env` and a build directory look exactly like a
+file somebody meant to add.
+
+A command file earns its place by holding something the model has to decide.
+`merge` writes a body from the change; `sync` routes a conflict and asks which
+way out; `pr` reads a session and decides what is one change and what is three.
+`gwa` printed a path and `doctor` printed a table: prose around a call that has
+no branch in it, maintained in a second place, and drifting from the CLI it
+wraps.
+
+The worktree commands existed three times over - here in bash, and in the zsh
+and fish `gw*` commands, which are the ones a person actually types. Two of the
+three were a tax on every change. The one that went is the one nobody typed:
+worktrees are a terminal activity, and an agent that needs one says so.
+
+`doctor` went with them. Half its table was worktree rows, and the half that
+was not existed so `pr` could read the head branch and the remote out of a
+diagnostic. Both are git's own now - `checkout.defaultRemote`,
+`branch.<name>.remote`, and `<remote>/HEAD` - which is what every command
+already reads and what the command files now read directly.
+
+alt: keep `doctor` for `gh auth` diagnosis. `gh auth status` says it, and a
+table that exists to explain one other command is a second thing to maintain.
+
+One command generates a branch name, and only when asked for none.
+`<branch>-YYYY-MM-DD_NNN` is right where the branch is a continuation - this
+one is merged, the next change carries on from it - and wrong as a default,
+because a name nobody chose ends up in a branch list, a pull request title and
+a merge commit. So `origin new` generates it, `origin new <name>` does not, and
+`sync --squash --branch <name>` has no generated form at all: a carry is a
+deliberate act with a name behind it.
+
+The stem drops a suffix before adding one, so a day of continuations reads as
+`feature-2026-09-09_001`, `_002`, `_003` rather than a name with three dates
+in it. Taken counts the remote as well as here, because the number exists to
+avoid a collision and half the collisions are somebody else's branch.
+
+`pr` is a command file with no subcommand behind it, which no other command
+here is. Committing and opening a pull request would be several hundred lines
+of bash whose every decision - which paths belong to the change, what the
+message says, whether this is one change or three - is the model's anyway. The
+cost is real and stated in the file: git runs directly, so `lib/common.sh`
+refuses nothing on its behalf.
+
+alt: `origin pr` as a subcommand, with the model writing only the message. It
+would own staging and pushing, and it would have to be told which paths the
+session touched, which is the one thing only the session knows.
+
+Stacking is base branches, so `pr` files a stack with plain `gh pr create
+--base` and `glab mr create --target-branch`, on either forge. `gh stack link`
+runs last and only when the extension is already installed, because it adds
+what GitHub shows and nothing the pull requests need. GitLab, an older `gh`, a
+repository where the extension does not work: the step is skipped without a
+word, and what was filed is the same either way.
+
+alt: `gh stack init` and `gh stack add` driving the branches from the start.
+It puts a GitHub extension in the path of every layer, including on GitLab, to
+arrive at the same chain of base branches.
+
+One layer reaches an open pull request before the next one starts. The other
+order - branch and commit everything, then push and file five - leaves five
+branches and no reviews when it stops half way.
+
+`user-invocable: false` rather than leaving the skill in the menu beside the
+commands. Two ways to invoke the same thing, one of which loads a document and
+the other of which runs a script, is a menu that has to be explained. Codex
+ignores the key and lists the skill anyway; it costs nothing there.
+
+No installer, because a symlink is a shim and a shim wants a stable path.
+`~/.claude/plugins/marketplaces/MihaiBojin/plugins/origin/bin` is one, kept
+current by `claude plugin update`, and a PATH line is what the rest of a shell
+config already looks like. The 106 lines it replaces had produced two bugs in
+one release: an `--uninstall` that deleted another clone's symlink under a
+success message, and a `--help` that printed the wrong line range.
+
+alt: keep `install.sh` for `--prefix` and `--uninstall`. Both are one command
+each at a shell, against a file with a tested-but-real capacity to delete the
+wrong link.
+
 ## 0.11.0
 
 - The `git-worktree-plugin.*` namespace is gone. `git config
@@ -53,6 +206,10 @@ say where a branch came from; `remote.pushDefault` says where it is going.
 The refusal reads the branch out of `git worktree list --porcelain` rather than
 out of the path, which is the same source every other command uses. The path
 segment is a label; the porcelain is the fact.
+
+The guard against `git worktree remove --force` stays in `lib/common.sh` with
+nothing left that removes a worktree. A refusal costs nothing to keep and the
+next command to want one would arrive without it.
 
 ## 0.10.0
 
