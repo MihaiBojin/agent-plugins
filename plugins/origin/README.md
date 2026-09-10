@@ -20,12 +20,13 @@ From a clone of this repository, point at that `bin/` instead.
 
 ## Commands
 
-|                           |                                                          |
-| ------------------------- | -------------------------------------------------------- |
-| `origin new <name>`       | Fetch, then branch `<name>` off the head branch          |
-| `origin sync`             | Fetch, rebase onto the head branch, push with a lease    |
-| `origin merge [<number>]` | Merge a pull request with a body written from the change |
-| `origin ci [<number>]`    | Read current PR/MR checks as JSON                        |
+|                              |                                                          |
+| ---------------------------- | -------------------------------------------------------- |
+| `origin new-branch [<name>]` | Fetch, then branch off the head branch                   |
+| `origin rotate`              | Print the name the next branch would take                |
+| `origin sync`                | Fetch, rebase onto the head branch, push with a lease    |
+| `origin merge [<number>]`    | Merge a pull request with a body written from the change |
+| `origin ci [<number>]`       | Read current PR/MR checks as JSON                        |
 
 Every command takes `--dry-run`, `--yes`, `--quiet`, `--verbose` and
 `--no-color`. Commentary goes to stderr and data to stdout, so `--quiet` is
@@ -165,7 +166,7 @@ merge rewrites the branch into one commit, so git can no longer match the
 branch's patches against it and a rebase replays work the head branch already
 has, stopping on commit after commit. That branch is finished, and `sync` says
 so and stops. The next change starts on a branch of its own, which is
-`origin new <name>`, and this one is left exactly where it is.
+`origin new-branch <name>`, and this one is left exactly where it is.
 
 `--squash --branch <name>` is the way through a rebase that keeps conflicting
 on content the head branch already has. It creates that branch off the head

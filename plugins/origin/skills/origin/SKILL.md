@@ -51,7 +51,8 @@ answered for.
 | Wanted                                  | Command                              |
 | --------------------------------------- | ------------------------------------ |
 | Finish publication through CI and merge | [ship-it skill](../ship-it/SKILL.md) |
-| A branch for new work                   | `origin new [<name>]`                |
+| A branch for new work                   | `origin new-branch [<name>]`         |
+| The name the next branch would take     | `origin rotate`                      |
 | Open a pull request                     | [push skill](../push/SKILL.md)       |
 | Catch a branch up with main             | `origin sync`                        |
 | Push it afterwards                      | `origin sync --push`                 |
@@ -65,7 +66,7 @@ mean the checks passed.
 ## Starting a branch
 
 ```bash
-origin new <name>
+origin new-branch <name>
 ```
 
 It fetches, then branches off the head branch as the remote has it, with
@@ -173,8 +174,9 @@ cherry-picks what is left onto a new branch and keeps the commits;
 `--squash --branch <name>` makes it one commit. The old branch never moves.
 
 When `sync` says a branch is finished, do not reach for git. The next change
-starts on a branch of its own: `origin new <name>`, with a name the user picks,
-or a bare `origin new` to take `<branch>-YYYY-MM-DD_NNN`. The old branch is
+starts on a branch of its own: `origin new-branch <name>`, with a name the user
+picks, or a bare `origin new-branch` to take the name `origin rotate` gives.
+The old branch is
 left exactly where it is.
 
 When a **rebase** conflict stops you, do not start resolving. Ask which route

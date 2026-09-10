@@ -74,8 +74,8 @@ untracked files, secrets, or build output into a commit with `git add -A`.
 
 ## Prepare the branch without losing work
 
-Fetch the resolved base remote and read its current default-branch ref. The
-command is `origin new`, not `origin new-branch`. For a new dedicated branch:
+Fetch the resolved base remote and read its current default-branch ref. For a
+new dedicated branch:
 
 ```bash
 <origin-bin> new <chosen-name> --yes

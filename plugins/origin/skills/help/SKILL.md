@@ -20,7 +20,8 @@ For example, `$origin:push --draft` opens a draft pull request in Codex CLI.
 The CLI also creates branches:
 
 ```bash
-origin new [<name>]     # fetch, then branch off the head branch
+origin new-branch [<name>]  # fetch, then branch off the head branch
+origin rotate               # the name the next branch would take
                         # no name: <branch>-YYYY-MM-DD_NNN, free number today
 origin ci [<number>]   # current PR/MR identity and checks as JSON
 origin --help

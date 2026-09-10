@@ -2,6 +2,32 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.16.0
+
+`origin new` is `origin new-branch`. The old spelling exits 1 naming the new
+one. `nb` still works. `skills/ship-it/SKILL.md` carried a note correcting a
+model that had guessed `new-branch`; the note is gone because the guess is now
+right.
+
+`origin rotate` prints the name the next branch would take and changes nothing:
+`<branch>-YYYY-MM-DD_NNN` from the branch you are on, at the first number free
+today, skipping any name already held here or on the remote. `new-branch` with
+no name calls it, so the two cannot drift.
+
+### Choices
+
+Splitting the name out of `new-branch` rather than leaving it inline. It is a
+question with an answer worth seeing before a branch exists, and a skill can now
+ask it without creating anything.
+
+`rotate` refuses on the head branch and on a detached HEAD, exactly as the
+inline version did. A branch off the head branch is new work rather than the
+next step in a chain, so it needs a name somebody chose.
+
+The old `new` dies rather than aliasing. An alias keeps two spellings alive in
+everything a model reads, and this plugin already retires names that way:
+`merge --force`, `merge --auto`, `merge --no-delete-branch`.
+
 ## 0.15.0
 
 Use `$origin:ship-it` in Codex or `/origin:ship-it` in Claude Code to finish
