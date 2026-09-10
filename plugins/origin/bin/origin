@@ -39,6 +39,8 @@ export ORIGIN_ROOT
 . "${ORIGIN_ROOT}/lib/sync.sh"
 # shellcheck source=SCRIPTDIR/../lib/new.sh
 . "${ORIGIN_ROOT}/lib/new.sh"
+# shellcheck source=SCRIPTDIR/../lib/ci.sh
+. "${ORIGIN_ROOT}/lib/ci.sh"
 
 usage() {
   cat >&2 <<'HELP'
@@ -51,6 +53,7 @@ COMMANDS
   new <name>                     Fetch, then branch <name> off the head branch
   sync                           Fetch, rebase onto the head branch, push with a lease
   merge [<number>]               Merge a pull request with a written body
+  ci [<number>]                  Read current PR/MR checks as JSON
   help                           This
 
 EVERYWHERE
@@ -88,6 +91,7 @@ main() {
     new | nb) new_main "$@" ;;
     sync) sync_main "$@" ;;
     merge) merge_main "$@" ;;
+    ci) ci_main "$@" ;;
     help | -h | --help) usage ;;
     version | -V | --version) printf 'origin %s\n' "$(origin_version)" ;;
     *) die "there is no '${command}' command; run 'origin --help'" ;;

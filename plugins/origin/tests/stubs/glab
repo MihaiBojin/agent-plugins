@@ -5,6 +5,7 @@
 
 set -euo pipefail
 printf 'glab %s\n' "$*" >>"${ORIGIN_STUB_LOG:-/dev/null}"
+printf '%s\n' "${GITLAB_REPO:-}" >"${ORIGIN_STUB_DIR}/glab-context"
 
 canned() {
   local file="${ORIGIN_STUB_DIR}/${1}"
@@ -72,10 +73,25 @@ case "${1:-}" in
       *) exit 0 ;;
     esac
     ;;
-  api) canned api.json | emit "$@" ;;
+  api)
+    case "${2:-}" in
+      projects/*/pipelines/*/jobs*) canned jobs.json | emit "$@" ;;
+      projects/*/pipelines/*) canned pipeline.json | emit "$@" ;;
+      projects/*/repository/commits/*) canned pipeline-commit.json | emit "$@" ;;
+      projects/*/repository/branches/*) canned pipeline-base.json | emit "$@" ;;
+      *) canned api.json | emit "$@" ;;
+    esac
+    ;;
   mr)
     case "${2:-}" in
-      view) canned mr.json | emit "$@" ;;
+      view)
+        if [ -n "${ORIGIN_STUB_GLAB_VIEW_THEN:-}" ] && [ -e "${ORIGIN_STUB_DIR}/.mr-viewed" ]; then
+          canned "$ORIGIN_STUB_GLAB_VIEW_THEN" | emit "$@"
+        else
+          : >"${ORIGIN_STUB_DIR}/.mr-viewed"
+          canned mr.json | emit "$@"
+        fi
+        ;;
       list) canned mr-list.json | emit "$@" ;;
       update)
         # `--ready` on a draft, the GitLab spelling. Same shape as the gh stub:

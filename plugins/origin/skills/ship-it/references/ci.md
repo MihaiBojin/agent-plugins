@@ -7,29 +7,33 @@ never fix an old head's failure or merge an unseen head.
 
 ## Read the forge
 
-For GitHub, use explicit `--repo <host/owner/target>` on review and run queries.
-`gh pr checks <number>` gives exit 0 for success, 1 for failure, and 8 for
-pending; inspect the returned results rather than treating any nonzero exit
-as a test failure. Read `gh pr view`'s `headRefOid`, `statusCheckRollup`,
-`mergeable`, and `mergeStateStatus` too. A required check absent from the
-rollup is still pending. An empty rollup is not proof of green immediately
-after publication. If this repository intentionally has no CI, establish that
-from its workflow and protection settings and report it explicitly.
+Run the CLI with the same target context used for publication and merge,
+as described in [remotes](remotes.md):
 
-For GitLab, use `glab mr view <number> --repo <target> --output json` and
-`glab ci get --merge-request <number> --repo <target> --with-job-details`.
-Track the MR's current source SHA and selected pipeline, including the pipeline
-project. Merged-result pipelines can have a generated merge SHA: verify their
-association with this MR and its current source/target instead of assuming
-the pipeline SHA must equal the source commit. Fetch failures from that
-pipeline's jobs, with pagination where needed. Do not use the latest pipeline
-for an unrelated branch or fork as the result for this review.
+```bash
+<origin-bin> ci <number>
+```
 
-Queued, running, pending, and mergeability-computing states require another
-poll. Skipped or neutral checks count only when the repository permits them.
-A blocked manual job, an approval gate, a required review, or absent access is
-a human/external blocker, not a green result. Never approve a privileged run,
-disable a check, weaken branch protection, or merge past failures automatically.
+It returns `pr`, `checks`, `pipeline`, `checksState`, and `stale`. Compare
+`pr.headSha` with the run record. `checksState` is `passed`, `failed`,
+`pending`, `blocked`, or `unknown`. A successful command means it read a
+snapshot; failing checks are data, not a command error. A read failure exits
+nonzero without a snapshot. Report that error without treating it as a test
+failure.
+
+The CLI reads the review again after its checks, marks changed identities
+`stale`, and returns `unknown` for empty checks or a missing pipeline. It
+selects GitLab's MR head pipeline, reads jobs from that pipeline's project
+across all pages, and verifies generated merge commits against the current
+source and target. `stale` or `pending` means read again before acting.
+
+`passed` describes observed checks, not merge readiness. Inspect `pr.draft`,
+`pr.mergeable`, and `pr.mergeStateStatus`, then use the merge skill's gather.
+Required checks not yet reported and required reviews still block merging.
+For `unknown`, establish whether CI is absent by design or not yet available.
+Do not turn an empty result into success. Manual jobs and external approvals
+need the relevant human action. Never approve a privileged run, disable a
+check, weaken branch protection, or merge past failures automatically.
 
 ## Diagnose before changing anything
 

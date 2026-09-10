@@ -25,6 +25,7 @@ From a clone of this repository, point at that `bin/` instead.
 | `origin new <name>`       | Fetch, then branch `<name>` off the head branch          |
 | `origin sync`             | Fetch, rebase onto the head branch, push with a lease    |
 | `origin merge [<number>]` | Merge a pull request with a body written from the change |
+| `origin ci [<number>]`    | Read current PR/MR checks as JSON                        |
 
 Every command takes `--dry-run`, `--yes`, `--quiet`, `--verbose` and
 `--no-color`. Commentary goes to stderr and data to stdout, so `--quiet` is

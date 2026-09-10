@@ -22,12 +22,14 @@ The CLI also creates branches:
 ```bash
 origin new [<name>]     # fetch, then branch off the head branch
                         # no name: <branch>-YYYY-MM-DD_NNN, free number today
+origin ci [<number>]   # current PR/MR identity and checks as JSON
 origin --help
 ```
 
 `ship-it` carries the current change through publication and merge, reusing
 an existing branch or review when appropriate. It uses fast workers for
 routine operations and the strongest available model for code and conflicts.
+`origin ci` reads the forge for each poll and reports stale or missing results.
 Routine failures escalate after three attempted remedies. The final report
 explains the issues and chosen solutions.
 

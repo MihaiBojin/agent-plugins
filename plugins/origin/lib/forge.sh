@@ -177,7 +177,7 @@ forge_pr_view() {
   case "$(forge_kind)" in
     github)
       raw="$(gh pr view "$selector" \
-        --json number,title,body,state,url,author,isDraft,isCrossRepository,mergeable,mergeStateStatus,baseRefName,headRefName,statusCheckRollup \
+        --json number,title,body,state,url,author,isDraft,isCrossRepository,mergeable,mergeStateStatus,baseRefName,headRefName,headRefOid,headRepository,headRepositoryOwner,statusCheckRollup \
         2>/dev/null || printf '')"
       [ -n "$raw" ] || return 1
       printf '%s' "$raw" | jq -c '
@@ -208,6 +208,11 @@ forge_pr_view() {
           draft: (.isDraft // false),
           baseRef: .baseRefName,
           headRef: .headRefName,
+          headSha: .headRefOid,
+          sourceProject: (if .headRepository.name then
+            .headRepositoryOwner.login + "/" + .headRepository.name else null end),
+          targetProject: (if .url then .url | split("/") | .[0:5] | join("/") else null end),
+          checkCount: ((.statusCheckRollup // []) | length),
           crossRepository: (.isCrossRepository // false),
           mergeable: (.mergeable // "UNKNOWN"),
           mergeStateStatus: (.mergeStateStatus // "UNKNOWN"),
@@ -238,6 +243,10 @@ forge_pr_view() {
           draft: (.draft // .work_in_progress // false),
           baseRef: .target_branch,
           headRef: .source_branch,
+          headSha: (.sha // .diff_refs.head_sha),
+          sourceProject: .source_project_id,
+          targetProject: .target_project_id,
+          pipeline: .head_pipeline,
           crossRepository: (
             if (.source_project_id != null and .target_project_id != null)
             then .source_project_id != .target_project_id else false end

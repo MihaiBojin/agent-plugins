@@ -9,11 +9,17 @@ publishing a change through CI fixes and merge. It resumes from uncommitted
 work, unpublished commits, or an existing review. The final report explains
 each issue, its solution, and the validation performed.
 
+`origin ci [<number>]` returns the current review identity and CI results as
+JSON. It reads GitLab jobs across pages in the selected pipeline's project,
+verifies merged-result commits, and marks changed heads or targets stale.
+Missing checks remain unknown; failed reads produce no snapshot.
+
 ### Choices
 
 Keep the workflow in one shared skill, using Origin's existing branch and
 merge commands. Git and forge decisions need an agent, so no shell command
-duplicates the coordinator. An explicit shipping request supplies routine
+duplicates the coordinator. Mechanical CI reads use `origin ci`; diagnosis,
+repair, and waiting remain with the agent. An explicit shipping request supplies routine
 confirmations and the merge skill's `--yes`; repository protections still
 apply.
 
