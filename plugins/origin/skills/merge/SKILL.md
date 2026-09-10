@@ -5,6 +5,12 @@ argument-hint: "[pr-number] [--yes] [--with-failing-checks]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git log:*), Bash(git diff:*), Bash(git status:*), Read, Write
 ---
 
+In Codex, `$ARGUMENTS` means the arguments supplied with the skill. Substitute
+them before running a command; do not read them from a shell variable.
+Resolve `${CLAUDE_PLUGIN_ROOT}` to the plugin root, two directories above this
+`SKILL.md`, if the client has not expanded it. Run the resulting absolute
+script path from the repository being worked on.
+
 Merge a pull request. Arguments: `$ARGUMENTS`
 
 The script does everything that touches the repository. Your job is the body.

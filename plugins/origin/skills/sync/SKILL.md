@@ -5,6 +5,12 @@ argument-hint: "[--branch <name>] [--squash] [--commit | --message <text>] [--pu
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git add:*), Bash(git commit:*), Bash(git rebase --continue), Bash(git rebase --abort), Bash(git reset --merge), Bash(git branch:*), Read, Edit, AskUserQuestion
 ---
 
+In Codex, `$ARGUMENTS` means the arguments supplied with the skill. Substitute
+them before running a command; do not read them from a shell variable.
+Resolve `${CLAUDE_PLUGIN_ROOT}` to the plugin root, two directories above this
+`SKILL.md`, if the client has not expanded it. Run the resulting absolute
+script path from the repository being worked on.
+
 Bring the current branch up to date. Arguments: `$ARGUMENTS`
 
 ```bash

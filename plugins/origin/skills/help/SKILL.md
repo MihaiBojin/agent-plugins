@@ -1,25 +1,22 @@
 ---
 name: help
-description: What the origin plugin does and which command to reach for
+description: Explain Origin's skills and CLI commands when the user asks for help or usage.
 ---
 
-`origin` wraps the git, GitHub and GitLab operations that are easy to get wrong
-and expensive to get wrong. Each lives in a tested shell script with a stable
-CLI; these commands gather intent and read the output back.
+Origin provides native skills for pull requests and branch maintenance.
+Use `$` in Codex CLI and `/` in Claude Code. Append arguments or a request
+after the skill name.
 
-Three commands, because those are the three where an agent has something to
-add: `pr` reads a session's work and writes the commits, `sync` routes a
-conflict, and `merge` writes the body that lands.
+| Codex CLI       | Claude Code     | What it does                                                        |
+| --------------- | --------------- | ------------------------------------------------------------------- |
+| `$origin:pr`    | `/origin:pr`    | Commit this session's work on a branch and open a PR                |
+| `$origin:sync`  | `/origin:sync`  | Fetch and rebase onto the head branch; `--push` pushes with a lease |
+| `$origin:merge` | `/origin:merge` | Merge a pull request with a body written from the change            |
+| `$origin:help`  | `/origin:help`  | Explain Origin's skills and CLI commands                            |
 
-| Command         | What it does                                             |
-| --------------- | -------------------------------------------------------- |
-| `/origin:pr`    | Commit this session's work on a branch and open a PR     |
-| `/origin:sync`  | Fetch, rebase onto the head branch, push with a lease    |
-| `/origin:merge` | Merge a pull request with a body written from the change |
-| `/origin:help`  | This                                                     |
+For example, `$origin:pr --draft` opens a draft pull request in Codex CLI.
 
-The CLI has one more, and no slash command for it, because there is nothing to
-decide once the name is chosen:
+The CLI also creates branches:
 
 ```bash
 origin new [<name>]     # fetch, then branch off the head branch

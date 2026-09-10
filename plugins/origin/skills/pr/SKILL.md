@@ -5,6 +5,9 @@ argument-hint: "[--draft] [--branch <name>] [--no-branch] [--no-push]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git switch:*), Bash(git add:*), Bash(git commit:*), Bash(git push --set-upstream:*), Bash(git push --force-with-lease --force-if-includes --set-upstream:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh stack:*), Bash(gh extension list), Bash(glab mr create:*), Read, Write, AskUserQuestion
 ---
 
+In Codex, `$ARGUMENTS` means the arguments supplied with the skill. Substitute
+them before running a command; do not read them from a shell variable.
+
 Open a pull request for the work in this session. Arguments: `$ARGUMENTS`
 
 Three flags change what it does, and they are the user's to pass:
@@ -169,4 +172,4 @@ It is best effort. If it fails, say so in one line and carry on - the pull
 requests are open, based correctly, and nothing about them is waiting on this.
 A failure here is never a reason to undo, retry differently, or stop the run.
 
-To merge the stack, start at the bottom: `/origin:merge`.
+To merge the stack, start at the bottom with the [merge skill](../merge/SKILL.md).

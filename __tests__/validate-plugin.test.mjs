@@ -118,6 +118,32 @@ describe("validatePlugin", () => {
     expect(validatePlugin({ root: build() }).errors).toEqual([]);
   });
 
+  it("accepts native skills without a commands declaration or directory", () => {
+    const root = build({ codex: { commands: undefined } });
+    fs.rmSync(path.join(root, "commands"), { recursive: true });
+    fs.appendFileSync(
+      path.join(root, "skills", "docket", "SKILL.md"),
+      "\nRun `${CLAUDE_PLUGIN_ROOT}/skills/docket/helper.mjs`.\n",
+    );
+
+    expect(validatePlugin({ root }).errors).toEqual([]);
+  });
+
+  it("catches a native skill naming a script that is not shipped", () => {
+    const root = build({ codex: { commands: undefined } });
+    fs.rmSync(path.join(root, "commands"), { recursive: true });
+    fs.appendFileSync(
+      path.join(root, "skills", "docket", "SKILL.md"),
+      '\nRun `node "${CLAUDE_PLUGIN_ROOT}/skills/docket/missing.mjs"`.\n',
+    );
+
+    expect(validatePlugin({ root }).errors).toEqual([
+      expect.stringContaining(
+        "skills/docket/SKILL.md references a missing file",
+      ),
+    ]);
+  });
+
   it("catches manifests that have drifted apart", () => {
     const root = build({ codex: { version: "0.2.0" } });
     expect(validatePlugin({ root }).errors).toEqual([
