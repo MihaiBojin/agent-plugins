@@ -2,6 +2,18 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.14.0
+
+Use `$origin:push` in Codex CLI or `/origin:push` in Claude Code to commit
+work, push the branch, and open a GitHub pull request or GitLab merge request.
+The skill keeps its draft, stacking, and repeat-invocation behavior.
+
+### Choices
+
+Use `push` for the skill name: `pr` is too short and names GitHub's review
+object. The name applies to either forge. Origin stays on the 0.x release
+line, with the `push` skill in 0.14.0 and no `pr` alias.
+
 ## 0.13.0
 
 Origin exposes native `help`, `pr`, `sync` and `merge` skills. Codex CLI uses

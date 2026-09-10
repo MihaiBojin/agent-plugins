@@ -1,6 +1,6 @@
 ---
-name: pr
-description: Commit this session's work on a branch and open a pull request
+name: push
+description: Commit this session's work, push the branch, and open a pull request on GitHub or a merge request on GitLab
 argument-hint: "[--draft] [--branch <name>] [--no-branch] [--no-push]"
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git switch:*), Bash(git add:*), Bash(git commit:*), Bash(git push --set-upstream:*), Bash(git push --force-with-lease --force-if-includes --set-upstream:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh stack:*), Bash(gh extension list), Bash(glab mr create:*), Read, Write, AskUserQuestion
 ---
@@ -8,7 +8,8 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/origin *), Bash(git status:*), Bas
 In Codex, `$ARGUMENTS` means the arguments supplied with the skill. Substitute
 them before running a command; do not read them from a shell variable.
 
-Open a pull request for the work in this session. Arguments: `$ARGUMENTS`
+Publish the work in this session as a pull request on GitHub or a merge
+request on GitLab. Arguments: `$ARGUMENTS`
 
 Three flags change what it does, and they are the user's to pass:
 

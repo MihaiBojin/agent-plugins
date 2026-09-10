@@ -9,12 +9,12 @@ after the skill name.
 
 | Codex CLI       | Claude Code     | What it does                                                        |
 | --------------- | --------------- | ------------------------------------------------------------------- |
-| `$origin:pr`    | `/origin:pr`    | Commit this session's work on a branch and open a PR                |
+| `$origin:push`  | `/origin:push`  | Commit this session's work on a branch and open a PR                |
 | `$origin:sync`  | `/origin:sync`  | Fetch and rebase onto the head branch; `--push` pushes with a lease |
 | `$origin:merge` | `/origin:merge` | Merge a pull request with a body written from the change            |
 | `$origin:help`  | `/origin:help`  | Explain Origin's skills and CLI commands                            |
 
-For example, `$origin:pr --draft` opens a draft pull request in Codex CLI.
+For example, `$origin:push --draft` opens a draft pull request in Codex CLI.
 
 The CLI also creates branches:
 
@@ -24,7 +24,7 @@ origin new [<name>]     # fetch, then branch off the head branch
 origin --help
 ```
 
-`pr` is the one command that does not run `bin/origin` for the steps that touch
+`push` is the one command that does not run `bin/origin` for the steps that touch
 the repository: git has no `origin` subcommand for committing or opening a pull
 request, so the refusals in `lib/common.sh` do not cover it. A change with
 layers in it becomes a stack of pull requests, each based on the branch below,
