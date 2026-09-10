@@ -37,13 +37,13 @@ arguments or a request. Both clients read the same files under `skills/`.
 
 | Codex CLI       | Claude Code     | Purpose                                           |
 | --------------- | --------------- | ------------------------------------------------- |
-| `$origin:pr`    | `/origin:pr`    | Commit the session's work and open a pull request |
+| `$origin:push`  | `/origin:push`  | Commit the session's work and open a pull request |
 | `$origin:sync`  | `/origin:sync`  | Update the branch; `--push` also pushes it        |
 | `$origin:merge` | `/origin:merge` | Write the merge body and merge a pull request     |
 | `$origin:help`  | `/origin:help`  | Explain the skills and CLI commands               |
 
-For example, `$origin:pr --draft` opens a draft pull request in Codex CLI.
-The `pr` skill runs git and the forge CLI directly.
+For example, `$origin:push --draft` opens a draft pull request in Codex CLI.
+The `push` skill runs git and the forge CLI directly.
 
 ## Worktrees are not here
 
