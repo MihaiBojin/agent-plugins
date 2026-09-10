@@ -2,7 +2,7 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
-## 1.0.0
+## 0.13.0
 
 Origin exposes native `help`, `pr`, `sync` and `merge` skills. Codex CLI uses
 `$origin:help`, `$origin:pr`, `$origin:sync` and `$origin:merge`. Claude Code
@@ -13,7 +13,8 @@ The shared Origin skill remains available for automatic task matching.
 
 Keep one skill file per workflow for both clients. Codex's command importer
 assigns `source-command-` names; native skills use the name in their front
-matter. The major version records the changed Codex invocation names.
+matter. Origin stays on the 0.x release line; these native skills ship in
+0.13.0.
 Separate command copies would duplicate the instructions and keep the
 generated names in Codex's picker.
 
