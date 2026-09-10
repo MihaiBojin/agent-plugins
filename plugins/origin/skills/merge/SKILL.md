@@ -132,4 +132,7 @@ A stacked merge that GitHub does not finish is reported rather than retried.
 Read the pull request before running this again: it may have landed after the
 script stopped waiting.
 
+A merge GitHub hands to a merge queue is reported as queued. Nothing has landed
+on the base branch yet, so report it as queued and do not say it merged.
+
 Report the merge and the URL. Do not offer to revert it.

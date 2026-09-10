@@ -249,7 +249,10 @@ merge_main() {
 
   forge_pr_merge "$pr_number" "$method" --title "$title" --body-file "$body_path" ||
     die "the merge was refused by $(forge_cli)"
-  good "merged #${pr_number}"
+  case "$FORGE_MERGE_OUTCOME" in
+    queued) good "#${pr_number} is in the merge queue; it lands when the queue reaches it" ;;
+    *) good "merged #${pr_number}" ;;
+  esac
 }
 
 # Either the number given, or the one belonging to the branch in hand.

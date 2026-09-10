@@ -151,7 +151,10 @@ endpoint, `PUT /repos/{owner}/{repo}/pulls/{number}/merge-async`. `gh pr merge`
 merges over GraphQL, and GitHub refuses that for anything in a stack, the
 bottom one included. The endpoint returns as soon as the merge is queued, so
 the script waits for GitHub to say it landed: sixty checks, five seconds apart.
-A merge that has not landed by then is reported, and not sent again.
+A merge that has not landed by then is reported, and not sent again. One GitHub
+hands to a merge queue is reported as queued and not waited on, because the
+queue runs CI before anything lands, which is the same "come back later" as an
+unfinished check.
 
 ## sync
 

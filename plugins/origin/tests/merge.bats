@@ -623,3 +623,30 @@ JSON
   run jq_of "$output" '.stacked'
   [ "$output" = "false" ]
 }
+
+@test "a merge GitHub hands to a queue is reported as queued, and nothing polls it" {
+  stacked_pr
+  stub_json merge-async-result.json <<'JSON'
+{ "status": "enqueued", "details": { "uuid": "u-1", "merge_action": "merge_queue" } }
+JSON
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"merge queue"* ]]
+  [[ "$stderr" != *"merged #7"* ]]
+  run grep_count "merge-async/u-1" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "a merge queued after it was already pending is reported the same way" {
+  stacked_pr
+  stub_json merge-async-status.json <<'JSON'
+{ "status": "enqueued", "details": { "uuid": "u-1", "merge_action": "merge_queue" } }
+JSON
+  export ORIGIN_MERGE_ASYNC_WAIT=0
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"merge queue"* ]]
+  [[ "$stderr" != *"merged #7"* ]]
+  run grep_count "merge-async/u-1" "$ORIGIN_STUB_LOG"
+  [ "$output" = "1" ]
+}

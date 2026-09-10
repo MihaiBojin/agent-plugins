@@ -13,6 +13,12 @@ FORGE_PR_BULK=''
 FORGE_PR_BULK_LOADED=0
 FORGE_KIND=''
 
+# How the merge that just succeeded finished. Only the asynchronous path ever
+# changes it, and only to `queued`: GitHub can hand a merge to a merge queue
+# instead of performing it, and the caller must not report that as a commit on
+# the head branch.
+FORGE_MERGE_OUTCOME=merged
+
 forge_host_of() {
   local url="$1" host=''
   case "$url" in
@@ -464,6 +470,15 @@ forge_merge_async_payload() {
     + (if $body == "" then {} else { commit_message: $body } end)'
 }
 
+# GitHub put the merge in a merge queue rather than performing it. It lands
+# when the queue reaches it, which is a CI run away: the same answer this plugin
+# gives about a check that has not finished, and the same reason not to sit and
+# poll for it.
+forge_merge_queued() {
+  FORGE_MERGE_OUTCOME=queued
+  note "GitHub put #${1} in a merge queue; it lands when the queue reaches it"
+}
+
 # The merge a stack gets: PUT merge-async, then wait for GitHub to say it
 # landed.
 #
@@ -491,10 +506,11 @@ forge_merge_async() {
     failed)
       die "GitHub refused the merge: $(printf '%s' "$result" | jq -r '.details.message // "it gave no reason"')"
       ;;
-    # `enqueued` is a merge queue holding it, and a queue can take longer than
-    # anything waited for here. Nothing in this plugin has been run against
-    # one, so it is waited on like `pending` and reported the same way.
-    pending | enqueued) ;;
+    enqueued)
+      forge_merge_queued "$number"
+      return 0
+      ;;
+    pending) ;;
     *) die "GitHub answered '${status:-nothing}' to the merge of #${number}" ;;
   esac
 
@@ -525,6 +541,12 @@ forge_merge_async_wait() {
       merged) return 0 ;;
       failed)
         die "GitHub could not merge #${number}: $(printf '%s' "$result" | jq -r '.details.message // "it gave no reason"')"
+        ;;
+      # Answered here as well as by the PUT, because a merge can come back
+      # `pending` from one and `enqueued` from the other.
+      enqueued)
+        forge_merge_queued "$number"
+        return 0
         ;;
     esac
     if [ "$(gh pr view "$number" --json state --jq '.state' 2>/dev/null || printf '')" = "MERGED" ]; then

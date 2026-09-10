@@ -8,9 +8,10 @@ Newest release first. Each says what changed, and the choices behind it.
 anything it has in a stack, so a stacked one goes through
 `PUT /repos/{owner}/{repo}/pulls/{number}/merge-async` instead: the script
 sends the merge, then waits for GitHub to say it landed, sixty checks five
-seconds apart. A `failed` status is reported with the reason GitHub gave, and a
-merge still queued when the checks run out is reported too, rather than sent a
-second time.
+seconds apart. A `failed` status is reported with the reason GitHub gave. A
+merge GitHub hands to a merge queue is reported as queued rather than waited
+on, and one still running when the checks run out is reported rather than sent
+a second time.
 
 `origin merge --gather` carries `stacked`. The merge skill can say a pull
 request is in a stack before it writes a body, instead of finding out when the
@@ -30,15 +31,23 @@ mergeable by hand is refused by `gh pr merge` as well. Nothing here treats
 position 1 as a special case.
 
 No `sha` in the payload. The endpoint takes one and would then refuse a merge
-whose head moved after the body was written, which is a protection the
-synchronous path does not have either. Two merges of the same shape behaving
-differently costs more than the window it would close.
+whose head moved after the body was written. What blocks a merge belongs to the
+forge, where a branch protection rule says it once for everybody, rather than
+to a client that only some merges go through. `gh pr merge
+--match-head-commit` is the same guard on the synchronous path, and it is not
+passed either.
 
-`enqueued` is waited on like `pending` and reported the same way. That status
-is a merge queue holding the merge, which can take longer than the checks run
-for, and nothing here has been run against one. A queue that outlasts them
-leaves a message saying the pull request may still land, and to read it before
-merging again.
+`enqueued` ends the wait rather than extending it. That status is a merge queue
+holding the merge, and a queue runs CI on the queued branch before anything
+lands, so waiting on it is waiting on a CI run. This plugin already refuses to
+sit through an unfinished check, and it answers the same way here: `origin
+merge` says the pull request is in the queue and does not claim a commit that
+has not landed. Both the PUT and the status read answer it, because a merge can
+come back `pending` from one and `enqueued` from the other.
+
+`merge_action` stays at GitHub's default. The endpoint takes `direct_merge`,
+which skips the queue, and a merge queue is a branch protection. `--force` was
+deleted from this plugin for covering that kind of thing with one word.
 
 GitLab is untouched. `glab mr merge` has no equivalent restriction, and
 `forge_pr_stacked` answers no for anything that is not GitHub before it reaches
