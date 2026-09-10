@@ -2,6 +2,33 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.15.0
+
+Use `$origin:ship-it` in Codex or `/origin:ship-it` in Claude Code to finish
+publishing a change through CI fixes and merge. It resumes from uncommitted
+work, unpublished commits, or an existing review. The final report explains
+each issue, its solution, and the validation performed.
+
+### Choices
+
+Keep the workflow in one shared skill, using Origin's existing branch and
+merge commands. Git and forge decisions need an agent, so no shell command
+duplicates the coordinator. An explicit shipping request supplies routine
+confirmations and the merge skill's `--yes`; repository protections still
+apply.
+
+Resolve the base remote separately from `branch.<name>.pushRemote` and
+`remote.pushDefault`. Origin's base resolver intentionally ignores push
+settings, while forge calls need an explicit target project when the branch
+is pushed to a fork.
+
+Use fast workers for routine operations and log collection. Code changes and
+conflicts start with the strongest available model. Three unsuccessful
+routine remedies for the same cause trigger escalation; three unsuccessful
+strong-model remedies produce a blocker report. Select models from the host's
+available capabilities rather than pinning a Codex model name or pretending
+one skill's frontmatter can control both clients.
+
 ## 0.14.0
 
 Use `$origin:push` in Codex CLI or `/origin:push` in Claude Code to commit
