@@ -367,13 +367,18 @@ merge_refusal_reasons() {
 
 # Everything a body could be written from, in one object.
 merge_gather() {
-  local commits diffstat trailers fallback_title fallback_body refusals
+  local commits diffstat trailers fallback_title fallback_body refusals stacked=false
   commits="$(forge_pr_commits "$(forge_pr_field .number)")"
   diffstat="$(forge_pr_diffstat "$(forge_pr_field .number)")"
   trailers="$(merge_trailers)"
   fallback_title="$(merge_decorate_title "$(forge_pr_field .title)" "$(forge_pr_field .number)" --squash)"
   fallback_body="$(merge_fallback_body)"
   refusals="$(merge_refusal_reasons | json_array_from_lines)"
+  # Asked here so it is known before a word of the body is written, rather than
+  # found out by the merge failing after the user has approved one.
+  if forge_pr_stacked "$(forge_pr_field .number)"; then
+    stacked=true
+  fi
 
   jq -n \
     --argjson pr "$FORGE_PR_JSON" \
@@ -381,6 +386,7 @@ merge_gather() {
     --argjson diffstat "$diffstat" \
     --argjson trailers "$trailers" \
     --argjson refusals "$refusals" \
+    --argjson stacked "$stacked" \
     --arg fallbackTitle "$fallback_title" \
     --arg fallbackBody "$fallback_body" \
     '{
@@ -389,6 +395,7 @@ merge_gather() {
       diffstat: $diffstat,
       trailers: $trailers,
       refusals: $refusals,
+      stacked: $stacked,
       fallback: { title: $fallbackTitle, body: $fallbackBody }
     }'
 }

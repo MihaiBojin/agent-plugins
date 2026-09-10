@@ -22,9 +22,15 @@ ${CLAUDE_PLUGIN_ROOT}/bin/origin merge $ARGUMENTS --gather
 ```
 
 No number gathers the pull request for the current branch. The output is JSON:
-`pr`, `commits`, `diffstat`, `trailers`, `refusals`, `fallback`.
+`pr`, `commits`, `diffstat`, `trailers`, `refusals`, `stacked`, `fallback`.
 
 If it fails, report what it said and stop.
+
+`stacked` is true when GitHub has this pull request in a stack, including the
+bottom one. GitHub merges those in the background, so the script sends the
+merge and then waits for GitHub to say it landed, which takes a few seconds
+rather than none. Say so before you write the body; nothing else about the
+steps below changes.
 
 ## 2. Stop if it is not ready
 
@@ -121,5 +127,9 @@ ${CLAUDE_PLUGIN_ROOT}/bin/origin merge $ARGUMENTS --body-file <the file> --yes
 The strategy defaults to whatever the repository itself prefers; pass
 `--squash`, `--merge` or `--rebase` only if the user asked for one. The branch
 on the remote is untouched; whether it goes is the forge's own setting.
+
+A stacked merge that GitHub does not finish is reported rather than retried.
+Read the pull request before running this again: it may have landed after the
+script stopped waiting.
 
 Report the merge and the URL. Do not offer to revert it.

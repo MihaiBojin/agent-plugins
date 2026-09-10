@@ -2,6 +2,48 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.17.0
+
+`origin merge` merges a stacked pull request. GitHub refuses `gh pr merge` for
+anything it has in a stack, so a stacked one goes through
+`PUT /repos/{owner}/{repo}/pulls/{number}/merge-async` instead: the script
+sends the merge, then waits for GitHub to say it landed, sixty checks five
+seconds apart. A `failed` status is reported with the reason GitHub gave, and a
+merge still queued when the checks run out is reported too, rather than sent a
+second time.
+
+`origin merge --gather` carries `stacked`. The merge skill can say a pull
+request is in a stack before it writes a body, instead of finding out when the
+merge fails after the user has approved one.
+
+### Choices
+
+Route on the REST object's `stack` field rather than on the refusal. The
+refusal is English, worded differently by the GraphQL and the synchronous REST
+endpoints, and it arrives only once the body has been written and approved.
+`stack` is an object inside a stack and no key at all outside one, and reading
+it in `--gather` puts the answer before the body rather than after it.
+
+The bottom of a stack is stacked. GitHub counts a pull request as being in one
+when anything is stacked on it, so a pull request based on the head branch and
+mergeable by hand is refused by `gh pr merge` as well. Nothing here treats
+position 1 as a special case.
+
+No `sha` in the payload. The endpoint takes one and would then refuse a merge
+whose head moved after the body was written, which is a protection the
+synchronous path does not have either. Two merges of the same shape behaving
+differently costs more than the window it would close.
+
+`enqueued` is waited on like `pending` and reported the same way. That status
+is a merge queue holding the merge, which can take longer than the checks run
+for, and nothing here has been run against one. A queue that outlasts them
+leaves a message saying the pull request may still land, and to read it before
+merging again.
+
+GitLab is untouched. `glab mr merge` has no equivalent restriction, and
+`forge_pr_stacked` answers no for anything that is not GitHub before it reaches
+a CLI.
+
 ## 0.16.0
 
 `origin new` is `origin new-branch`, and it now requires a name. The old
