@@ -256,15 +256,13 @@ function validateSkills(root, errors) {
     if (!/^description:/m.test(front[1])) {
       errors.push(`skills/${directory.name}/SKILL.md has no description`);
     }
+    validatePluginRoot(root, `skills/${directory.name}/SKILL.md`, text, errors);
   }
 }
 
 /**
- * The commands that show up in an agent's slash menu.
- *
- * Claude Code and Codex both read `commands/` from the plugin root - Codex
- * falls back to it when the manifest names no path, and the manifest names it
- * anyway so the intent is on the page rather than in another tool's default.
+ * Validate legacy command files when the plugin ships or declares them.
+ * Plugins containing only native skills need no commands directory.
  *
  * `help.md` lists them for the user, which is the one piece of this that can
  * quietly go stale: adding a command is easy, and remembering that a second
@@ -273,6 +271,9 @@ function validateSkills(root, errors) {
  */
 function validateCommands(root, pluginName, codex, errors) {
   const directory = path.join(root, "commands");
+  if (!fs.existsSync(directory) && codex?.commands === undefined) {
+    return;
+  }
   if (codex && codex.commands !== "./commands/") {
     errors.push(`${CODEX_MANIFEST} must set "commands": "./commands/"`);
   }
@@ -407,7 +408,7 @@ function validateHooks(root, errors) {
  */
 function validatePluginRoot(root, label, text, errors) {
   for (const [, reference] of text.matchAll(
-    /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'\s:)]+)/g,
+    /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"'`\s:)]+)/g,
   )) {
     if (!fs.existsSync(path.join(root, reference))) {
       errors.push(`${label} references a missing file: ${reference}`);

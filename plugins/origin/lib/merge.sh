@@ -9,7 +9,7 @@
 # survive without it.
 #
 # So this splits in two. The script gathers the material and performs the
-# merge; the model, in `commands/merge.md`, writes the prose. Trailers are the
+# merge; the model, in `skills/merge/SKILL.md`, writes the prose. Trailers are the
 # exception: `Fixes #123` closes an issue and `Co-authored-by:` gives somebody
 # credit, so they are re-attached here after the fact rather than trusted to
 # survive a rewrite.

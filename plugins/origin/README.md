@@ -30,11 +30,20 @@ Every command takes `--dry-run`, `--yes`, `--quiet`, `--verbose` and
 `--no-color`. Commentary goes to stderr and data to stdout, so `--quiet` is
 parseable.
 
-Three slash commands sit on top, and they are the three places an agent has
-something to add: `/origin:pr` reads a session's work and writes the commits
-and the pull request, `/origin:sync` routes a conflict, `/origin:merge` writes
-the body that lands. `pr` has no subcommand behind it - it is git and `gh`
-directly.
+## Skills
+
+Type `$` in Codex CLI or `/` in Claude Code, select the skill, and append
+arguments or a request. Both clients read the same files under `skills/`.
+
+| Codex CLI       | Claude Code     | Purpose                                           |
+| --------------- | --------------- | ------------------------------------------------- |
+| `$origin:pr`    | `/origin:pr`    | Commit the session's work and open a pull request |
+| `$origin:sync`  | `/origin:sync`  | Update the branch; `--push` also pushes it        |
+| `$origin:merge` | `/origin:merge` | Write the merge body and merge a pull request     |
+| `$origin:help`  | `/origin:help`  | Explain the skills and CLI commands               |
+
+For example, `$origin:pr --draft` opens a draft pull request in Codex CLI.
+The `pr` skill runs git and the forge CLI directly.
 
 ## Worktrees are not here
 
@@ -95,7 +104,7 @@ start checks the draft never ran.
 The checks are read once, at the moment of the merge; nothing sleeps or polls,
 so a pull request whose CI is still running is a "come back in a minute" rather
 than a wait. `gh pr merge --auto` is the queue for that, and it is the forge's to run.
-The slash command offers to sit and watch instead, when the user asks it to.
+The merge skill can wait for checks when the user asks it to.
 
 ## sync
 

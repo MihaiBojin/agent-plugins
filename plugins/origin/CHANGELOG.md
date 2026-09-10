@@ -2,6 +2,21 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 1.0.0
+
+Origin exposes native `help`, `pr`, `sync` and `merge` skills. Codex CLI uses
+`$origin:help`, `$origin:pr`, `$origin:sync` and `$origin:merge`. Claude Code
+uses `/origin:help`, `/origin:pr`, `/origin:sync` and `/origin:merge`.
+The shared Origin skill remains available for automatic task matching.
+
+### Choices
+
+Keep one skill file per workflow for both clients. Codex's command importer
+assigns `source-command-` names; native skills use the name in their front
+matter. The major version records the changed Codex invocation names.
+Separate command copies would duplicate the instructions and keep the
+generated names in Codex's picker.
+
 ## 0.12.0
 
 The plugin is a branch, a pull request, and the two moves between them. What a
