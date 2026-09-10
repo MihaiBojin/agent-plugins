@@ -13,6 +13,12 @@ FORGE_PR_BULK=''
 FORGE_PR_BULK_LOADED=0
 FORGE_KIND=''
 
+# How the merge that just succeeded finished. Only the asynchronous path ever
+# changes it, and only to `queued`: GitHub can hand a merge to a merge queue
+# instead of performing it, and the caller must not report that as a commit on
+# the head branch.
+FORGE_MERGE_OUTCOME=merged
+
 forge_host_of() {
   local url="$1" host=''
   case "$url" in
@@ -431,6 +437,131 @@ forge_pr_diffstat() {
   esac
 }
 
+# Is this pull request in a stack?
+#
+# GitHub refuses `gh pr merge` for anything in one: it merges over GraphQL, and
+# `mergePullRequest` answers that the pull request "must be merged using the
+# asynchronous merge REST API". The synchronous REST endpoint refuses it too.
+# A pull request is in a stack when anything is stacked on it, so the bottom
+# one - based on the head branch, mergeable by hand - is refused as well.
+#
+# The REST object's `stack` field is the whole answer: an object inside a
+# stack, and no key at all outside one. Read rather than matched on the
+# refusal, which is English, worded differently by the two endpoints, and
+# arrives only once the body has been written and approved.
+forge_pr_stacked() {
+  local number="$1"
+  [ "$(forge_kind)" = github ] || return 1
+  [ "$(gh api "repos/{owner}/{repo}/pulls/${number}" --jq '.stack != null' 2>/dev/null)" = "true" ]
+}
+
+# What the asynchronous endpoint takes. The same fields as the synchronous one,
+# spelled differently: `merge_method` is the bare word, without the dashes
+# `gh pr merge` wants. `commit_title` is passed through as written, so the
+# `(#12)` already on it stays on the squashed commit.
+forge_merge_async_payload() {
+  local method="$1" title="$2" body_file="$3" body=''
+  if [ -n "$body_file" ]; then
+    body="$(cat "$body_file")"
+  fi
+  jq -n --arg method "${method#--}" --arg title "$title" --arg body "$body" '
+    { merge_method: $method }
+    + (if $title == "" then {} else { commit_title: $title } end)
+    + (if $body == "" then {} else { commit_message: $body } end)'
+}
+
+# GitHub put the merge in a merge queue rather than performing it. It lands
+# when the queue reaches it, which is a CI run away: the same answer this plugin
+# gives about a check that has not finished, and the same reason not to sit and
+# poll for it.
+forge_merge_queued() {
+  FORGE_MERGE_OUTCOME=queued
+  note "GitHub put #${1} in a merge queue; it lands when the queue reaches it"
+}
+
+# The merge a stack gets: PUT merge-async, then wait for GitHub to say it
+# landed.
+#
+# The endpoint returns as soon as the merge is queued, so `merged` is not what
+# it usually answers first. Everything after the PUT is waiting for one.
+forge_merge_async() {
+  local number="$1" method="$2" title="$3" body_file="$4"
+  local path="repos/{owner}/{repo}/pulls/${number}/merge-async"
+  local payload result status uuid
+
+  note "#${number} is in a stack; GitHub merges those in the background"
+  payload="$(forge_merge_async_payload "$method" "$title" "$body_file")"
+
+  if [ "$ORIGIN_DRY_RUN" = 1 ]; then
+    origin_run gh api --method PUT "$path" --input -
+    return 0
+  fi
+
+  debug "$(quote_args gh api --method PUT "$path" --input -)"
+  result="$(printf '%s' "$payload" | gh api --method PUT "$path" --input -)" || return 1
+
+  status="$(printf '%s' "$result" | jq -r '.status // ""' 2>/dev/null || printf '')"
+  case "$status" in
+    merged) return 0 ;;
+    failed)
+      die "GitHub refused the merge: $(printf '%s' "$result" | jq -r '.details.message // "it gave no reason"')"
+      ;;
+    enqueued)
+      forge_merge_queued "$number"
+      return 0
+      ;;
+    pending) ;;
+    *) die "GitHub answered '${status:-nothing}' to the merge of #${number}" ;;
+  esac
+
+  uuid="$(printf '%s' "$result" | jq -r '.details.uuid // ""')"
+  [ -n "$uuid" ] || die "GitHub queued the merge of #${number} without an id to follow it by"
+  forge_merge_async_wait "$number" "$uuid"
+}
+
+# Waits for a queued merge to land.
+#
+# The merge request's own status is what says it did: `merged` is done, and
+# `failed` carries a reason, which is a refusal to report rather than something
+# to try again. The pull request's state is read beside it because GitHub is
+# free to forget the request - a merge that landed and then lost its record
+# must not come back from here as a failure.
+#
+# Sixty checks, five seconds apart. Both numbers are a guess. The two variables
+# exist so a test does not sleep.
+forge_merge_async_wait() {
+  local number="$1" uuid="$2"
+  local tries="${ORIGIN_MERGE_ASYNC_TRIES:-60}" wait="${ORIGIN_MERGE_ASYNC_WAIT:-5}" try=1
+  local result status
+
+  while :; do
+    result="$(gh api "repos/{owner}/{repo}/pulls/${number}/merge-async/${uuid}" 2>/dev/null || printf '')"
+    status="$(printf '%s' "$result" | jq -r '.status // ""' 2>/dev/null || printf '')"
+    case "$status" in
+      merged) return 0 ;;
+      failed)
+        die "GitHub could not merge #${number}: $(printf '%s' "$result" | jq -r '.details.message // "it gave no reason"')"
+        ;;
+      # Answered here as well as by the PUT, because a merge can come back
+      # `pending` from one and `enqueued` from the other.
+      enqueued)
+        forge_merge_queued "$number"
+        return 0
+        ;;
+    esac
+    if [ "$(gh pr view "$number" --json state --jq '.state' 2>/dev/null || printf '')" = "MERGED" ]; then
+      return 0
+    fi
+    [ "$try" -lt "$tries" ] || break
+    if [ "$wait" -gt 0 ]; then
+      sleep "$wait"
+    fi
+    try=$((try + 1))
+  done
+
+  die "#${number} was still ${status:-unreported} after ${try} checks; a merge queue can hold one longer than that, so read the pull request before merging it again"
+}
+
 # Merges. The one call in this plugin that cannot be taken back.
 #
 #   forge_pr_merge <number> --squash|--merge|--rebase --title T --body-file F
@@ -457,6 +588,10 @@ forge_pr_merge() {
 
   case "$(forge_kind)" in
     github)
+      if forge_pr_stacked "$number"; then
+        forge_merge_async "$number" "$method" "$title" "$body_file"
+        return
+      fi
       set -- gh pr merge "$number" "$method"
       [ -n "$title" ] && set -- "$@" --subject "$title"
       [ -n "$body_file" ] && set -- "$@" --body-file "$body_file"

@@ -53,6 +53,16 @@ emit() {
   fi
 }
 
+# A canned answer, or the one a test did not bother to write.
+canned_or() {
+  local file="${ORIGIN_STUB_DIR}/${1}"
+  if [ -r "$file" ]; then
+    cat "$file"
+  else
+    printf '%s\n' "$2"
+  fi
+}
+
 [ "${ORIGIN_STUB_GH_UNAUTHENTICATED:-0}" = 1 ] && {
   printf 'You are not logged into any GitHub hosts.\n' >&2
   exit 1
@@ -75,6 +85,22 @@ case "${1:-}" in
     esac
     ;;
   repo) canned repo.json | emit "$@" ;;
+  api)
+    case " $* " in
+      # The result of a queued merge, by the uuid the PUT handed back.
+      *"/merge-async/"*) canned_or merge-async-status.json '{ "status": "merged", "details": { "message": "Merged.", "sha": "beef" } }' | emit "$@" ;;
+      # The merge itself. Its payload arrives on stdin, and a test reads it
+      # back from there.
+      *"/merge-async "*)
+        cat >"${ORIGIN_STUB_DIR}/merge-async-payload.json"
+        canned_or merge-async-result.json '{ "status": "pending", "details": { "uuid": "u-1" } }' | emit "$@"
+        ;;
+      # The REST pull request, which is where `stack` lives. A pull request
+      # outside a stack has no such key, so the default carries none.
+      *"/pulls/"*) canned_or pull.json '{}' | emit "$@" ;;
+      *) exit 1 ;;
+    esac
+    ;;
   pr)
     case "${2:-}" in
       checks)

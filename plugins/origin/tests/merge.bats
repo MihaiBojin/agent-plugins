@@ -510,3 +510,143 @@ JSON
   run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
   [ "$output" = "0" ]
 }
+
+# The REST pull request object, which is where GitHub keeps the stack. A pull
+# request outside one has no `stack` key at all.
+stacked_pr() {
+  stub_json pull.json <<'JSON'
+{
+  "number": 7,
+  "stack": { "id": 1019658, "number": 5, "base": { "ref": "main" }, "size": 2, "position": 1 }
+}
+JSON
+}
+
+@test "a stacked pull request is merged asynchronously, because gh pr merge cannot" {
+  stacked_pr
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"is in a stack"* ]]
+  run grep_count "gh api --method PUT" "$ORIGIN_STUB_LOG"
+  [ "$output" = "1" ]
+  run grep_count "gh pr merge" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "the asynchronous payload carries the decorated title, the bare method and the trailers" {
+  stacked_pr
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 0 ]
+
+  run jq -r '.commit_title' "${ORIGIN_STUB_DIR}/merge-async-payload.json"
+  [ "$output" = "Rewrite the loader (#7)" ]
+  run jq -r '.merge_method' "${ORIGIN_STUB_DIR}/merge-async-payload.json"
+  [ "$output" = "squash" ]
+  run jq -r '.commit_message' "${ORIGIN_STUB_DIR}/merge-async-payload.json"
+  [[ "$output" == *"Chunked reads."* ]]
+  [[ "$output" == *"Fixes #12"* ]]
+  [[ "$output" == *"Co-authored-by: Ada Lovelace"* ]]
+}
+
+@test "the strategy asked for reaches the asynchronous endpoint too" {
+  stacked_pr
+  origin_cli merge --yes --rebase --body "Chunked reads."
+  [ "$status" -eq 0 ]
+  run jq -r '.merge_method' "${ORIGIN_STUB_DIR}/merge-async-payload.json"
+  [ "$output" = "rebase" ]
+}
+
+@test "an asynchronous merge GitHub refuses is reported, and not tried again" {
+  stacked_pr
+  stub_json merge-async-result.json <<'JSON'
+{ "status": "failed", "details": { "message": "the base branch moved" } }
+JSON
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"the base branch moved"* ]]
+  run grep_count "merge-async/" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "a queued merge that never lands is reported, rather than waited on forever" {
+  stacked_pr
+  stub_json merge-async-status.json <<'JSON'
+{ "status": "pending", "details": { "message": "Merge request enqueued." } }
+JSON
+  export ORIGIN_MERGE_ASYNC_TRIES=2 ORIGIN_MERGE_ASYNC_WAIT=0
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 1 ]
+  [[ "$stderr" == *"still pending after 2 checks"* ]]
+  run grep_count "merge-async/u-1" "$ORIGIN_STUB_LOG"
+  [ "$output" = "2" ]
+}
+
+@test "a merge that landed and lost its record is not reported as a failure" {
+  # GitHub is free to forget the merge request; the pull request's state is the
+  # answer that outlives it.
+  stacked_pr
+  stub_json merge-async-status.json <<'JSON'
+{ "message": "Not Found", "status": "404" }
+JSON
+  stub_json pr-merged.json <<'JSON'
+{ "number": 7, "title": "Rewrite the loader", "body": "", "state": "MERGED",
+  "url": "https://github.com/owner/repo/pull/7", "author": { "login": "someone" },
+  "isDraft": false, "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN",
+  "baseRefName": "main", "headRefName": "feature", "statusCheckRollup": [] }
+JSON
+  export ORIGIN_STUB_GH_VIEW_THEN=pr-merged.json ORIGIN_MERGE_ASYNC_WAIT=0
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"merged #7"* ]]
+}
+
+@test "a dry run sends no asynchronous merge either" {
+  stacked_pr
+  origin_cli merge --yes --dry-run --body "Anything"
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"would run: gh api --method PUT"* ]]
+  run grep_count "gh api --method PUT" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "the gather says a pull request is in a stack before a body is written" {
+  stacked_pr
+  origin_cli merge --gather
+  [ "$status" -eq 0 ]
+  run jq_of "$output" '.stacked'
+  [ "$output" = "true" ]
+}
+
+@test "a pull request outside a stack is not reported as being in one" {
+  origin_cli merge --gather
+  [ "$status" -eq 0 ]
+  run jq_of "$output" '.stacked'
+  [ "$output" = "false" ]
+}
+
+@test "a merge GitHub hands to a queue is reported as queued, and nothing polls it" {
+  stacked_pr
+  stub_json merge-async-result.json <<'JSON'
+{ "status": "enqueued", "details": { "uuid": "u-1", "merge_action": "merge_queue" } }
+JSON
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"merge queue"* ]]
+  [[ "$stderr" != *"merged #7"* ]]
+  run grep_count "merge-async/u-1" "$ORIGIN_STUB_LOG"
+  [ "$output" = "0" ]
+}
+
+@test "a merge queued after it was already pending is reported the same way" {
+  stacked_pr
+  stub_json merge-async-status.json <<'JSON'
+{ "status": "enqueued", "details": { "uuid": "u-1", "merge_action": "merge_queue" } }
+JSON
+  export ORIGIN_MERGE_ASYNC_WAIT=0
+  origin_cli merge --yes --body "Chunked reads."
+  [ "$status" -eq 0 ]
+  [[ "$stderr" == *"merge queue"* ]]
+  [[ "$stderr" != *"merged #7"* ]]
+  run grep_count "merge-async/u-1" "$ORIGIN_STUB_LOG"
+  [ "$output" = "1" ]
+}

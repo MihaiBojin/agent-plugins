@@ -141,10 +141,20 @@ it does not matter. A draft is a question instead — at a terminal it offers to
 mark the pull request ready, and then reads it again, because undrafting can
 start checks the draft never ran.
 
-The checks are read once, at the moment of the merge; nothing sleeps or polls,
-so a pull request whose CI is still running is a "come back in a minute" rather
-than a wait. `gh pr merge --auto` is the queue for that, and it is the forge's to run.
-The merge skill can wait for checks when the user asks it to.
+The checks are read once, at the moment of the merge, and nothing here waits
+for one to finish: a pull request whose CI is still running is a "come back in
+a minute". `gh pr merge --auto` is the queue for that, and it is the forge's to
+run. The merge skill can wait for checks when the user asks it to.
+
+A pull request GitHub has in a stack is merged through its asynchronous
+endpoint, `PUT /repos/{owner}/{repo}/pulls/{number}/merge-async`. `gh pr merge`
+merges over GraphQL, and GitHub refuses that for anything in a stack, the
+bottom one included. The endpoint returns as soon as the merge is queued, so
+the script waits for GitHub to say it landed: sixty checks, five seconds apart.
+A merge that has not landed by then is reported, and not sent again. One GitHub
+hands to a merge queue is reported as queued and not waited on, because the
+queue runs CI before anything lands, which is the same "come back later" as an
+unfinished check.
 
 ## sync
 
