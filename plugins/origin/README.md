@@ -20,12 +20,13 @@ From a clone of this repository, point at that `bin/` instead.
 
 ## Commands
 
-|                           |                                                          |
-| ------------------------- | -------------------------------------------------------- |
-| `origin new <name>`       | Fetch, then branch `<name>` off the head branch          |
-| `origin sync`             | Fetch, rebase onto the head branch, push with a lease    |
-| `origin merge [<number>]` | Merge a pull request with a body written from the change |
-| `origin ci [<number>]`    | Read current PR/MR checks as JSON                        |
+|                            |                                                                          |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `origin new-branch <name>` | Fetch, then branch `<name>` off the head branch                          |
+| `origin rotate`            | Start the next branch in this chain, or bring the head branch up to date |
+| `origin sync`              | Fetch, rebase onto the head branch, push with a lease                    |
+| `origin merge [<number>]`  | Merge a pull request with a body written from the change                 |
+| `origin ci [<number>]`     | Read current PR/MR checks as JSON                                        |
 
 Every command takes `--dry-run`, `--yes`, `--quiet`, `--verbose` and
 `--no-color`. Commentary goes to stderr and data to stdout, so `--quiet` is
@@ -82,7 +83,7 @@ and validation. `ship-it` is an agent skill, with no `bin/origin` subcommand.
 yours to run in a terminal. Both tools read the same two config keys, so they
 agree about which remote and which head branch a repository has.
 
-## new
+## new-branch
 
 Fetches first, so the branch starts on top of what the remote has rather than
 on top of a local copy that may be days old. Nothing has to be rebased
@@ -94,17 +95,26 @@ the head branch as its upstream, and `git push` would target it.
 Refuses a name that is already a branch, naming `git switch <name>` instead,
 and a name `git check-ref-format` will not take.
 
-With no name, this branch names the next one: `<branch>-YYYY-MM-DD_NNN`, at the
-first number free today, counting both local branches and the remote's. Three
-digits, so the sequence cannot be misread as another field of the date. A stem
-already carrying that suffix keeps one rather than gaining a second, so a day
-of continuations reads as siblings. The head branch names nothing - a branch
-off it is a new change rather than the next one - and neither does a detached
-HEAD; both ask for a name.
+The name is required. `origin rotate` derives one from the branch you are on.
 
 The base is named as `refs/remotes/<remote>/<head>`, never `<remote>/<head>`,
 because git resolves a bare name as a tag first and a repository holding a tag
 called `origin/main` would branch from the tag.
+
+## rotate
+
+Names the next branch after the one you are on, then creates it:
+`<branch>-YYYY-MM-DD_NNN`, at the first number free today, counting both local
+branches and the remote's. Three digits, so the sequence cannot be misread as
+another field of the date. A stem already carrying that suffix keeps one rather
+than gaining a second, so a day of continuations reads as siblings. Creation is
+`new-branch` exactly: fetch, then branch off the remote's head with
+`--no-track`.
+
+The head branch has no chain to continue, so there it fast-forwards to the
+remote and says so, which is the move `sync` makes on that branch. Ahead of the
+remote it refuses and lists the commits a fast-forward would drop. A detached
+HEAD has no name to derive one from and asks for `new-branch <name>`.
 
 ## merge
 
@@ -165,7 +175,7 @@ merge rewrites the branch into one commit, so git can no longer match the
 branch's patches against it and a rebase replays work the head branch already
 has, stopping on commit after commit. That branch is finished, and `sync` says
 so and stops. The next change starts on a branch of its own, which is
-`origin new <name>`, and this one is left exactly where it is.
+`origin new-branch <name>`, and this one is left exactly where it is.
 
 `--squash --branch <name>` is the way through a rebase that keeps conflicting
 on content the head branch already has. It creates that branch off the head
@@ -294,8 +304,8 @@ signed in to.
 
 ## Requirements
 
-`git` and `bash`. `jq` and either `gh` or `glab` for `merge`; `new` and `sync`
-need neither, and work offline apart from the fetch.
+`git` and `bash`. `jq` and either `gh` or `glab` for `merge`; `new-branch`,
+`rotate` and `sync` need neither, and work offline apart from the fetch.
 
 Written for bash 3.2, which is what a mac ships. CI runs the suite on bash 5 on
 Linux and bash 3.2 on macOS.

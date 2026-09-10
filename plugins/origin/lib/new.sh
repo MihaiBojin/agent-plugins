@@ -12,14 +12,12 @@
 
 new_usage() {
   cat >&2 <<'USAGE'
-origin new [<name>] [flags]
+origin new-branch <name> [flags]
 
   Fetch, then branch off the head branch and check it out.
 
-  With no name, this branch names the next one: <branch>-YYYY-MM-DD_NNN, at
-  the first number free today. A branch already carrying that suffix keeps one
-  suffix rather than gaining a second. The head branch does not name anything,
-  so from there a name is required.
+  The name is required. `origin rotate` names and creates the next branch in
+  a chain when you do not want to choose one.
 
   The base is the head branch as the remote has it, so the branch starts on
   top of the server's copy rather than on top of a stale local one. Nothing
@@ -29,54 +27,6 @@ origin new [<name>] [flags]
   --dry-run    Say what would happen
   --yes        Do not ask
 USAGE
-}
-
-# <branch>-YYYY-MM-DD_NNN, from the branch this one continues.
-#
-# The stem has any suffix a previous run added taken off, so four branches in a
-# day give four names rather than one name with four suffixes on it. Three
-# digits, so the sequence cannot be read as another field of the date the way a
-# two-digit one beside -09-08 can.
-new_stem() {
-  printf '%s\n' "$1" | sed -E 's/-[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{3}$//'
-}
-
-# Is this name spoken for, here or on the remote?
-new_name_taken() {
-  local name="$1" remote
-  if git show-ref --verify --quiet "refs/heads/${name}"; then
-    return 0
-  fi
-  remote="$(repo_remote 2>/dev/null || printf '')"
-  if [ -n "$remote" ] && git show-ref --verify --quiet "refs/remotes/${remote}/${name}"; then
-    return 0
-  fi
-  return 1
-}
-
-# The name a nameless run gets, in the caller's own shell so `die` still stops
-# the program: a `die` inside `$(…)` exits the subshell and lets the command
-# carry on with an empty name.
-new_generated_name() {
-  local branch head stem date candidate n=1
-  branch="$(repo_current_branch)"
-  [ -n "$branch" ] ||
-    die "HEAD is detached, so there is no branch to name the next one after; pass a name"
-  head="$(repo_head_branch 2>/dev/null || printf '')"
-  [ "$branch" != "$head" ] ||
-    die "${branch} is the head branch, and a branch off it is a new change rather than the next one; pass a name"
-
-  stem="$(new_stem "$branch")"
-  date="$(date +%Y-%m-%d)"
-  while [ "$n" -lt 1000 ]; do
-    candidate="$(printf '%s-%s_%03d' "$stem" "$date" "$n")"
-    if ! new_name_taken "$candidate"; then
-      printf '%s\n' "$candidate"
-      return 0
-    fi
-    n=$((n + 1))
-  done
-  die "every name derived from ${branch} is taken today; pass a name"
 }
 
 new_main() {
@@ -92,9 +42,9 @@ new_main() {
         new_usage
         return 0
         ;;
-      -*) die "new: unknown argument ${arg}" ;;
+      -*) die "new-branch: unknown argument ${arg}" ;;
       *)
-        [ -z "$name" ] || die "new takes one name; ${name} and ${arg} are two"
+        [ -z "$name" ] || die "new-branch takes one name; ${name} and ${arg} are two"
         name="$1"
         shift
         ;;
@@ -103,7 +53,15 @@ new_main() {
 
   repo_require
 
-  [ -n "$name" ] || name="$(new_generated_name)"
+  [ -n "$name" ] ||
+    die "new-branch: which name? 'origin rotate' takes the next one after this branch"
+
+  new_start "$name"
+}
+
+# Fetch, then branch `$1` off the head branch and check it out.
+new_start() {
+  local name="$1"
 
   git check-ref-format --branch "$name" >/dev/null 2>&1 ||
     die "${name} is not a valid branch name"

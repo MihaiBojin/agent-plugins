@@ -2,6 +2,35 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.16.0
+
+`origin new` is `origin new-branch`, and it now requires a name. The old
+spelling exits 1 naming the new one. `nb` still works. `skills/ship-it/SKILL.md`
+carried a note correcting a model that had guessed `new-branch`; the note is
+gone because the guess is now right.
+
+`origin rotate` starts the next branch in a chain. It derives
+`<branch>-YYYY-MM-DD_NNN` from the branch you are on, at the first number free
+today, skipping any name already held here or on the remote, then creates it
+off the remote's head exactly as `new-branch` does. On the head branch there is
+no chain, so it fast-forwards to the remote and says so.
+
+### Choices
+
+Two commands rather than one with an optional argument. Naming a branch and
+continuing a chain are different decisions, and an optional name made the
+command mean whichever one you had not thought about. Now `new-branch feat-x`
+is a name somebody chose and `rotate` is a name derived from where you stand.
+
+`rotate` on the head branch fast-forwards instead of rebasing. A rebase there
+would rewrite local commits the remote has not seen, which this plugin refuses
+everywhere else. `git merge --ff-only` stops and lists them instead, and those
+commits want `new-branch <name>`.
+
+The old `new` dies rather than aliasing. An alias keeps two spellings alive in
+everything a model reads, and this plugin already retires names that way:
+`merge --force`, `merge --auto`, `merge --no-delete-branch`.
+
 ## 0.15.0
 
 Use `$origin:ship-it` in Codex or `/origin:ship-it` in Claude Code to finish

@@ -73,7 +73,7 @@ clone answers both without either being set.
 - `git switch --create <name>` carries the uncommitted work with you. Name
   each branch after its own layer in kebab-case, three or four words.
   `--branch <name>` in the arguments names the first one.
-- Starting fresh work with nothing uncommitted is `origin new <name>` instead,
+- Starting fresh work with nothing uncommitted is `origin new-branch <name>` instead,
   which fetches first so the branch begins on top of what the remote has.
 
 ## 3. One layer at a time, start to finish

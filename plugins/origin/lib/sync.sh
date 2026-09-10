@@ -25,7 +25,7 @@ origin sync [flags]
   Fetch, put this branch back on top of the head branch, and push it.
 
   A branch whose change is already in the head branch cannot be rebased onto
-  it. That one is finished: `origin new <name>` starts the next change, and
+  it. That one is finished: `origin new-branch <name>` starts the next change, and
   this branch is left where it is.
 
   --branch <name>   The branch to carry or cherry-pick onto
@@ -418,7 +418,7 @@ sync_rebase() {
 
 # The branch is finished: its change is in the head branch already, so there is
 # nothing to rebase and nothing here to move. Starting the next branch is
-# `origin new`, which fetches and branches off the head branch.
+# `origin new-branch`, which fetches and branches off the head branch.
 sync_finished() {
   local branch="$1" head_ref="$2" reason="$3" at=''
   at="$(git rev-parse --short "refs/heads/${branch}" 2>/dev/null || printf '')"
@@ -427,7 +427,7 @@ sync_finished() {
   say "  it is untouched${at:+, at ${at}}"
   say ''
   say 'Start the next change on a branch of its own:'
-  say '  origin new <name>'
+  say '  origin new-branch <name>'
   exit 1
 }
 

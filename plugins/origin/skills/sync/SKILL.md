@@ -48,8 +48,8 @@ is. Nothing here runs `git reset --hard`.
 
 - **Refuses because the branch is finished.** Its change is already in the head
   branch, so its commits cannot go back on top of it. The next change starts on
-  a branch of its own: `origin new <name>`, with a name the user chooses or
-  agrees to. Say that this branch is untouched.
+  a branch of its own: `origin new-branch <name>` with a name the user chooses,
+  or `origin rotate` to continue the chain. Say that this branch is untouched.
 - **Stopped on a conflict.** Below.
 
 ## A conflict is yours to try

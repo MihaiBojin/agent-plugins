@@ -228,7 +228,7 @@ push_by_hand() {
 }
 
 @test "a first push onto a name somebody else took is refused, and renaming is named" {
-  origin_cli new next-thing --yes
+  origin_cli new-branch next-thing --yes
   [ "$status" -eq 0 ]
   commit_file later.txt yes "Later work"
 
@@ -290,7 +290,7 @@ push_by_hand() {
   origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"squash-merged"* ]]
-  [[ "$stderr" == *"origin new <name>"* ]]
+  [[ "$stderr" == *"origin new-branch <name>"* ]]
   # Nothing moved.
   [ "$(git rev-parse --abbrev-ref HEAD)" = "feature" ]
 }
@@ -309,7 +309,7 @@ push_by_hand() {
 @test "a branch carrying nothing is empty rather than finished" {
   # It points at the head branch, so every merge test says it is merged. That
   # is not a reason to refuse to push it.
-  origin_cli new next-thing --yes
+  origin_cli new-branch next-thing --yes
   [ "$status" -eq 0 ]
 
   origin_cli sync --yes
@@ -551,7 +551,7 @@ setup_replay_conflict() {
   # commit nothing, so the answer is the same one a plain sync gives.
   origin_cli sync --yes --squash --branch carried
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"origin new <name>"* ]]
+  [[ "$stderr" == *"origin new-branch <name>"* ]]
   run git show-ref --verify --quiet refs/heads/carried
   [ "$status" -ne 0 ]
 }
@@ -679,7 +679,7 @@ partly_absorbed() {
   origin_cli sync --yes
   [ "$status" -eq 1 ]
   [[ "$stderr" == *"squash-merged"* ]]
-  [[ "$stderr" == *"origin new <name>"* ]]
+  [[ "$stderr" == *"origin new-branch <name>"* ]]
 }
 
 @test "a branch with nothing of it upstream is rebased as before" {
