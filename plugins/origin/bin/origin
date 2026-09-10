@@ -52,8 +52,8 @@ USAGE
   origin <command> [flags]
 
 COMMANDS
-  new-branch [<name>]            Fetch, then branch off the head branch
-  rotate                         Print the name the next branch would take
+  new-branch <name>              Fetch, then branch <name> off the head branch
+  rotate                         Start the next branch in this chain
   sync                           Fetch, rebase onto the head branch, push with a lease
   merge [<number>]               Merge a pull request with a written body
   ci [<number>]                  Read current PR/MR checks as JSON

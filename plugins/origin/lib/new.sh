@@ -12,12 +12,12 @@
 
 new_usage() {
   cat >&2 <<'USAGE'
-origin new-branch [<name>] [flags]
+origin new-branch <name> [flags]
 
   Fetch, then branch off the head branch and check it out.
 
-  With no name, `origin rotate` supplies one. The head branch names nothing,
-  so from there a name is required.
+  The name is required. `origin rotate` names and creates the next branch in
+  a chain when you do not want to choose one.
 
   The base is the head branch as the remote has it, so the branch starts on
   top of the server's copy rather than on top of a stale local one. Nothing
@@ -53,7 +53,15 @@ new_main() {
 
   repo_require
 
-  [ -n "$name" ] || name="$(rotate_next)"
+  [ -n "$name" ] ||
+    die "new-branch: which name? 'origin rotate' takes the next one after this branch"
+
+  new_start "$name"
+}
+
+# Fetch, then branch `$1` off the head branch and check it out.
+new_start() {
+  local name="$1"
 
   git check-ref-format --branch "$name" >/dev/null 2>&1 ||
     die "${name} is not a valid branch name"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 #
-# new: a branch off the head branch as the remote has it.
+# new-branch: a branch off the head branch as the remote has it.
 
 load helpers/repo
 
@@ -44,72 +44,14 @@ setup() {
   [[ "$stderr" == *"not a valid branch name"* ]]
 }
 
-@test "with no name this branch names the next one" {
+@test "a missing name asks for one" {
   git checkout -qb feature
   commit_file mine.txt yes "My work"
-
-  origin_cli new-branch --yes
-  [ "$status" -eq 0 ]
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-$(date +%Y-%m-%d)_001" ]
-  [ "$(git rev-parse HEAD)" = "$(git rev-parse refs/remotes/origin/main)" ]
-}
-
-@test "a second nameless run the same day takes the next number" {
-  local today
-  today="$(date +%Y-%m-%d)"
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-
-  origin_cli new-branch --yes
-  [ "$status" -eq 0 ]
-  git checkout -q feature
-  origin_cli new-branch --yes
-  [ "$status" -eq 0 ]
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-${today}_002" ]
-}
-
-@test "a generated name does not gain a second suffix" {
-  local today
-  today="$(date +%Y-%m-%d)"
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-
-  origin_cli new-branch --yes
-  [ "$status" -eq 0 ]
-  # Standing on feature-<today>_001, the next one is its sibling rather than a
-  # name with two dates in it.
-  origin_cli new-branch --yes
-  [ "$status" -eq 0 ]
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-${today}_002" ]
-}
-
-@test "a name the remote holds is not generated, even with nothing local" {
-  local today name
-  today="$(date +%Y-%m-%d)"
-  name="feature-${today}_001"
-  git checkout -qb feature
-  commit_file mine.txt yes "My work"
-  git push -q origin "refs/heads/feature:refs/heads/${name}"
-  git fetch -q origin
-
-  origin_cli new-branch --yes
-  [ "$status" -eq 0 ]
-  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature-${today}_002" ]
-}
-
-@test "the head branch does not name the next one" {
-  origin_cli new-branch --yes
-  [ "$status" -eq 1 ]
-  [[ "$stderr" == *"head branch"* ]]
-  [[ "$stderr" == *"pass a name"* ]]
-}
-
-@test "a detached HEAD has no branch to name the next one after" {
-  git checkout -q --detach HEAD
 
   origin_cli new-branch --yes
   [ "$status" -eq 1 ]
-  [[ "$stderr" == *"detached"* ]]
+  [[ "$stderr" == *"origin rotate"* ]]
+  [ "$(git rev-parse --abbrev-ref HEAD)" = "feature" ]
 }
 
 @test "two names is an error, not a guess" {

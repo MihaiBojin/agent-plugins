@@ -51,8 +51,8 @@ answered for.
 | Wanted                                  | Command                              |
 | --------------------------------------- | ------------------------------------ |
 | Finish publication through CI and merge | [ship-it skill](../ship-it/SKILL.md) |
-| A branch for new work                   | `origin new-branch [<name>]`         |
-| The name the next branch would take     | `origin rotate`                      |
+| A branch for new work                   | `origin new-branch <name>`           |
+| The next branch in a chain              | `origin rotate`                      |
 | Open a pull request                     | [push skill](../push/SKILL.md)       |
 | Catch a branch up with main             | `origin sync`                        |
 | Push it afterwards                      | `origin sync --push`                 |
@@ -67,11 +67,16 @@ mean the checks passed.
 
 ```bash
 origin new-branch <name>
+origin rotate
 ```
 
-It fetches, then branches off the head branch as the remote has it, with
-`--no-track` so `git push` cannot target the head branch. It refuses a name
+Both fetch, then branch off the head branch as the remote has it, with
+`--no-track` so `git push` cannot target the head branch. They refuse a name
 that is already a branch and a name git will not take.
+
+`rotate` takes no name. It derives `<branch>-YYYY-MM-DD_NNN` from the branch
+the session is on, at the first number free today. On the head branch there is
+no chain to continue, so it fast-forwards to the remote and says so.
 
 Give it a name whenever the work has one - that is the name the user and every
 reviewer will see. With no name it derives `<branch>-YYYY-MM-DD_NNN` from the
@@ -174,9 +179,8 @@ cherry-picks what is left onto a new branch and keeps the commits;
 `--squash --branch <name>` makes it one commit. The old branch never moves.
 
 When `sync` says a branch is finished, do not reach for git. The next change
-starts on a branch of its own: `origin new-branch <name>`, with a name the user
-picks, or a bare `origin new-branch` to take the name `origin rotate` gives.
-The old branch is
+starts on a branch of its own: `origin new-branch <name>` with a name the user
+picks, or `origin rotate` to take `<branch>-YYYY-MM-DD_NNN`. The old branch is
 left exactly where it is.
 
 When a **rebase** conflict stops you, do not start resolving. Ask which route

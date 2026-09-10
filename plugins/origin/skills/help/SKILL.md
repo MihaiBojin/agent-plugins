@@ -20,8 +20,8 @@ For example, `$origin:push --draft` opens a draft pull request in Codex CLI.
 The CLI also creates branches:
 
 ```bash
-origin new-branch [<name>]  # fetch, then branch off the head branch
-origin rotate               # the name the next branch would take
+origin new-branch <name>    # fetch, then branch <name> off the head branch
+origin rotate               # start the next branch in this chain
                         # no name: <branch>-YYYY-MM-DD_NNN, free number today
 origin ci [<number>]   # current PR/MR identity and checks as JSON
 origin --help
@@ -54,9 +54,9 @@ branch a repository has.
 - No force delete of a branch that nothing has proved merged.
 - The CLI stops on conflicts. The `ship-it` skill assigns their resolution to
   the strongest available model and validates the result.
-- No naming a carry for you: `sync --squash` takes the name you give. `new`
-  generates one only when you ask for none, and only from the branch you are
-  standing on.
+- No naming a carry for you: `sync --squash` takes the name you give, and
+  `new-branch` takes the name you give. Only `rotate` derives one, from the
+  branch you are standing on.
 
 The CLI prints the branch, SHA, and recovery command before replacing
 history, whatever `--quiet` and `--yes` say.
