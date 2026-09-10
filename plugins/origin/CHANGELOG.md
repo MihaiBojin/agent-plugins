@@ -35,6 +35,10 @@ strong-model remedies produce a blocker report. Select models from the host's
 available capabilities rather than pinning a Codex model name or pretending
 one skill's frontmatter can control both clients.
 
+Parenthesize the pipeline object's addition for jq 1.7 compatibility. Earlier
+jq versions require this grouping inside an object value; jq 1.8 accepts the
+ungrouped expression, so tests with that version cannot detect the syntax error.
+
 ## 0.14.0
 
 Use `$origin:push` in Codex CLI or `/origin:push` in Claude Code to commit

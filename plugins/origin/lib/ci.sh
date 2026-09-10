@@ -167,7 +167,7 @@ ci_gitlab() {
         "scheduled", "canceling", "waiting_for_callback"] | index($status)) != null then "pending"
       else "unknown" end;
     def check: {name: (.name // "pipeline"), id, state: .status, bucket: bucket, link: .web_url};
-    {pipeline: ($pipeline | {id, project_id, sha, ref, status, web_url}) + {association: $association},
+    {pipeline: (($pipeline | {id, project_id, sha, ref, status, web_url}) + {association: $association}),
       stale: ($association == "stale"),
       checks: [($pipeline | check), ($jobs[] | check)]}
   '
