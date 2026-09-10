@@ -48,13 +48,19 @@ answered for.
 
 ## Which one
 
-| Wanted                      | Command                        |
-| --------------------------- | ------------------------------ |
-| A branch for new work       | `origin new [<name>]`          |
-| Open a pull request         | [push skill](../push/SKILL.md) |
-| Catch a branch up with main | `origin sync`                  |
-| Push it afterwards          | `origin sync --push`           |
-| Merge a pull request        | `origin merge [<number>]`      |
+| Wanted                                  | Command                              |
+| --------------------------------------- | ------------------------------------ |
+| Finish publication through CI and merge | [ship-it skill](../ship-it/SKILL.md) |
+| A branch for new work                   | `origin new [<name>]`                |
+| Open a pull request                     | [push skill](../push/SKILL.md)       |
+| Catch a branch up with main             | `origin sync`                        |
+| Push it afterwards                      | `origin sync --push`                 |
+| Merge a pull request                    | `origin merge [<number>]`            |
+| Read current PR/MR checks               | `origin ci [<number>]`               |
+
+`origin ci` returns JSON with the review identity, checks, pipeline, and
+whether the result became stale during the read. A successful read does not
+mean the checks passed.
 
 ## Starting a branch
 

@@ -25,6 +25,7 @@ From a clone of this repository, point at that `bin/` instead.
 | `origin new <name>`       | Fetch, then branch `<name>` off the head branch          |
 | `origin sync`             | Fetch, rebase onto the head branch, push with a lease    |
 | `origin merge [<number>]` | Merge a pull request with a body written from the change |
+| `origin ci [<number>]`    | Read current PR/MR checks as JSON                        |
 
 Every command takes `--dry-run`, `--yes`, `--quiet`, `--verbose` and
 `--no-color`. Commentary goes to stderr and data to stdout, so `--quiet` is
@@ -35,15 +36,44 @@ parseable.
 Type `$` in Codex CLI or `/` in Claude Code, select the skill, and append
 arguments or a request. Both clients read the same files under `skills/`.
 
-| Codex CLI       | Claude Code     | Purpose                                           |
-| --------------- | --------------- | ------------------------------------------------- |
-| `$origin:push`  | `/origin:push`  | Commit the session's work and open a pull request |
-| `$origin:sync`  | `/origin:sync`  | Update the branch; `--push` also pushes it        |
-| `$origin:merge` | `/origin:merge` | Write the merge body and merge a pull request     |
-| `$origin:help`  | `/origin:help`  | Explain the skills and CLI commands               |
+| Codex CLI         | Claude Code       | Purpose                                           |
+| ----------------- | ----------------- | ------------------------------------------------- |
+| `$origin:ship-it` | `/origin:ship-it` | Finish the change through CI fixes and merge      |
+| `$origin:push`    | `/origin:push`    | Commit the session's work and open a pull request |
+| `$origin:sync`    | `/origin:sync`    | Update the branch; `--push` also pushes it        |
+| `$origin:merge`   | `/origin:merge`   | Write the merge body and merge a pull request     |
+| `$origin:help`    | `/origin:help`    | Explain the skills and CLI commands               |
 
 For example, `$origin:push --draft` opens a draft pull request in Codex CLI.
 The `push` skill runs git and the forge CLI directly.
+
+## ship-it
+
+`$origin:ship-it` in Codex or `/origin:ship-it` in Claude Code finishes the
+steps left to publish the current change. It can carry uncommitted work and
+unpublished commits onto a dedicated branch from the latest remote head, or
+resume an existing PR/MR. It validates, commits, pushes, opens the review,
+repairs CI failures, and uses the `merge` skill with the repository's defaults.
+An explicit request to ship through merge authorizes those steps without
+another confirmation for each one.
+
+The skill resolves the base remote separately from the push destination.
+`checkout.defaultRemote` identifies the base; `branch.<name>.pushRemote` or
+`remote.pushDefault` can send commits to a fork. The PR/MR, checks, and merge
+stay on the verified target project. An ambiguous destination needs an answer
+before publication.
+
+Fast workers inspect git state, collect logs, and poll CI. The strongest
+available model diagnoses code failures, edits code and tests, and resolves
+conflicts. Routine failures escalate after three attempted remedies. Model
+routing uses the host's available tools and models; the skill reports when a
+required model cannot be selected. Three failed strong-model remedies for the
+same cause produce a blocker report with the preserved work.
+
+The skill waits while CI progresses and reports a job stalled for 30 minutes.
+It respects required reviews and external approvals. Its final report gives
+the merge result and explains each issue, attempted remedy, chosen solution,
+and validation. `ship-it` is an agent skill, with no `bin/origin` subcommand.
 
 ## Worktrees are not here
 

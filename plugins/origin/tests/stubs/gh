@@ -5,6 +5,7 @@
 
 set -euo pipefail
 printf 'gh %s\n' "$*" >>"${ORIGIN_STUB_LOG:-/dev/null}"
+printf '%s\n' "${GH_REPO:-}" >"${ORIGIN_STUB_DIR}/gh-context"
 
 canned() {
   local file="${ORIGIN_STUB_DIR}/${1}"
@@ -76,6 +77,10 @@ case "${1:-}" in
   repo) canned repo.json | emit "$@" ;;
   pr)
     case "${2:-}" in
+      checks)
+        canned checks.json | emit "$@"
+        exit "${ORIGIN_STUB_GH_CHECKS_STATUS:-0}"
+        ;;
       view)
         # A test that wants the forge's answer to change between readings sets
         # ORIGIN_STUB_GH_VIEW_THEN to the file every reading after the first
