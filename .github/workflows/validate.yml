@@ -206,11 +206,11 @@ jobs:
 
           expected="$(node -p "require('./plugins/${PLUGIN}/.claude-plugin/plugin.json').version")"
           claude plugin marketplace add "$PWD"
-          claude plugin install "${PLUGIN}@MihaiBojin"
+          claude plugin install "${PLUGIN}@mihaibojin"
 
           installed="$(claude plugin list --json | node -e '
             const rows = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
-            const found = rows.find((row) => row.id === `${process.env.PLUGIN}@MihaiBojin`);
+            const found = rows.find((row) => row.id === `${process.env.PLUGIN}@mihaibojin`);
             process.stdout.write(found ? found.version : "");
           ')"
           if [ "$installed" != "$expected" ]; then
@@ -229,7 +229,7 @@ jobs:
           expected="$(node -p "require('./plugins/${PLUGIN}/.codex-plugin/plugin.json').version")"
           mkdir -p "$CODEX_HOME"
           codex plugin marketplace add "$PWD"
-          codex plugin add "${PLUGIN}@MihaiBojin"
+          codex plugin add "${PLUGIN}@mihaibojin"
 
           installed="$(codex plugin list --json | node -e '
             const { installed } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));

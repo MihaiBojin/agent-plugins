@@ -4,16 +4,16 @@ A branch, kept on top of the head branch, and the pull request it becomes. One
 CLI that a person and an agent run the same way.
 
 ```shell
-claude plugin install origin@MihaiBojin
-codex plugin add origin@MihaiBojin
+claude plugin install origin@mihaibojin
+codex plugin add origin@mihaibojin
 ```
 
 For the terminal, put `bin/` on PATH. The marketplace clone is a stable path
 that `claude plugin update` keeps current:
 
 ```shell
-path+=(~/.claude/plugins/marketplaces/MihaiBojin/plugins/origin/bin)          # zsh
-fish_add_path ~/.claude/plugins/marketplaces/MihaiBojin/plugins/origin/bin    # fish
+path+=(~/.claude/plugins/marketplaces/mihaibojin/plugins/origin/bin)          # zsh
+fish_add_path ~/.claude/plugins/marketplaces/mihaibojin/plugins/origin/bin    # fish
 ```
 
 From a clone of this repository, point at that `bin/` instead.

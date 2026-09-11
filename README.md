@@ -12,7 +12,7 @@ Add the marketplace once. Everything after that is installing plugins from it.
 
 ```shell
 claude plugin marketplace add MihaiBojin/agent-plugins
-claude plugin install <name>@MihaiBojin
+claude plugin install <name>@mihaibojin
 ```
 
 Both steps work as `/plugin marketplace add` and `/plugin install` inside a
@@ -22,7 +22,7 @@ session.
 
 ```shell
 codex plugin marketplace add MihaiBojin/agent-plugins
-codex plugin add <name>@MihaiBojin
+codex plugin add <name>@mihaibojin
 ```
 
 ## What is published

@@ -50,13 +50,13 @@ export function readJson(root, relative) {
 export function marketplace(overrides = {}) {
   const root = temporary("marketplace");
   writeJson(root, ".claude-plugin/marketplace.json", {
-    name: overrides.name ?? "MihaiBojin",
+    name: overrides.name ?? "mihaibojin",
     owner: { name: "Mihai Bojin", url: "https://github.com/MihaiBojin" },
     description: "Mihai Bojin's personal plugins for coding agents",
     plugins: [],
   });
   writeJson(root, ".agents/plugins/marketplace.json", {
-    name: overrides.name ?? "MihaiBojin",
+    name: overrides.name ?? "mihaibojin",
     interface: { displayName: overrides.name ?? "MihaiBojin" },
     plugins: [],
   });

@@ -23,7 +23,7 @@ __tests__/                        Jest, run by `npm test`
 
 ## The two catalogs
 
-Both name the marketplace `MihaiBojin`, so `<name>@MihaiBojin` means the same
+Both name the marketplace `mihaibojin`, so `<name>@mihaibojin` means the same
 thing in either client. They describe the same plugins in the same order, and
 each keeps its own client's schema:
 
