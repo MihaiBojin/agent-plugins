@@ -1,6 +1,6 @@
 {
   "name": "decisions",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",
   "author": {
     "name": "Mihai Bojin",

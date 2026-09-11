@@ -2,6 +2,12 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.17.1
+
+The README reads `origin@mihaibojin`, and the `bin/` directory to put on PATH
+is `~/.claude/plugins/marketplaces/mihaibojin/plugins/origin/bin`. The
+marketplace is named `mihaibojin`, and its clone lands under that name.
+
 ## 0.17.0
 
 `origin merge` merges a stacked pull request. GitHub refuses `gh pr merge` for
