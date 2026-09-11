@@ -7,6 +7,8 @@ allowed-tools:
   - Bash(cp "${CLAUDE_PLUGIN_ROOT}/skills/docket/docket.mjs" .github/scripts/docket.mjs)
   - Bash(cp ${CLAUDE_PLUGIN_ROOT}/skills/docket/docket-ci.yml .github/workflows/docket-ci.yml)
   - Bash(cp "${CLAUDE_PLUGIN_ROOT}/skills/docket/docket-ci.yml" .github/workflows/docket-ci.yml)
+  - Bash(cp ${CLAUDE_PLUGIN_ROOT}/skills/docket/collection-agents.md:*)
+  - Bash(cp "${CLAUDE_PLUGIN_ROOT}/skills/docket/collection-agents.md":*)
   - Bash(mkdir -p .github/scripts .github/workflows)
 ---
 
@@ -14,7 +16,7 @@ allowed-tools:
 backend. Ask for whichever of the two is missing - profile `rfc` or
 `decision`, backend `notion`, `gdocs` or `git` - rather than defaulting.
 
-Then, from the archive repo's root, three writes and nothing else:
+Then, from the archive repo's root, four writes and nothing else:
 
 1. Create `<collection>/docket.toml`:
 
@@ -33,7 +35,17 @@ Then, from the archive repo's root, three writes and nothing else:
    cp "${CLAUDE_PLUGIN_ROOT}/skills/docket/docket-ci.yml" .github/workflows/docket-ci.yml
    ```
 
-Say what was written and that the workflow will enforce immutability on every
-pull request once committed. Commit only if the user asks. If the directory
-is already a collection, or the workflow file already exists, say so and
-change nothing.
+3. Copy the collection's rules in beside the documents, so somebody working
+   here without this plugin reads them before CI tells them:
+
+   ```bash
+   cp "${CLAUDE_PLUGIN_ROOT}/skills/docket/collection-agents.md" <collection>/AGENTS.md
+   ```
+
+   Copy it as it stands. Do not summarise it, and do not substitute the
+   collection's name for the `<collection>` placeholder in its examples.
+
+Say what was written, and that `AGENTS.md` states the rules the workflow will
+enforce on every pull request once committed. Commit only if the user asks. If
+the directory is already a collection, or the workflow file already exists, say
+so and change nothing.

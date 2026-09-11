@@ -1,6 +1,6 @@
 {
   "name": "docket",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Take documents through numbered collections and collaborative review to a frozen, immutable archive",
   "author": {
     "name": "Mihai Bojin",

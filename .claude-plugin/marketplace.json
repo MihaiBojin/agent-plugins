@@ -10,7 +10,7 @@
       "name": "docket",
       "source": "./plugins/docket",
       "description": "Take documents through numbered collections and collaborative review to a frozen, immutable archive",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"

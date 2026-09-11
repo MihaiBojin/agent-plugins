@@ -25,6 +25,11 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/docket/docket.mjs" freeze <collection> <nnnn>
   --title "<title>" --created <YYYY-MM-DD> --backend <ref> --body <exported-file>
 ```
 
+`--created` is the date the draft first existed, read from the backend: the
+Notion page's or the Google Doc's creation time, or the first commit on the
+draft's branch for git. Ask the user when the backend cannot say. The helper
+checks the shape and nothing else, so a guessed date archives as fact.
+
 `--backend` is the draft's address - `notion/page/<id>`, `gdocs/<id>`, or the
 PR URL for the git backend, where the draft file is replaced by this
 assembled one and the merge is the freeze. Follow with `verify` on the

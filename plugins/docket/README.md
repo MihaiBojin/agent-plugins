@@ -50,6 +50,10 @@ Docket also scaffolds a CI check for the archive repo. On every pull request,
 it makes sure a frozen document's body has not changed. Only `status`,
 `superseded_by`, and `errata` may be updated afterward.
 
+The same scaffold writes `AGENTS.md` into the collection, stating those rules
+where the documents are. The check reports a broken rule; the file is what
+tells somebody before they break it.
+
 If the [mutex plugin](https://github.com/releasetools/mutex) is available,
 docket uses `doc/<collection>/allocator` while assigning numbers and
 `doc/<collection>/<nnnn>` during lifecycle changes. Without it, docket warns
@@ -78,13 +82,13 @@ there.
 
 ## Commands
 
-| Command                                             | What it does                                      |
-| --------------------------------------------------- | ------------------------------------------------- |
-| `/docket:new <collection> "<title>"`                | Assign the next number and open a draft           |
-| `/docket:status <collection> <n>`                   | Show the stage, backend, and open review threads  |
-| `/docket:freeze <collection> <n>`                   | Run the final checks and export the frozen record |
-| `/docket:supersede <collection> <old> <new>`        | Link the old document to its replacement          |
-| `/docket:scaffold <collection> [profile] [backend]` | Create the collection, config, and CI check       |
+| Command                                             | What it does                                       |
+| --------------------------------------------------- | -------------------------------------------------- |
+| `/docket:new <collection> "<title>"`                | Assign the next number and open a draft            |
+| `/docket:status <collection> <n>`                   | Show the stage, backend, and open review threads   |
+| `/docket:freeze <collection> <n>`                   | Run the final checks and export the frozen record  |
+| `/docket:supersede <collection> <old> <new>`        | Link the old document to its replacement           |
+| `/docket:scaffold <collection> [profile] [backend]` | Create the collection, its rules, and the CI check |
 
 Docket handles the mechanics, but it does not pretend the important calls are
 mechanical. Deciding whether a thread is truly resolved, how to work with the

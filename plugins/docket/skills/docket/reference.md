@@ -63,6 +63,10 @@ Documents are `<collection>/<nnnn>.md`, numbers zero-padded to `width`. The
 frozen file's git path is the document's address; hosting prettier URLs is
 deliberately somebody's later problem.
 
+`AGENTS.md` sits beside `docket.toml`, copied from the plugin unchanged by
+`/docket:scaffold`. It states the rules the CI check enforces, for the people
+and the sessions that work in the archive without this plugin installed.
+
 ## The frontmatter
 
 `freeze` writes this schema, and nothing else writes it:
@@ -111,6 +115,8 @@ New files, drafts and non-docket files pass untouched.
 becomes `.github/workflows/docket-ci.yml`, which runs the check on every pull
 request against the PR's base commit. The copy is deliberate - the archive's
 guarantee must not depend on any contributor having this plugin installed.
+`<collection>/AGENTS.md` is copied for the same reason one step earlier: the
+check reports a broken rule, and that file is what states it first.
 
 ## Lock ids
 
