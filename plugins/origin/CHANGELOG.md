@@ -2,6 +2,19 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.17.3
+
+The ship-it CI reference says where `checksState: unknown` comes from. `stale`
+overrides it at `lib/ci.sh:72`, so `unknown` is what a poll sees while a run is
+still moving, not a sign that CI is absent. An agent treating it as terminal
+stops watching a green run.
+
+### Choices
+
+The reference changes, not the CLI. `unknown` on a stale read is the honest
+answer: the second read disagreed with the first, so the checks it saw prove
+nothing. What was missing was the sentence saying so.
+
 ## 0.17.2
 
 The ship-it skill branches with `origin new-branch`. Its two code blocks kept
