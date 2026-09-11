@@ -138,10 +138,14 @@ ask, and let them edit either.
 The body is for a reviewer who has not read the diff:
 
 - One line stating the change.
-- Three to five bullets on what changed and why, not one per file.
+- Then a heading per area of change, with what changed and why under it, not
+  one bullet per file.
 - Say what you did not do, when the change leaves something obvious undone.
-- No headings, no preamble, 72 columns.
+- 72 columns, no preamble.
 - In a stack, one line naming the branch below it and what it does.
+
+The merge commit is the other shape: `origin merge` writes that one, and a
+commit message carries no headings at all.
 
 ```bash
 gh pr create --base <parent> --title <title> --body-file <path>

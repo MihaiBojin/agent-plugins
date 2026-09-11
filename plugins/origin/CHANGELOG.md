@@ -2,6 +2,20 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.17.4
+
+The pull request body `origin push` writes carries a heading per area of
+change, with what changed and why under it. The merge commit body is
+unchanged: `origin merge` still writes one line and a few bullets at 72
+columns, because a git commit message has no headings.
+
+### Choices
+
+Two bodies, two shapes, rather than one rule for both. A reviewer reads the
+pull request on a web page with a diff beside it and jumps between areas; the
+commit lands in `git log` a year later with nothing beside it. The earlier
+rule made both flat and lost the first reader to save a sentence.
+
 ## 0.17.3
 
 The ship-it CI reference says where `checksState: unknown` comes from. `stale`
