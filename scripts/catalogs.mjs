@@ -28,7 +28,7 @@ import path from "node:path";
  */
 
 /** The name a user types after `@` when installing. Both catalogs carry it. */
-export const MARKETPLACE_NAME = "MihaiBojin";
+export const MARKETPLACE_NAME = "mihaibojin";
 
 /** Claude Code's catalog. */
 export const CLAUDE_CATALOG = ".claude-plugin/marketplace.json";

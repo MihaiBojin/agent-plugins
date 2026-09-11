@@ -162,7 +162,7 @@ describe("syncCatalogs", () => {
     roots.push(root);
     plugin(root, "docket", {});
 
-    expect(syncCatalogs({ root }).errors[0]).toContain("not 'MihaiBojin'");
+    expect(syncCatalogs({ root }).errors[0]).toContain("not 'mihaibojin'");
   });
 
   it("writes the JSON a formatter would leave alone", () => {

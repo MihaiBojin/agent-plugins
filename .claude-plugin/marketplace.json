@@ -1,5 +1,5 @@
 {
-  "name": "MihaiBojin",
+  "name": "mihaibojin",
   "owner": {
     "name": "Mihai Bojin",
     "url": "https://github.com/MihaiBojin"
@@ -33,7 +33,7 @@
       "name": "origin",
       "source": "./plugins/origin",
       "description": "Git worktrees, pull request merges, and keeping a branch on top of the head branch, from one tested CLI.",
-      "version": "0.17.0",
+      "version": "0.17.1",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"
@@ -54,7 +54,7 @@
       "name": "decisions",
       "source": "./plugins/decisions",
       "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"

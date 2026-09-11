@@ -205,12 +205,16 @@ jobs:
           set -euo pipefail
 
           expected="$(node -p "require('./plugins/${PLUGIN}/.claude-plugin/plugin.json').version")"
+          # The handle a user types after `@`, read from the one place that defines it,
+          # so a rename cannot leave this job installing something nobody publishes.
+          export MARKETPLACE="$(node -e 'import("./scripts/catalogs.mjs").then((m) => process.stdout.write(m.MARKETPLACE_NAME))')"
           claude plugin marketplace add "$PWD"
-          claude plugin install "${PLUGIN}@MihaiBojin"
+          claude plugin install "${PLUGIN}@${MARKETPLACE}"
 
           installed="$(claude plugin list --json | node -e '
             const rows = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
-            const found = rows.find((row) => row.id === `${process.env.PLUGIN}@MihaiBojin`);
+            const id = `${process.env.PLUGIN}@${process.env.MARKETPLACE}`;
+            const found = rows.find((row) => row.id === id);
             process.stdout.write(found ? found.version : "");
           ')"
           if [ "$installed" != "$expected" ]; then
@@ -228,8 +232,11 @@ jobs:
 
           expected="$(node -p "require('./plugins/${PLUGIN}/.codex-plugin/plugin.json').version")"
           mkdir -p "$CODEX_HOME"
+          # The handle a user types after `@`, read from the one place that defines it,
+          # so a rename cannot leave this job installing something nobody publishes.
+          export MARKETPLACE="$(node -e 'import("./scripts/catalogs.mjs").then((m) => process.stdout.write(m.MARKETPLACE_NAME))')"
           codex plugin marketplace add "$PWD"
-          codex plugin add "${PLUGIN}@MihaiBojin"
+          codex plugin add "${PLUGIN}@${MARKETPLACE}"
 
           installed="$(codex plugin list --json | node -e '
             const { installed } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));

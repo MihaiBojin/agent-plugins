@@ -48,5 +48,5 @@ exactly like a log nobody wrote.
 
 ```
 /plugin marketplace add MihaiBojin/agent-plugins
-/plugin install decisions@MihaiBojin
+/plugin install decisions@mihaibojin
 ```

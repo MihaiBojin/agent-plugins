@@ -216,10 +216,10 @@ describe("validateMarketplaces", () => {
   it("catches a marketplace renamed out from under its users", () => {
     const root = published();
     const claude = readJson(root, CLAUDE);
-    claude.name = "MihaiBojin-plugins";
+    claude.name = "mihaibojin-plugins";
     writeJson(root, CLAUDE, claude);
 
-    expect(failure(root)).toMatch(/names the marketplace 'MihaiBojin-plugins'/);
+    expect(failure(root)).toMatch(/names the marketplace 'mihaibojin-plugins'/);
   });
 
   it("catches a Codex entry with no installation policy", () => {

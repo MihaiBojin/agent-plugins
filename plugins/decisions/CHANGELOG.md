@@ -2,6 +2,11 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.1.1
+
+The install command in the README reads `decisions@mihaibojin`. The
+marketplace is named `mihaibojin`, so that is the handle to type after `@`.
+
 ## 0.1.0
 
 The first release: a decision log a repository opts into, and the commands and
