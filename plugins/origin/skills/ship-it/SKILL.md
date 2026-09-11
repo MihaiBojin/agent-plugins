@@ -78,7 +78,7 @@ Fetch the resolved base remote and read its current default-branch ref. For a
 new dedicated branch:
 
 ```bash
-<origin-bin> new <chosen-name> --yes
+<origin-bin> new-branch <chosen-name> --yes
 ```
 
 Run this with the base-remote context from the remotes reference. It creates

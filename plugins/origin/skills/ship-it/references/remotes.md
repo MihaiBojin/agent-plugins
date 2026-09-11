@@ -42,7 +42,7 @@ calls rely on the forge CLI's repository context. Supply that context on every
 invocation, including the merge skill's gather and merge calls:
 
 ```bash
-GH_REPO=<host/owner/target> GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=checkout.defaultRemote GIT_CONFIG_VALUE_0=<base-remote> <origin-bin> new <name> --yes
+GH_REPO=<host/owner/target> GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=checkout.defaultRemote GIT_CONFIG_VALUE_0=<base-remote> <origin-bin> new-branch <name> --yes
 GH_REPO=<host/owner/target> GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=checkout.defaultRemote GIT_CONFIG_VALUE_0=<base-remote> <origin-bin> merge <number> --gather
 ```
 
