@@ -2,6 +2,19 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.17.2
+
+The ship-it skill branches with `origin new-branch`. Its two code blocks kept
+the pre-0.16.0 spelling, which `bin/origin` exits 1 on, so an agent following
+the skill stopped at the first branch it had to create. `SKILL.md` and
+`references/remotes.md` both carry the right name now.
+
+### Choices
+
+The older entries keep `origin new`. Each describes the release it belongs to,
+and 0.16.0 is where the rename is recorded; rewriting them would hide when it
+happened.
+
 ## 0.17.1
 
 The README reads `origin@mihaibojin`, and the `bin/` directory to put on PATH
