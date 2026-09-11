@@ -2,6 +2,11 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.2.1
+
+The README says how to install the plugin, the way `decisions` and `readme`
+already do.
+
 ## 0.2.0
 
 - `/docket:scaffold` writes `<collection>/AGENTS.md`, a fourth file beside

@@ -96,3 +96,10 @@ available backend, or whether a change deserves a new document still requires
 judgment. The guidance for those calls lives in
 [the skill](./skills/docket/SKILL.md), with implementation details in
 [the reference](./skills/docket/reference.md).
+
+## Install
+
+```
+/plugin marketplace add MihaiBojin/agent-plugins
+/plugin install docket@mihaibojin
+```
