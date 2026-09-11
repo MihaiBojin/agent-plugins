@@ -16,7 +16,7 @@ plugins/<name>/CHANGELOG.md       Its releases, and the choices behind them
 scripts/validate-plugin.mjs       One plugin's own layout
 scripts/validate-marketplaces.mjs What holds between the two catalogs
 scripts/sync-catalogs.mjs         Writes both catalogs from plugins/
-scripts/check-version-bump.mjs    A changed plugin has to say so in its version
+scripts/check-release.mjs         A changed plugin declares a version and an entry
 scripts/catalogs.mjs              What all of those agree on
 __tests__/                        Jest, run by `npm test`
 ```
@@ -56,9 +56,10 @@ npm run sync           # rewrite the catalogs from plugins/
 **Bump the version in both manifests.** This is the rule with no second chance:
 a client that already installed 0.1.0 compares versions to decide whether an
 update exists, so shipping a fix under the same number means nobody receives it,
-quietly, on every machine that already had it. `check-version-bump.mjs` reads
-the diff against the base branch and fails the pull request when a plugin
-changed and its version did not.
+quietly, on every machine that already had it. `check-release.mjs` reads the diff
+against the base branch and fails the pull request when a plugin changed and
+its version did not, or when its `CHANGELOG.md` carries no section for the
+version it now claims.
 
 Semver is judged from what an agent sees: new commands or skills are a minor,
 wording and fixes are a patch, and removing a command or changing what one does

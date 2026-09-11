@@ -83,12 +83,13 @@ jobs:
         run: npm run sync -- --check
 
       # A plugin that changed without saying so in its version is a fix nobody
-      # receives, so the rule is read out of the diff.
-      - name: ✅ A changed plugin says so in its version
+      # receives, and one that changed without a changelog entry is reasoning
+      # nobody gets back. Both are read out of the diff.
+      - name: ✅ A changed plugin declares its release
         if: github.event_name == 'pull_request'
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
-        run: node scripts/check-version-bump.mjs --base "$BASE"
+        run: node scripts/check-release.mjs --base "$BASE"
 
       - name: 📦 Install the pinned Claude Code CLI
         run: npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"

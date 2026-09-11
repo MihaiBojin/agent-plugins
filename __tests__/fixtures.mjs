@@ -114,6 +114,11 @@ export function plugin(root, name, overrides = {}) {
     `${at}/skills/${name}/SKILL.md`,
     `---\nname: ${name}\ndescription: ${description}\n---\n`,
   );
+  write(
+    root,
+    `${at}/CHANGELOG.md`,
+    `# ${name}\n\nNewest release first.\n\n## ${version}\n\nThe first release.\n`,
+  );
   for (const [relative, contents] of Object.entries(overrides.files ?? {})) {
     write(root, `${at}/${relative}`, contents);
   }

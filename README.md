@@ -55,7 +55,8 @@ The layout and the validation machinery are ported from
 where they earned their keep first: `validate-plugin.mjs` checks one plugin's
 own layout, `validate-marketplaces.mjs` checks what holds between the two
 catalogs, `sync-catalogs.mjs` rewrites both catalogs from `plugins/`, and
-`check-version-bump.mjs` insists that a changed plugin says so in its version.
+`check-release.mjs` insists that a changed plugin declares a new version and a
+changelog section carrying it.
 
 Two pieces did not make the trip. `install-agent-skills.mjs` - the copy-based
 installs for agents that read no manifest (Hermes, Gemini, Antigravity) - only
