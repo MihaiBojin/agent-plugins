@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#
+# A fake CLI whose `--help` is the file a test wrote, so one stub covers a
+# command list, a missing command list, and anything else worth checking.
+
+set -euo pipefail
+
+case "${1:-}" in
+  --help) cat "${SAMPLECLI_HELP:?SAMPLECLI_HELP is unset}" ;;
+  *)
+    printf 'samplecli: %s\n' "${1:-no command}" >&2
+    exit 1
+    ;;
+esac

@@ -70,6 +70,27 @@
         "provenance",
         "agent-rules"
       ]
+    },
+    {
+      "name": "readme",
+      "source": "./plugins/readme",
+      "description": "Check a README's claims by running the thing it describes, then rewrite it around what is true",
+      "version": "0.1.0",
+      "author": {
+        "name": "Mihai Bojin",
+        "url": "https://github.com/MihaiBojin"
+      },
+      "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/readme#readme",
+      "repository": "https://github.com/MihaiBojin/agent-plugins",
+      "license": "Apache-2.0",
+      "keywords": [
+        "readme",
+        "documentation",
+        "technical-writing",
+        "docs",
+        "drift",
+        "audit"
+      ]
     }
   ]
 }

@@ -27,10 +27,12 @@ codex plugin add <name>@mihaibojin
 
 ## What is published
 
-| Plugin                            | What it does                                                                           |
-| --------------------------------- | -------------------------------------------------------------------------------------- |
-| [docket](./plugins/docket#readme) | Numbered document collections, argued through review, frozen into an immutable archive |
-| [origin](./plugins/origin#readme) | Git worktrees, pull request merges, and rebasing onto the head branch                  |
+| Plugin                                  | What it does                                                                           |
+| --------------------------------------- | -------------------------------------------------------------------------------------- |
+| [docket](./plugins/docket#readme)       | Numbered document collections, argued through review, frozen into an immutable archive |
+| [origin](./plugins/origin#readme)       | Git worktrees, pull request merges, and rebasing onto the head branch                  |
+| [decisions](./plugins/decisions#readme) | A decision log written while the work happens, in the repositories that ask for one    |
+| [readme](./plugins/readme#readme)       | A README checked against the code it describes, then rewritten                         |
 
 Each plugin lives in `plugins/<name>/` in this repository: the source, not a
 copy of one. Editing a plugin is an ordinary pull request, and the merge is the

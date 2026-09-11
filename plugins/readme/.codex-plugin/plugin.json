@@ -1,0 +1,41 @@
+{
+  "name": "readme",
+  "version": "0.1.0",
+  "description": "Check a README's claims by running the thing it describes, then rewrite it around what is true",
+  "author": {
+    "name": "Mihai Bojin",
+    "url": "https://github.com/MihaiBojin"
+  },
+  "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/readme#readme",
+  "repository": "https://github.com/MihaiBojin/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "readme",
+    "documentation",
+    "technical-writing",
+    "docs",
+    "drift",
+    "audit"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "interface": {
+    "displayName": "readme",
+    "shortDescription": "A README, checked against the code it describes",
+    "longDescription": "Four passes over a README: measure it against comparable projects, check every claim by running the thing it describes, rewrite what is left, then run the same checks over the new draft. The second pass is where the findings are, because a documented command list, a documented file format and a documented quickstart all drift without anything failing. bin/readme settles the mechanical part - links that do not resolve, badges naming workflows that are not there, anchors pointed at deleted headings, and the CLI's own --help against the commands the README names.",
+    "developerName": "Mihai Bojin",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Resolve every link, badge and inbound anchor a README carries",
+      "Compare a CLI's --help with the commands its README documents",
+      "Report which README claims the repository contradicts, with the evidence",
+      "Rewrite a README in place and check the rewrite the same way"
+    ],
+    "websiteURL": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/readme#readme",
+    "defaultPrompt": [
+      "Audit this README against the code.",
+      "Is anything in the README still true?",
+      "Rewrite the README and tell me what you cut."
+    ]
+  }
+}
