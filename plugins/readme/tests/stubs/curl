@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# A fake `curl` for the link check. The URL's path picks the status, so a test
+# asks for one by naming it. No network, and no dependence on a real server.
+
+set -euo pipefail
+
+url=""
+for argument in "$@"; do
+  case "$argument" in
+    http://* | https://*) url="$argument" ;;
+  esac
+done
+
+case "$url" in
+  *unreachable*) exit 7 ;;
+  *gone*) printf '404' ;;
+  *teapot*) printf '418' ;;
+  *) printf '200' ;;
+esac

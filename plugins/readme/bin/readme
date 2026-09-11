@@ -1,0 +1,465 @@
+#!/usr/bin/env bash
+#
+# readme - the part of a README review a script can settle.
+#
+# A link resolves or it does not. A badge names the workflow it points at or it
+# does not. A command the CLI has appears in the README or it does not. Those
+# are the questions here. Whether the README is worth reading is judgement, and
+# judgement belongs to the skill.
+
+set -euo pipefail
+
+# Identifies the tool to the servers it asks. A borrowed browser string gets
+# past more of them and is a lie told by a checker.
+UA='readme (+https://github.com/MihaiBojin/agent-plugins)'
+
+FINDINGS=0
+
+die() {
+  printf 'readme: %s\n' "$1" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'HELP'
+readme - what a script can settle about a README
+
+USAGE
+  readme <command> [file]
+
+COMMANDS
+  all       [file]         stats, links, badges and anchors in one run
+  stats     [file]         Words, lines, headings and fenced blocks
+  links     [file]         Every link target, resolved
+  badges    [file]         Badge alt text against the workflow it names
+  anchors   [file]         Links into this README from the rest of the repository
+  commands  <cli> [file]   The CLI's commands against the ones the README names
+  help      This
+
+file defaults to README.md.
+
+Findings go to stdout, one per line, named by the check that found them.
+Counts go to stderr. The exit status says whether the run worked, not
+whether it found anything.
+
+Words exclude fenced code blocks. Links inside them are examples the reader
+types rather than links the page offers, so they are not checked either.
+HELP
+}
+
+finding() {
+  printf '%s\n' "$*"
+  FINDINGS=$((FINDINGS + 1))
+}
+
+note() {
+  printf '%s\n' "$*" >&2
+}
+
+summary() {
+  printf 'readme: %s finding(s)\n' "$FINDINGS"
+}
+
+# Sets FILE. Not a value printed from a subshell: `die` there kills the
+# subshell alone, the caller reads an empty path, and awk given no file reads
+# stdin and waits forever.
+resolve_file() {
+  FILE="${1:-}"
+  [ -n "$FILE" ] || FILE="README.md"
+  [ -f "$FILE" ] || die "no such file: $FILE"
+}
+
+# The repository this README belongs to, or the working directory when there
+# is no repository.
+repo_root() {
+  git rev-parse --show-toplevel 2>/dev/null || pwd
+}
+
+# The README with fenced code blocks removed.
+prose() {
+  awk '
+    /^[[:space:]]*(```|~~~)/ { fenced = !fenced; next }
+    !fenced { print }
+  ' "$1"
+}
+
+# Every heading, as the anchor GitHub gives it.
+slugs() {
+  prose "$1" |
+    sed -n -e 's/^#\{1,6\}[[:space:]][[:space:]]*//p' |
+    tr '[:upper:]' '[:lower:]' |
+    sed -e 's/[^a-z0-9 _-]//g' -e 's/[[:space:]]*$//' -e 's/ /-/g'
+}
+
+# Whether a slug list holds this anchor.
+anchor_known() {
+  local list="$1" anchor bare
+  anchor="$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]')"
+  if printf '%s\n' "$list" | grep -qxF "$anchor"; then
+    return 0
+  fi
+  # GitHub numbers a heading it has already seen: install, install-1.
+  bare="$(printf '%s' "$anchor" | sed -e 's/-[0-9][0-9]*$//')"
+  if [ "$bare" = "$anchor" ]; then
+    return 1
+  fi
+  printf '%s\n' "$list" | grep -qxF "$bare"
+}
+
+# Every link target in the prose: inline, autolink, and reference definition.
+link_targets() {
+  awk '
+    function emit(target) {
+      sub(/[[:space:]].*$/, "", target)
+      if (target != "") { print target }
+    }
+    /^[[:space:]]*(```|~~~)/ { fenced = !fenced; next }
+    fenced { next }
+    {
+      rest = $0
+      while (match(rest, /\]\([^)]*\)/)) {
+        emit(substr(rest, RSTART + 2, RLENGTH - 3))
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+      rest = $0
+      while (match(rest, /<https?:\/\/[^>[:space:]]+>/)) {
+        emit(substr(rest, RSTART + 1, RLENGTH - 2))
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+      if (match($0, /^\[[^]]+\]:[[:space:]]*[^[:space:]]+/)) {
+        rest = $0
+        sub(/^\[[^]]+\]:[[:space:]]*/, "", rest)
+        emit(rest)
+      }
+    }
+  ' "$1" | sort -u
+}
+
+check_links() {
+  local file="$1" root dir list target status path count=0
+  dir="$(dirname "$file")"
+  root="$(repo_root)"
+  list="$(slugs "$file")"
+
+  while IFS= read -r target; do
+    [ -n "$target" ] || continue
+    count=$((count + 1))
+    case "$target" in
+      '#'*)
+        if ! anchor_known "$list" "${target#\#}"; then
+          finding "links: $target has no heading in $file"
+        fi
+        ;;
+      http://* | https://*)
+        status="$(curl -sS -L -o /dev/null -w '%{http_code}' \
+          --connect-timeout 5 --max-time 15 -A "$UA" "$target" 2>/dev/null || printf '000')"
+        case "$status" in
+          2*) ;;
+          000) finding "links: no answer from $target" ;;
+          *) finding "links: HTTP $status $target" ;;
+        esac
+        ;;
+      *:*)
+        # mailto:, tel:, and anything else no filesystem or HTTP call settles.
+        count=$((count - 1))
+        ;;
+      /*)
+        path="${root}${target%%#*}"
+        [ -e "$path" ] || finding "links: $target is not a file in this repository"
+        ;;
+      *)
+        path="${dir}/${target%%#*}"
+        [ -e "$path" ] || finding "links: $target is not a file beside $file"
+        ;;
+    esac
+  done < <(link_targets "$file")
+
+  note "links: $count checked"
+}
+
+# Every image, as `alt|url`.
+badge_images() {
+  awk '
+    /^[[:space:]]*(```|~~~)/ { fenced = !fenced; next }
+    fenced { next }
+    {
+      rest = $0
+      while (match(rest, /!\[[^]]*\]\([^)]*\)/)) {
+        image = substr(rest, RSTART, RLENGTH)
+        rest = substr(rest, RSTART + RLENGTH)
+        alt = image
+        sub(/^!\[/, "", alt)
+        sub(/\].*$/, "", alt)
+        url = image
+        sub(/^!\[[^]]*\]\(/, "", url)
+        sub(/\)$/, "", url)
+        sub(/[[:space:]].*$/, "", url)
+        print alt "|" url
+      }
+    }
+  ' "$1"
+}
+
+# A workflow's own name, which is what its badge reads as.
+workflow_name() {
+  sed -n -e 's/^name:[[:space:]]*//p' "$1" | head -1 |
+    sed -e 's/^["'\'']//' -e 's/["'\'']$//' -e 's/[[:space:]]*$//'
+}
+
+# The `owner/name` this repository pushes to, which is how a badge pointing
+# here is told from one pointing at a sibling repository.
+repo_slug() {
+  local url
+  url="$(git -C "$1" config --get remote.origin.url 2>/dev/null)" || return 1
+  [ -n "$url" ] || return 1
+  url="${url%.git}"
+  case "$url" in
+    *github.com[:/]*) ;;
+    *) return 1 ;;
+  esac
+  url="${url#*github.com}"
+  printf '%s\n' "${url#[:/]}"
+}
+
+check_badges() {
+  local file="$1" root slug alt url owner workflow name count=0 elsewhere=0
+  root="$(repo_root)"
+  if ! slug="$(repo_slug "$root")"; then
+    note "badges: no GitHub remote here, so nothing says which badges point at it"
+    return 0
+  fi
+
+  while IFS='|' read -r alt url; do
+    owner=""
+    workflow=""
+    case "$url" in
+      https://github.com/*/actions/workflows/*)
+        owner="${url#https://github.com/}"
+        owner="${owner%%/actions/workflows/*}"
+        workflow="${url#*/actions/workflows/}"
+        workflow="${workflow%%/badge.svg*}"
+        ;;
+      https://img.shields.io/github/actions/workflow/status/*)
+        owner="${url#https://img.shields.io/github/actions/workflow/status/}"
+        workflow="${owner#*/}"
+        workflow="${workflow#*/}"
+        workflow="${workflow%%\?*}"
+        owner="${owner%/"$workflow"*}"
+        ;;
+    esac
+    case "$workflow" in
+      "" | */*) continue ;;
+    esac
+    # A badge for another repository's workflow is a normal thing to carry, and
+    # this checkout holds no answer about it.
+    if [ "$owner" != "$slug" ]; then
+      elsewhere=$((elsewhere + 1))
+      continue
+    fi
+    count=$((count + 1))
+
+    if [ ! -f "${root}/.github/workflows/${workflow}" ]; then
+      finding "badges: \"$alt\" points at .github/workflows/${workflow}, which is not here"
+      continue
+    fi
+    name="$(workflow_name "${root}/.github/workflows/${workflow}")"
+    if [ -n "$name" ] && [ "$name" != "$alt" ]; then
+      finding "badges: \"$alt\" is the alt text, but .github/workflows/${workflow} is named \"$name\""
+    fi
+  done < <(badge_images "$file")
+
+  if [ "$elsewhere" -gt 0 ]; then
+    note "badges: $count checked, $elsewhere pointing at another repository"
+  else
+    note "badges: $count checked"
+  fi
+}
+
+# Every inbound anchor written anywhere else in the repository, as
+# `file:line|reference`, the reference keeping whatever path was written in
+# front of it.
+inbound_anchors() {
+  local root="$1" base="$2"
+  {
+    (cd "$root" && grep -rInE "[A-Za-z0-9_./-]*${base}#[A-Za-z0-9_-]+" \
+      --exclude-dir=.git --exclude-dir=node_modules .) || true
+  } | awk -v base="$base" '
+    {
+      pattern = "[A-Za-z0-9_./-]*" base "#[A-Za-z0-9_-]+"
+      split($0, parts, ":")
+      rest = $0
+      while (match(rest, pattern)) {
+        print parts[1] ":" parts[2] "|" substr(rest, RSTART, RLENGTH)
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+    }' | sort -u
+}
+
+# A path, with any `..` and `.` resolved, for comparing two of them.
+resolved_path() {
+  local directory base
+  directory="$(dirname "$1")"
+  base="$(basename "$1")"
+  [ -d "$directory" ] || return 1
+  printf '%s/%s\n' "$(cd "$directory" && pwd -P)" "$base"
+}
+
+check_anchors() {
+  local file="$1" root target list where reference anchor from candidate count=0
+  root="$(repo_root)"
+  target="$(resolved_path "$file")"
+  list="$(slugs "$file")"
+
+  while IFS='|' read -r where reference; do
+    [ -n "$reference" ] || continue
+    # A repository holds more than one README, and the reference belongs to
+    # whichever one its own directory resolves it to.
+    from="$(dirname "${root}/${where%%:*}")"
+    candidate="$(resolved_path "${from}/${reference%%#*}")" || continue
+    [ "$candidate" = "$target" ] || continue
+
+    count=$((count + 1))
+    anchor="${reference##*#}"
+    if ! anchor_known "$list" "$anchor"; then
+      finding "anchors: $where wants #$anchor, and $(basename "$file") has no such heading"
+    fi
+  done < <(inbound_anchors "$root" "$(basename "$file")")
+
+  note "anchors: $count checked"
+}
+
+# The commands a CLI admits to having.
+cli_commands() {
+  local cli="$1"
+  case "$cli" in
+    */*) [ -x "$cli" ] || die "not an executable: $cli" ;;
+    *) command -v "$cli" >/dev/null 2>&1 || die "no such command: $cli" ;;
+  esac
+  { "$cli" --help 2>&1 </dev/null || true; } | awk '
+    /^[[:space:]]*(COMMANDS|Commands:|Available Commands:|SUBCOMMANDS|Subcommands:)[[:space:]]*$/ {
+      inside = 1
+      next
+    }
+    inside && /^[^[:space:]]/ { inside = 0 }
+    inside && /^[[:space:]]+[a-z][a-z0-9-]*/ {
+      sub(/^[[:space:]]+/, "")
+      split($0, field, /[[:space:],|]/)
+      if (field[1] != "") { print field[1] }
+    }
+  ' | sort -u
+}
+
+# The commands the README names, at the start of a code span or a line.
+#
+# A README writes a command the way a reader types it, so a CLI given as a path
+# is searched for by its basename.
+documented_commands() {
+  local cli="$1" file="$2" name tick
+  name="$(basename "$cli")"
+  case "$name" in
+    *[!A-Za-z0-9._-]*) die "a CLI name with nothing to search for: $name" ;;
+  esac
+  tick='`'
+  {
+    grep -oE "${tick}${name}[[:space:]]+[a-z][a-z0-9-]*" "$file" || true
+    grep -oE "^(\\\$ )?${name}[[:space:]]+[a-z][a-z0-9-]*" "$file" || true
+  } | awk '{ print $NF }' | sort -u
+}
+
+check_commands() {
+  local cli="$1" file="$2" shown readme listed documented name count=0
+  shown="$(basename "$cli")"
+  readme="$(basename "$file")"
+  listed="$(cli_commands "$cli")"
+  if [ -z "$listed" ]; then
+    finding "commands: $shown --help lists no commands this can read"
+    return 0
+  fi
+  documented="$(documented_commands "$cli" "$file")"
+
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    count=$((count + 1))
+    printf '%s\n' "$documented" | grep -qxF "$name" ||
+      finding "commands: $shown $name is in --help and not in $readme"
+  done < <(printf '%s\n' "$listed")
+
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    printf '%s\n' "$listed" | grep -qxF "$name" ||
+      finding "commands: $readme names $shown $name, and --help does not"
+  done < <(printf '%s\n' "$documented")
+
+  note "commands: $count read from $shown --help"
+}
+
+show_stats() {
+  local file="$1" words lines fences headings depth
+  lines="$(awk 'END { print NR }' "$file")"
+  words="$(prose "$file" | wc -w | tr -d ' ')"
+  fences="$(awk '/^[[:space:]]*(```|~~~)/ { n++ } END { print int(n / 2) }' "$file")"
+  read -r headings depth < <(prose "$file" | awk '
+    /^#+[[:space:]]/ {
+      match($0, /^#+/)
+      if (RLENGTH <= 6) {
+        n++
+        if (RLENGTH > deepest) { deepest = RLENGTH }
+      }
+    }
+    END { print n + 0, deepest + 0 }
+  ')
+  printf 'stats: %s words, %s lines, %s headings (max depth %s), %s fenced blocks\n' \
+    "$words" "$lines" "$headings" "$depth" "$fences"
+}
+
+FILE=""
+cli=""
+
+case "${1:-help}" in
+  all)
+    shift
+    resolve_file "${1:-}"
+    show_stats "$FILE"
+    check_links "$FILE"
+    check_badges "$FILE"
+    check_anchors "$FILE"
+    summary
+    ;;
+  stats)
+    shift
+    resolve_file "${1:-}"
+    show_stats "$FILE"
+    ;;
+  links)
+    shift
+    resolve_file "${1:-}"
+    check_links "$FILE"
+    summary
+    ;;
+  badges)
+    shift
+    resolve_file "${1:-}"
+    check_badges "$FILE"
+    summary
+    ;;
+  anchors)
+    shift
+    resolve_file "${1:-}"
+    check_anchors "$FILE"
+    summary
+    ;;
+  commands)
+    shift
+    [ $# -ge 1 ] || die "commands needs the CLI to run: readme commands <cli> [file]"
+    cli="$1"
+    shift
+    resolve_file "${1:-}"
+    check_commands "$cli" "$FILE"
+    summary
+    ;;
+  help | -h | --help) usage ;;
+  *)
+    usage >&2
+    exit 1
+    ;;
+esac

@@ -1,1 +1,6 @@
 node_modules
+
+# Vendored verbatim. Prettier turns 60 of its lines into 91, and a bold label
+# after a blockquote becomes part of the blockquote, so a formatted copy cannot
+# be diffed against upstream.
+plugins/readme/skills/readme/references/humanizer.md
