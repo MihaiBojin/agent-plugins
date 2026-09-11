@@ -21,8 +21,10 @@ snapshot; failing checks are data, not a command error. A read failure exits
 nonzero without a snapshot. Report that error without treating it as a test
 failure.
 
-The CLI reads the review again after its checks, marks changed identities
-`stale`, and returns `unknown` for empty checks or a missing pipeline. It
+The CLI reads the review again after its checks and marks a changed identity
+`stale`. A stale read reports `checksState` as `unknown` whatever the checks
+hold, so `unknown` is the ordinary answer while a run is still moving; only a
+settled read returns it for an empty check list or a missing pipeline. It
 selects GitLab's MR head pipeline, reads jobs from that pipeline's project
 across all pages, and verifies generated merge commits against the current
 source and target. `stale` or `pending` means read again before acting.
@@ -30,10 +32,12 @@ source and target. `stale` or `pending` means read again before acting.
 `passed` describes observed checks, not merge readiness. Inspect `pr.draft`,
 `pr.mergeable`, and `pr.mergeStateStatus`, then use the merge skill's gather.
 Required checks not yet reported and required reviews still block merging.
-For `unknown`, establish whether CI is absent by design or not yet available.
-Do not turn an empty result into success. Manual jobs and external approvals
-need the relevant human action. Never approve a privileged run, disable a
-check, weaken branch protection, or merge past failures automatically.
+For `unknown`, read `stale` first: a stale one says nothing about the checks
+and wants another poll. A settled `unknown` is where you establish whether CI
+is absent by design or not yet available. Do not turn an empty result into
+success. Manual jobs and external approvals need the relevant human action.
+Never approve a privileged run, disable a check, weaken branch protection, or
+merge past failures automatically.
 
 ## Diagnose before changing anything
 
