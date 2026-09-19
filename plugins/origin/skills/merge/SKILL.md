@@ -68,9 +68,28 @@ with no access to the pull request.
 - Do not write the trailers yourself. The script re-attaches every
   `Fixes #123` and `Co-authored-by:` afterwards, so a body carrying them gets
   them twice.
+- Copy a `release-note` block out of `pr.body` verbatim, as its own block at
+  the end. Never rewrite it, never fold it into a bullet, and never count it
+  as prose to summarise.
 
 A small change deserves a short body. One line and no bullets is right for a
 one-line change.
+
+### The note the change declared
+
+Repositories following the
+[releasetools conventions](https://github.com/releasetools/conventions) put
+each change's release note in a fenced `release-note` block in its
+description, and what a release publishes months later is the copy in the
+commit this merge writes. The pull request body is editable by anybody and
+the branch is deleted; this commit is the one that lasts.
+
+- A block in `pr.body` goes into the body unchanged, `NONE` included.
+- Two blocks are a change that needed splitting. Carry the first, and say so
+  when you show the body.
+- No block, in a repository that has a `.releasetools.yaml`, is worth one
+  line before you merge: `/release-notes:write` writes one. Do not invent a
+  note yourself, and do not hold up the merge for it.
 
 Write it to a file with the Write tool. Do not pass a multi-line body as a
 shell argument.

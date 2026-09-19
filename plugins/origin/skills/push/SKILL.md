@@ -143,6 +143,10 @@ The body is for a reviewer who has not read the diff:
 - Say what you did not do, when the change leaves something obvious undone.
 - 72 columns, no preamble.
 - In a stack, one line naming the branch below it and what it does.
+- A `release-note` block from the branch's commits goes in unchanged, as its
+  own block at the end. In a repository that has a `.releasetools.yaml` and
+  no block anywhere, say so in one line: `/release-notes:write` writes one,
+  and the note is what the release publishes.
 
 The merge commit is the other shape: `origin merge` writes that one, and a
 commit message carries no headings at all.
