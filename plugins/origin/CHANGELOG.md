@@ -2,6 +2,27 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.18.0
+
+A `release-note` block in a pull request's description is carried into the
+commit that merges it, word for word. `origin push` carries one out of the
+branch's commits into the description it writes. Where a repository follows
+the [releasetools conventions](https://github.com/releasetools/conventions)
+and nothing declares a note, both say so in one line rather than inventing
+one.
+
+### Choices
+
+Carried, never written. The note is the author's sentence about their own
+change, and a merge that rewrites it into its own voice loses the only thing
+that made it worth keeping. Where there is none, the line points at
+`/release-notes:write` and the merge goes ahead: a missing note is worth
+mentioning and not worth blocking a merge for.
+
+The commit is the copy that lasts. A pull request body can be edited by
+anybody and the branch is deleted after the merge, so a release reading notes
+months later reads the commits on the default branch.
+
 ## 0.17.4
 
 The pull request body `origin push` writes carries a heading per area of
