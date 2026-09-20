@@ -57,6 +57,7 @@ answered for.
 | Catch a branch up with main             | `origin sync`                        |
 | Push it afterwards                      | `origin sync --push`                 |
 | Merge a pull request                    | `origin merge [<number>]`            |
+| Delete the branches main already has    | `origin prune`                       |
 | Read current PR/MR checks               | `origin ci [<number>]`               |
 
 `origin ci` returns JSON with the review identity, checks, pipeline, and

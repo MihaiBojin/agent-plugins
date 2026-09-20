@@ -43,6 +43,8 @@ export ORIGIN_ROOT
 . "${ORIGIN_ROOT}/lib/new.sh"
 # shellcheck source=SCRIPTDIR/../lib/ci.sh
 . "${ORIGIN_ROOT}/lib/ci.sh"
+# shellcheck source=SCRIPTDIR/../lib/prune.sh
+. "${ORIGIN_ROOT}/lib/prune.sh"
 
 usage() {
   cat >&2 <<'HELP'
@@ -56,6 +58,7 @@ COMMANDS
   rotate                         Start the next branch in this chain
   sync                           Fetch, rebase onto the head branch, push with a lease
   merge [<number>]               Merge a pull request with a written body
+  prune                          Delete the branches the head branch already has
   ci [<number>]                  Read current PR/MR checks as JSON
   help                           This
 
@@ -96,6 +99,7 @@ main() {
     rotate) rotate_main "$@" ;;
     sync) sync_main "$@" ;;
     merge) merge_main "$@" ;;
+    prune) prune_main "$@" ;;
     ci) ci_main "$@" ;;
     help | -h | --help) usage ;;
     version | -V | --version) printf 'origin %s\n' "$(origin_version)" ;;

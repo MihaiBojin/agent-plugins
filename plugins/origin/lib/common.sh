@@ -25,8 +25,9 @@ ORIGIN_ASSUME_YES=0
 ORIGIN_QUIET=0
 ORIGIN_VERBOSE=0
 
-# Set only by the one code path that has both an explicit --force and a proof
-# that the branch is already in the head branch. Nothing else may raise it.
+# Set only by `prune`, which raises it for one branch at a time and lowers it
+# again, having proved the branch's change is in the head branch and that the
+# forge holds a merged pull request to restore it from. Nothing else may.
 ORIGIN_ALLOW_FORCE_DELETE=0
 
 if [ -t 2 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]; then

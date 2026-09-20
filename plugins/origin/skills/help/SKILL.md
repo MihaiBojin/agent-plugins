@@ -17,12 +17,13 @@ after the skill name.
 
 For example, `$origin:push --draft` opens a draft pull request in Codex CLI.
 
-The CLI also creates branches:
+The CLI also creates and retires branches:
 
 ```bash
 origin new-branch <name>    # fetch, then branch <name> off the head branch
 origin rotate               # start the next branch in this chain
                         # no name: <branch>-YYYY-MM-DD_NNN, free number today
+origin prune                # delete the branches the head branch already has
 origin ci [<number>]   # current PR/MR identity and checks as JSON
 origin --help
 ```
