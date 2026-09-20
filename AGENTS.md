@@ -16,7 +16,7 @@ plugins/<name>/CHANGELOG.md       Its releases, and the choices behind them
 scripts/validate-plugin.mjs       One plugin's own layout
 scripts/validate-marketplaces.mjs What holds between the two catalogs
 scripts/sync-catalogs.mjs         Writes both catalogs from plugins/
-scripts/check-version-bump.mjs    A changed plugin has to say so in its version
+.releasetools.yaml                What this repository holds, for every releasetools tool
 scripts/catalogs.mjs              What all of those agree on
 __tests__/                        Jest, run by `npm test`
 ```
@@ -53,16 +53,35 @@ npm run check          # lint, tests, then both validators
 npm run sync           # rewrite the catalogs from plugins/
 ```
 
-**Bump the version in both manifests.** This is the rule with no second chance:
-a client that already installed 0.1.0 compares versions to decide whether an
-update exists, so shipping a fix under the same number means nobody receives it,
-quietly, on every machine that already had it. `check-version-bump.mjs` reads
-the diff against the base branch and fails the pull request when a plugin
-changed and its version did not.
+**Bump the version in both manifests, and write the entry.** This is the rule
+with no second chance: a client that already installed 0.1.0 compares versions
+to decide whether an update exists, so shipping a fix under the same number
+means nobody receives it, quietly, on every machine that already had it. A fix
+shipped with nothing written down loses the reasoning while somebody still
+remembers it.
 
-Semver is judged from what an agent sees: new commands or skills are a minor,
-wording and fixes are a patch, and removing a command or changing what one does
-is a major.
+Two checks on every pull request enforce that, both from
+[releasetools/actions](https://github.com/releasetools/actions):
+`versions-guard` asks whether the version moved far enough for what changed,
+and `changelog-guard` asks whether the plugin's `CHANGELOG.md` carries a
+section for the version it now declares. Neither takes any configuration from
+the workflow: `.releasetools.yaml` names each plugin as a project, where it
+keeps its version, and which changelog it owes. Projects are named rather
+than matched, so a new plugin is checked once it is added to that list.
+
+How far the version has to move follows from what the changes say they are,
+which is the [releasetools conventions](https://github.com/releasetools/conventions):
+`typed-change` for the subject, `bump-from-type` for the arithmetic,
+`semver-versions` for the number, `changelog-per-change` for the entry, and
+`breaking-says-how` for what a break owes a reader. In agent terms a new
+command or skill is a minor, wording and fixes are a patch, and removing a
+command or changing what one does is a major.
+
+Write the entry with `/release-notes:write`, from the `release-notes` plugin
+in the `release-tools` marketplace. It reads the same `.releasetools.yaml`, so
+the note lands in the changelog of the plugin the change is in, and it puts
+the same note in the pull request as a `release-note` block, which
+`origin merge` carries into the commit that lands on `main`.
 
 ## Recording a choice
 
