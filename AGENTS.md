@@ -65,8 +65,9 @@ Two checks on every pull request enforce that, both from
 `versions-guard` asks whether the version moved far enough for what changed,
 and `changelog-guard` asks whether the plugin's `CHANGELOG.md` carries a
 section for the version it now declares. Neither takes any configuration from
-the workflow: `.releasetools.yaml` says that each directory under `plugins/`
-is a project, where it keeps its version, and which changelog it owes.
+the workflow: `.releasetools.yaml` names each plugin as a project, where it
+keeps its version, and which changelog it owes. Projects are named rather
+than matched, so a new plugin is checked once it is added to that list.
 
 How far the version has to move follows from what the changes say they are,
 which is the [releasetools conventions](https://github.com/releasetools/conventions):

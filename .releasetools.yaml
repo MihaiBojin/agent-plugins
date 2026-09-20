@@ -3,9 +3,14 @@
 # Conventions: https://github.com/releasetools/conventions
 # Tools:       https://github.com/releasetools
 #
-# Each plugin is released on its own version, so each is a project. The
-# repository itself releases nothing.
+# Each plugin is released on its own version, so each is a project, named
+# here rather than matched: a new directory under plugins/ is checked once
+# somebody adds it to this list, and not before.
 projects:
-  - path: plugins/*
+  - path:
+      - plugins/decisions
+      - plugins/docket
+      - plugins/origin
+      - plugins/readme
     manifest: plugin.json
     changelog: CHANGELOG.md
