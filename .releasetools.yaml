@@ -1,0 +1,11 @@
+# How this repository releases, read by every releasetools tool.
+#
+# Conventions: https://github.com/releasetools/conventions
+# Tools:       https://github.com/releasetools
+#
+# Each plugin is released on its own version, so each is a project. The
+# repository itself releases nothing.
+projects:
+  - path: plugins/*
+    manifest: plugin.json
+    changelog: CHANGELOG.md

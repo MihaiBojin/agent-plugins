@@ -38,8 +38,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # The version check compares this plugin against the one on the base
-          # branch, so it needs both.
+          # The guards compare this plugin against the one at the fork point,
+          # so they need the history reaching it.
           fetch-depth: 0
 
       - name: Set up Node.js
@@ -83,12 +83,16 @@ jobs:
         run: npm run sync -- --check
 
       # A plugin that changed without saying so in its version is a fix nobody
-      # receives, so the rule is read out of the diff.
+      # receives, and one that changed without saying what changed is a fix
+      # nobody can read. Both guards are configured by .releasetools.yaml,
+      # so what they check is declared once, there.
       - name: ✅ A changed plugin says so in its version
         if: github.event_name == 'pull_request'
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-        run: node scripts/check-version-bump.mjs --base "$BASE"
+        uses: releasetools/actions/versions-guard@v0
+
+      - name: ✅ A changed plugin says what changed
+        if: github.event_name == 'pull_request'
+        uses: releasetools/actions/changelog-guard@v0
 
       - name: 📦 Install the pinned Claude Code CLI
         run: npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
