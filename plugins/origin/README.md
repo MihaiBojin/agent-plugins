@@ -26,6 +26,7 @@ From a clone of this repository, point at that `bin/` instead.
 | `origin rotate`            | Start the next branch in this chain, or bring the head branch up to date |
 | `origin sync`              | Fetch, rebase onto the head branch, push with a lease                    |
 | `origin merge [<number>]`  | Merge a pull request with a body written from the change                 |
+| `origin prune`             | Delete the branches whose change the head branch already has             |
 | `origin ci [<number>]`     | Read current PR/MR checks as JSON                                        |
 
 Every command takes `--dry-run`, `--yes`, `--quiet`, `--verbose` and
@@ -241,6 +242,41 @@ A branch the remote has never seen gets a plain push: nothing to lease
 against, and no force. Either refusal ends the same way — somebody else holds
 that name, so rename the branch and push again.
 
+## prune
+
+Two kinds of finished branch, and they are not equally safe to delete.
+
+A branch with a merged pull request goes here and on the remote. The forge
+holds the change and offers the branch back from the pull request's own page,
+so the deletion has somewhere to come back from. A branch proved finished by
+its content alone is printed with the command that deletes it, and nothing
+deletes it for you: content proves the change is upstream and says nothing
+about where the branch could be recovered.
+
+```shell
+origin prune --dry-run
+```
+
+```
+Finished branches
+delete   install-at-v1  937b33e  squash-merged, pull request #8
+keep     wip-parser     31fad7e  2 commits no remote has
+suggest  old-experiment a9ac175  squash-merged, no merged pull request
+
+3 branches hold work origin/main has not got
+```
+
+Kept whatever else is true of them: the branch you are on, the head branch, a
+branch checked out in another worktree, one whose pull request is still open,
+and one holding commits no remote has. A branch that is not finished never
+reaches the table; it is the count underneath it.
+
+`git branch --merged` is not the question. Most branches now end in a squash,
+which leaves their commits reachable from nothing, so that reading calls every
+finished branch unfinished. What `lib/merged.sh` asks instead is whether the
+branch's tree, replayed as one commit on the merge base, is a patch `git
+cherry` already finds upstream.
+
 ## What it refuses
 
 Enforced in `lib/common.sh`, where every mutation passes, rather than in six
@@ -261,9 +297,9 @@ Nothing above takes a flag. `--yes` does not reach them.
 
 ## What is replaced, said first
 
-Nothing here deletes a branch. What a rebase and a leased push replace is
-printed before it happens, under `--quiet` and `--yes` too, because those lines
-are the record of where the branch was:
+What a rebase, a leased push or a deletion replaces is printed before it
+happens, under `--quiet` and `--yes` too, because those lines are the record of
+where the branch was:
 
 ```
 This will replace:

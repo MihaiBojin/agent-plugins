@@ -2,6 +2,36 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.19.0
+
+`origin prune` deletes the branches whose change the head branch already has.
+A branch with a merged pull request goes here and on the remote. One proved
+finished by its content alone, with no merged pull request behind it, is
+printed with the command that deletes it and left where it is.
+
+Kept whatever else is true of them: the branch you are on, the head branch, a
+branch checked out in another worktree, one whose pull request is still open,
+and one holding commits no remote has. A branch that is not finished is a
+count at the end rather than a row to read.
+
+### Choices
+
+The forge is what makes a deletion safe. A merged pull request holds the
+commits and offers the branch back from its own page, so the deletion has
+somewhere to come back from. Content alone proves the change is upstream and
+says nothing about where the branch could be recovered, which is why that case
+prints commands and stops.
+
+`git branch --merged` is not the question it looks like. Most branches now end
+in a squash, which leaves their commits reachable from nothing, so that
+reading calls every finished branch unfinished and the list stops being read.
+`lib/merged.sh` answered this for `sync` already: replay the branch's tree as
+one commit on the merge base, and ask `git cherry` whether that patch is
+upstream.
+
+The name was free. `origin prune` removed finished worktrees until 0.12.0,
+where worktrees left the plugin for `gwa`, `gwr`, `gwl` and `gwm`.
+
 ## 0.18.0
 
 A `release-note` block in a pull request's description is carried into the
