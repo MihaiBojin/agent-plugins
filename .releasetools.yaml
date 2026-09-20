@@ -6,11 +6,18 @@
 # Each plugin is released on its own version, so each is a project, named
 # here rather than matched: a new directory under plugins/ is checked once
 # somebody adds it to this list, and not before.
+#
+# A plugin keeps its version in three files. The two manifests are what the
+# clients read, plugin.json is generated from the first, and all three have
+# to say the same thing.
 projects:
   - path:
       - plugins/decisions
       - plugins/docket
       - plugins/origin
       - plugins/readme
-    manifest: plugin.json
+    manifest:
+      - .claude-plugin/plugin.json
+      - .codex-plugin/plugin.json
+      - plugin.json
     changelog: CHANGELOG.md
