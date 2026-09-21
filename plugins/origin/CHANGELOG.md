@@ -2,6 +2,25 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.19.1
+
+`/origin:merge` writes each commit's title and body under the pull request's
+own link, so a reader can open what is about to land rather than assemble a
+URL from a number.
+
+It also says what a request covering several pull requests means: that many
+runs of the skill, one at a time, each writing out its own title and body
+under its own rule and its own link before its own merge. The request stands
+in for each approval the way `--yes` does, and nothing lands whose body the
+reader has not seen.
+
+### Choices
+
+Step 4 was written for one pull request and said nothing about a handful, so
+"merge all of these" read as permission to skip the record rather than
+permission to skip the question. Nine merged bodies nobody read is the same
+defect as one.
+
 ## 0.19.0
 
 `origin prune` deletes the branches whose change the head branch already has.
