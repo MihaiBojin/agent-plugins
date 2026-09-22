@@ -74,8 +74,10 @@ which is the [releasetools conventions](https://github.com/releasetools/conventi
 `typed-change` for the subject, `bump-from-type` for the arithmetic,
 `semver-versions` for the number, `changelog-per-change` for the entry, and
 `breaking-says-how` for what a break owes a reader. In agent terms a new
-command or skill is a minor, wording and fixes are a patch, and removing a
-command or changing what one does is a major.
+command or skill is a `feat`, wording and fixes are a `fix`, and removing a
+command or changing what one does is breaking, marked with a `!`.
+`bump-from-type` turns those into a number, and nothing derives a major: a
+release increments one because somebody was asked and said so.
 
 Write the entry with `/release-notes:write`, from the `release-notes` plugin
 in the `release-tools` marketplace. It reads the same `.releasetools.yaml`, so
