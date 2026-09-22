@@ -97,7 +97,9 @@ shell argument.
 ## 4. Show it and ask
 
 Write the title and the body out **in your reply** — the message the user
-reads — in full, exactly as they will land.
+reads — in full, exactly as they will land, under `pr.url` as a link they can
+open. A number is not a link, and a reader checking what is about to land
+should not have to assemble a URL to do it.
 
 Not a `cat`, not an `echo`, and not a reference back to what the script
 printed. Command output is shown to you, not to them, so a body they never saw
@@ -106,6 +108,14 @@ above": from where the user is sitting there is nothing above.
 
 **With `--yes` in the arguments**, write them out just the same — they are the
 record — and go straight to the merge without asking.
+
+**A request covering several pull requests** is that many runs of this skill,
+one at a time, and the request is what stands in for each merge's approval,
+the way `--yes` does. Every one still writes out its own title and body before
+its own merge, each under its own `---` and its own `pr.url`, so a handful of
+them stay separable rather than running together into one wall. Nine merged
+bodies nobody read is the same defect as one, and a subject line afterwards is
+not the body.
 
 Otherwise, having written them out, ask the user to choose:
 
