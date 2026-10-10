@@ -13,6 +13,19 @@ alt: git from $PATH on every call — 700ms of extra runtime
 alt: a configured path — one more thing to set per machine
 ```
 
+## Guided planning
+
+Ask for `decision-interview` when you want to work through a design one
+question at a time. The skill keeps question numbers and remaining counts
+consistent, saves answers in a requested planning package, and prepares a
+review entry point with unresolved and discarded questions. It honors an
+explicit review-before-implementation gate.
+
+It does not enable `.decisions/` automatically. When logging is on, qualifying
+choices use the existing record format; ordinary implementation work does not
+turn into an interview. For an agent-rules preference instead, copy the
+[optional rules snippet](skills/decision-interview/references/agent-rules.md).
+
 ## The switch is a directory
 
 `.decisions/` at the repository root. It exists, the log is on; it does not,

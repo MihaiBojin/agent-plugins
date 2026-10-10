@@ -2,6 +2,18 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.2.0 - 2026-10-10
+
+Use the decision-interview skill for guided planning one question at a time. It tracks outstanding questions, updates the requested design records as answers arrive, and prepares a review handoff with unresolved and discarded choices. An explicit review gate keeps implementation paused until the user proceeds.
+
+### Choices
+
+The interview is a separate skill within decisions so it can be requested for
+planning without turning ordinary work into a questionnaire. It preserves the
+existing opt-in log and links qualifying decisions rather than duplicating
+their reasoning. Question IDs stay stable when the queue shrinks; unresolved
+and discarded items remain distinct at review.
+
 ## 0.1.1
 
 The install command in the README reads `decisions@mihaibojin`. The
