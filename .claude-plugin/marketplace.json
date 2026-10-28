@@ -54,7 +54,7 @@
       "name": "decisions",
       "source": "./plugins/decisions",
       "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"

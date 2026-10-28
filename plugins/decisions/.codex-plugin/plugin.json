@@ -1,6 +1,6 @@
 {
   "name": "decisions",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",
   "author": {
     "name": "Mihai Bojin",
@@ -29,13 +29,15 @@
       "Turn the decision log on for a repository, and say whether git will commit it",
       "Turn it off without deleting anything already recorded",
       "Append a decision to the file for its topic while the work happens",
-      "Notice at the end of a session that nothing was recorded, and say so once"
+      "Notice at the end of a session that nothing was recorded, and say so once",
+      "Guide planning one question at a time, with saved progress and a reviewable handoff"
     ],
     "websiteURL": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/decisions#readme",
     "defaultPrompt": [
       "Turn the decision log on for this repository.",
       "Record why we picked system git over brew git.",
-      "Stop logging decisions here, but keep the ones we have."
+      "Stop logging decisions here, but keep the ones we have.",
+      "Use $decision-interview to plan this project one question at a time."
     ]
   }
 }

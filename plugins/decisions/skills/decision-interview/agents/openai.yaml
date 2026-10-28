@@ -1,0 +1,4 @@
+interface:
+  display_name: "Decision Interview"
+  short_description: "One-question-at-a-time planning with clear decisions"
+  default_prompt: "Use $decision-interview to clarify this project one question at a time, keep the design and decision log current, and prepare it for my review."
