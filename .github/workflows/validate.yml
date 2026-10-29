@@ -164,6 +164,9 @@ jobs:
       - name: ✅ Shell lint
         run: npm run lint:shell
 
+      - name: ✅ Python tests
+        run: npm run test:python
+
       # Against throwaway repositories with a local bare `origin`, and stubbed
       # forge CLIs on PATH. No network, and no GitHub account.
       - name: ✅ Shell tests

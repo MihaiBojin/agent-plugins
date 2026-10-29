@@ -29,6 +29,7 @@ codex plugin add <name>@mihaibojin
 
 | Plugin                                  | What it does                                                                           |
 | --------------------------------------- | -------------------------------------------------------------------------------------- |
+| [dialogue](./plugins/dialogue#readme)   | Opt-in conversation settings and a persistent thread backlog                           |
 | [docket](./plugins/docket#readme)       | Numbered document collections, argued through review, frozen into an immutable archive |
 | [origin](./plugins/origin#readme)       | Git worktrees, pull request merges, and rebasing onto the head branch                  |
 | [decisions](./plugins/decisions#readme) | A decision log written while the work happens, in the repositories that ask for one    |
@@ -41,7 +42,7 @@ release. See [AGENTS.md](./AGENTS.md) for how that works.
 ## Development
 
 ```shell
-npm run check    # format, shellcheck, both test suites, then both validators
+npm run check    # format, shellcheck, all test suites, then both validators
 ```
 
 A plugin written in shell brings its own tests: `npm run test:shell` runs

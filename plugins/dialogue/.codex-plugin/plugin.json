@@ -1,0 +1,19 @@
+{
+  "name": "dialogue",
+  "version": "0.1.0",
+  "description": "Opt-in response style and persistent conversation threads, with settings isolated by client session.",
+  "author": {
+    "name": "Mihai Bojin"
+  },
+  "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/dialogue#readme",
+  "repository": "https://github.com/MihaiBojin/agent-plugins",
+  "license": "Apache-2.0",
+  "skills": "./skills/",
+  "hooks": "./hooks/codex.json",
+  "interface": {
+    "displayName": "dialogue",
+    "shortDescription": "Session settings, focused work, and a saved thread backlog",
+    "longDescription": "Enable conversation behavior explicitly, persist settings per session, and keep deferred decisions in a saved backlog. Inspect every setting in one table.",
+    "category": "Developer Tools"
+  }
+}
