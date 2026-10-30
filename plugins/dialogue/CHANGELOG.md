@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+Claude Code shows subcommand syntax in the dialogue autocomplete hint. Invoke dialogue with `help`, `--help`, or `-h` to see commands and accepted settings without changing session state.
+
 ## 0.1.0
 
 Enable response style and persistent threads explicitly in Claude Code or Codex. Each session keeps its settings across resume and compaction. The settings command shows session values, saved defaults, and explanations. Focus mode defers unrelated issues, and compact replies show a count of other open threads with commands to reveal them.

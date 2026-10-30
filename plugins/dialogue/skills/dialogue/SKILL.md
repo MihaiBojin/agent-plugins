@@ -1,5 +1,6 @@
 ---
 name: dialogue
+argument-hint: "[help | enable | disable | settings | set <setting> <value> | defaults show | defaults set <setting> <value>]"
 description: Use only when the user explicitly invokes dialogue to enable, disable, inspect, or configure conversation behavior. Never activate from ordinary discussion of threads, focus, or writing style.
 disable-model-invocation: true
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/dialogue *)
@@ -11,6 +12,8 @@ This command controls persistent conversation settings. Installing it does not e
 Do not apply response or thread instructions merely because this file was read. Apply only the policy returned by the tool for the current session.
 
 ## Run the requested command
+
+For `help`, `--help`, or `-h`, show the command table below and the accepted settings and values. Explain that no arguments enables this session, `set` changes only this session, and `defaults set` affects future sessions. Do not run a state-changing command or enable dialogue when showing help. Help does not require a session ID.
 
 The tool is `../../bin/dialogue` relative to this skill directory. Resolve its absolute path from this file's location.
 In Claude, the plugin root is `${CLAUDE_PLUGIN_ROOT}` and the session ID is `${CLAUDE_SESSION_ID}`.
@@ -26,6 +29,7 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 
 | Arguments                  | Effect                                                                 |
 | -------------------------- | ---------------------------------------------------------------------- |
+| `help`                     | Show subcommands, settings, and accepted values without changing state |
 | `enable`                   | Enable this session and apply the returned policy                      |
 | `disable`                  | Disable this session, retain its records, and stop applying its policy |
 | `settings`                 | Print the complete table of session values, defaults, and explanations |
@@ -38,6 +42,7 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | `defaults set enabled off` | Keep future sessions off until explicitly invoked                      |
 
 `set enabled on/off` is equivalent to enabling/disabling. Other settings never implicitly enable the plugin.
+The setting names are `enabled`, `threads`, `focus`, `compact`, and `response_style`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
 All settings accept `on/off` or `true/false` except `response_style`, which accepts `pyramid/plain`.
 Defaults affect only sessions that have not yet saved a snapshot. Existing sessions keep their values.
 A session's explicit off remains off after restart, resume, and compaction, even when defaults enable new sessions.

@@ -13,6 +13,8 @@ Python 3.9 or newer and Bash are required. The Python implementation uses only t
 
 Add `MihaiBojin/agent-plugins` as a marketplace first if it is not already registered. Start a new session after installation and trust the plugin's hooks when the client asks.
 
+Claude Code shows subcommand syntax in the autocomplete hint for `/dialogue:dialogue`. Use `/dialogue:dialogue help` or `$dialogue help` to see commands, setting names, and accepted values without enabling the plugin.
+
 Installation does not enable response behavior. A bare invocation enables the current session. Append `settings` to inspect the table without enabling anything. Append `disable` to stop applying the policy while keeping recorded threads.
 
 | Request after the skill name | Result                                                                  |
