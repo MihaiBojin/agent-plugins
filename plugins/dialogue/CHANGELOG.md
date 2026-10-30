@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+Codex labels the startup hook as `loading dialogue settings`. Its skill picker lists Dialogue subcommands; `$dialogue:dialogue help` shows their syntax and accepted settings.
+
 ## 0.1.1
 
 Claude Code shows subcommand syntax in the dialogue autocomplete hint. Invoke dialogue with `help`, `--help`, or `-h` to see commands and accepted settings without changing session state.

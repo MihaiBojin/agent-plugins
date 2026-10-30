@@ -9,11 +9,11 @@ Python 3.9 or newer and Bash are required. The Python implementation uses only t
 | Client      | Install from the mihaibojin marketplace     | Explicit command     |
 | ----------- | ------------------------------------------- | -------------------- |
 | Claude Code | `claude plugin install dialogue@mihaibojin` | `/dialogue:dialogue` |
-| Codex       | `codex plugin add dialogue@mihaibojin`      | `$dialogue`          |
+| Codex       | `codex plugin add dialogue@mihaibojin`      | `$dialogue:dialogue` |
 
 Add `MihaiBojin/agent-plugins` as a marketplace first if it is not already registered. Start a new session after installation and trust the plugin's hooks when the client asks.
 
-Claude Code shows subcommand syntax in the autocomplete hint for `/dialogue:dialogue`. Use `/dialogue:dialogue help` or `$dialogue help` to see commands, setting names, and accepted values without enabling the plugin.
+Claude Code shows subcommand syntax in the autocomplete hint for `/dialogue:dialogue`. Codex lists subcommands in the skill picker description. Use `/dialogue:dialogue help` or `$dialogue:dialogue help` to see commands, setting names, and accepted values without enabling the plugin.
 
 Installation does not enable response behavior. A bare invocation enables the current session. Append `settings` to inspect the table without enabling anything. Append `disable` to stop applying the policy while keeping recorded threads.
 
