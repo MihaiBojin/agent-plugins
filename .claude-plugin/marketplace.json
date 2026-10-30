@@ -91,6 +91,18 @@
         "drift",
         "audit"
       ]
+    },
+    {
+      "name": "dialogue",
+      "source": "./plugins/dialogue",
+      "description": "Opt-in response style and persistent conversation threads, with settings isolated by client session.",
+      "version": "0.1.1",
+      "author": {
+        "name": "Mihai Bojin"
+      },
+      "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/dialogue#readme",
+      "repository": "https://github.com/MihaiBojin/agent-plugins",
+      "license": "Apache-2.0"
     }
   ]
 }

@@ -12,6 +12,7 @@
 # to say the same thing.
 projects:
   - path:
+      - plugins/dialogue
       - plugins/decisions
       - plugins/docket
       - plugins/origin

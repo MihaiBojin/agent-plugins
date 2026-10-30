@@ -16,7 +16,8 @@
     "lint:shell": "shellcheck -x plugins/*/bin/* plugins/*/hooks/*.sh plugins/*/tests/stubs/*",
     "validate": "node scripts/validate-plugin.mjs && node scripts/validate-marketplaces.mjs",
     "sync": "node scripts/sync-catalogs.mjs",
-    "check": "npm run lint && npm run lint:shell && npm test && npm run test:shell && npm run validate"
+    "check": "npm run lint && npm run lint:shell && npm test && npm run test:python && npm run test:shell && npm run validate",
+    "test:python": "python3 -B -m unittest discover -s plugins/dialogue/tests -v"
   },
   "engines": {
     "node": ">=24.0.0"
