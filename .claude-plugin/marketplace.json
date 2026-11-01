@@ -96,7 +96,7 @@
       "name": "dialogue",
       "source": "./plugins/dialogue",
       "description": "Opt-in response style and persistent conversation threads, with settings isolated by client session.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "Mihai Bojin"
       },
