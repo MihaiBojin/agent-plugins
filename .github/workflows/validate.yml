@@ -28,7 +28,12 @@ env:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    name: checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
     permissions:
       contents: read
     outputs:
@@ -134,7 +139,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-24.04, ubuntu-26.04, macos-26]
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -180,12 +185,13 @@ jobs:
   install:
     needs: checks
     if: needs.checks.outputs.any == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-24.04, ubuntu-26.04]
         plugin: ${{ fromJson(needs.checks.outputs.plugins) }}
     steps:
       - name: Checkout code
@@ -266,7 +272,7 @@ jobs:
   validated:
     if: always()
     needs: [checks, shell, install]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions: {}
     steps:
       - name: ✅ Every validation job passed
