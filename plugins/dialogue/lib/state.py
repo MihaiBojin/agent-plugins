@@ -209,6 +209,20 @@ class Store:
             save_json(self.path, data)
             return data, result
 
+    def change_guideline_defaults(self, identifiers, action):
+        with locked(self.root):
+            defaults = self.defaults()
+            overrides = dict(defaults['guideline_overrides'])
+            for identifier in identifiers:
+                if action == 'reset':
+                    overrides.pop(identifier, None)
+                else:
+                    overrides[identifier] = action == 'on'
+            defaults['guideline_overrides'] = overrides
+            validate_settings(defaults)
+            save_json(self.root / 'defaults.json', defaults)
+            return defaults
+
     def change_default(self, key, value):
         with locked(self.root):
             defaults = self.defaults()
