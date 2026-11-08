@@ -30,6 +30,11 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | Arguments                          | Effect                                                                 |
 | ---------------------------------- | ---------------------------------------------------------------------- |
 | `help`                             | Show subcommands, settings, and accepted values without changing state |
+| `guidelines --all`                 | Show enabled/disabled guidelines grouped by type and source             |
+| `guideline on bluf`                | Enable BLUF even when a profile does not include it                     |
+| `guideline off bluf`               | Disable BLUF even when a profile includes it                             |
+| `guideline reset bluf`             | Restore the profile's setting for BLUF                                   |
+| `guideline group brevity on`       | Enable all brevity guidelines                                            |
 | `setup`                            | Ask three questions to configure this session                          |
 | `set comms efficient`              | Select efficient response guidance                                     |
 | `set style ste`                    | Select simplified technical English                                    |
@@ -54,11 +59,15 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | `defaults set enabled on`          | Explicitly opt future sessions into automatic startup activation       |
 | `defaults set enabled off`         | Keep future sessions off until explicitly invoked                      |
 
+## Individual guidelines
+
+Guidelines are the primary communication controls; profiles are optional bundles. Use `guidelines` for enabled rules grouped by purpose, `guidelines --all` to see disabled rules and their source, and `guidelines --group TYPE` to inspect one category. Types are structure, brevity, precision, evidence, risk, language, and procedures. Use `guideline on ID`, `guideline off ID`, or `guideline reset ID` to override or restore an individual rule; `guideline group TYPE on|off|reset` does the same for a category. `guideline reset all` clears overrides. Only the enabled effective rules apply. Changes do not implicitly enable Dialogue. Never silently toggle guidelines as a side effect of ordinary task wording.
+
 ## Guided setup
 
 When the user invokes `setup`, run the CLI `setup` overview. Present **one question at a time**. Ask exactly these three questions, using options and descriptions from the tool's output:
 
-1. **Comms**: `pyramid`, `direct`, `efficient`, or `plain`.
+1. **Comms**: `pyramid`, `direct`, `efficient`, `plain`, or `custom` (start with no enabled rules; configure guidelines individually). Presets only set baseline guidelines. Individual overrides remain in effect.
 2. **Style**: `plain` or `ste` (STE-inspired, not ASD-STE100 compliant).
 3. **Workflow**: `quiet`, `automatic`, `verified`, `status`, `escalation`, `handoff`, `safety`, or `incident`. A workflow selects both situational formatting and signal semantics; explain that individual settings remain editable.
 
@@ -67,8 +76,8 @@ Retain the selected values in the current conversation only until question three
 ## Manual configuration
 
 `set enabled on/off` is equivalent to enabling/disabling. Other settings never implicitly enable the plugin.
-The simple setting names are `comms`, `style`, `situation`, `signals`, `enabled`, `threads`, `focus`, and `compact`. Existing full names `communication_profile`, `language_standard`, and `signaling` remain supported. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
-Booleans accept `on/off` or `true/false`. `comms` accepts `pyramid/direct/efficient/plain`; `style` accepts `plain/ste` (`ste-inspired` is the stored value); `situation` accepts `none/auto/sbar/ipass/can/cus/methane`; `signals` accepts `off/intent/full`. Legacy `set response_style pyramid/plain` is supported as an alias.
+The simple setting names are `comms`, `style`, `situation`, `signals`, `enabled`, `threads`, `focus`, and `compact`. Per-guideline changes use the `guideline` command, not `set`. Existing full names `communication_profile`, `language_standard`, and `signaling` remain supported. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
+Booleans accept `on/off` or `true/false`. `comms` accepts `pyramid/direct/efficient/plain/custom`; `style` accepts `plain/ste` (`ste-inspired` is the stored value); `situation` accepts `none/auto/sbar/ipass/can/cus/methane`; `signals` accepts `off/intent/full`. Legacy `set response_style pyramid/plain` is supported as an alias.
 Defaults affect only sessions that have not yet saved a snapshot. Existing sessions keep their values.
 A session's explicit off remains off after restart, resume, and compaction, even when defaults enable new sessions.
 The hook restores saved policy; the model must never invent a reason to turn it on.
