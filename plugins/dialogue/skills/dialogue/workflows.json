@@ -1,0 +1,42 @@
+{
+  "quiet": {
+    "description": "No structured framework or communication markers.",
+    "situation": "none",
+    "signaling": "off"
+  },
+  "automatic": {
+    "description": "Match a framework to clear tasks; use intent labels selectively.",
+    "situation": "auto",
+    "signaling": "intent"
+  },
+  "verified": {
+    "description": "Automatic framework selection and explicit response statuses.",
+    "situation": "auto",
+    "signaling": "full"
+  },
+  "status": {
+    "description": "CAN operational updates with intent markers.",
+    "situation": "can",
+    "signaling": "intent"
+  },
+  "escalation": {
+    "description": "SBAR problem escalation with intent markers.",
+    "situation": "sbar",
+    "signaling": "intent"
+  },
+  "handoff": {
+    "description": "I-PASS ownership transfer with explicit acknowledgments.",
+    "situation": "ipass",
+    "signaling": "full"
+  },
+  "safety": {
+    "description": "CUS risk escalation with explicit acknowledgments.",
+    "situation": "cus",
+    "signaling": "full"
+  },
+  "incident": {
+    "description": "M/ETHANE initial incident reporting with explicit acknowledgments.",
+    "situation": "methane",
+    "signaling": "full"
+  }
+}
