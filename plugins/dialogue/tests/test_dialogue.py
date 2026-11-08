@@ -216,6 +216,65 @@ class DialogueTest(unittest.TestCase):
         self.assertEqual(saved['communication_profile'], 'pyramid')
         self.assertNotIn('response_style', saved)
 
+    def test_minimal_profile_migrates_to_efficient(self):
+        self.run_cli('enable')
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        data = json.loads(path.read_text())
+        data['settings']['communication_profile'] = 'minimal'
+        path.write_text(json.dumps(data))
+        self.assertEqual(self.state()['settings']['communication_profile'], 'efficient')
+
+    def test_situations_preview_and_selection(self):
+        self.run_cli('enable')
+        self.assertIn('sbar', self.run_cli('situations').stdout)
+        preview = self.run_cli('situation', 'preview', 'sbar').stdout
+        self.assertIn('Situation:', preview)
+        self.assertEqual(self.state()['settings']['situation'], 'none')
+        self.run_cli('situation', 'use', 'ipass')
+        self.assertEqual(self.state()['settings']['situation'], 'ipass')
+        self.assertIn('Synthesis by receiver', self.run_cli('render').stdout)
+        for client in ('codex', 'claude'):
+            self.run_cli('situation', 'use', 'can', client=client)
+            for source in ('resume', 'compact'):
+                result = self.run_cli('hook', client=client,
+                                      payload={'session_id': 'a', 'source': source})
+                context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+                self.assertIn('Situational framework: can', context)
+        self.run_cli('situation', 'clear')
+        self.assertNotIn('Situational framework: can', self.run_cli('render').stdout)
+        self.run_cli('situation', 'preview', 'invalid', ok=False)
+
+    def test_auto_situations_and_language_signals(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'situation', 'auto')
+        self.run_cli('set', 'language_standard', 'ste-inspired')
+        self.run_cli('set', 'signaling', 'full')
+        rendered = self.run_cli('render').stdout
+        self.assertIn('Situational mode: auto', rendered)
+        self.assertIn('Language standard: ste-inspired', rendered)
+        self.assertIn('Response markers:', self.run_cli('signals').stdout)
+        self.assertIn('ACK:', rendered)
+        self.assertIn('STE', self.run_cli('languages').stdout.upper())
+        self.run_cli('set', 'signaling', 'invalid', ok=False)
+        self.run_cli('set', 'language_standard', 'invalid', ok=False)
+        self.run_cli('set', 'situation', 'invalid', ok=False)
+        self.run_cli('set', 'signaling', 'off')
+        self.assertNotIn('ACK:', self.run_cli('render').stdout)
+
+    def test_old_session_settings_receive_new_defaults(self):
+        self.run_cli('enable')
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        data = json.loads(path.read_text())
+        for name in ('situation', 'language_standard', 'signaling'):
+            data['settings'].pop(name)
+        path.write_text(json.dumps(data))
+        settings = self.state()['settings']
+        self.assertEqual(settings['situation'], 'none')
+        self.assertEqual(settings['language_standard'], 'plain')
+        self.assertEqual(settings['signaling'], 'off')
+        self.run_cli('set', 'situation', 'sbar')
+        self.assertEqual(self.state()['settings']['situation'], 'sbar')
+
     def test_disabled_fork_replaces_inherited_session_policy(self):
         self.run_cli('enable', session='parent')
         self.run_cli('thread', 'open', 'Parent decision', session='parent')
