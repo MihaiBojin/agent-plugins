@@ -1,6 +1,6 @@
 ---
 name: dialogue
-argument-hint: "[help | enable | disable | settings | set <setting> <value> | defaults show | defaults set <setting> <value>]"
+argument-hint: "[help | enable | disable | settings | profiles | guidelines | set <setting> <value> | defaults show | defaults set <setting> <value>]"
 description: Use only when the user explicitly invokes dialogue to enable, disable, inspect, or configure conversation behavior. Never activate from ordinary discussion of threads, focus, or writing style.
 disable-model-invocation: true
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/dialogue *)
@@ -8,12 +8,12 @@ allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/dialogue *)
 
 # Dialogue
 
-This command controls persistent conversation settings. Installing it does not enable it.
+This command controls persistent conversation settings and communication profiles. Installing it does not enable it.
 Do not apply response or thread instructions merely because this file was read. Apply only the policy returned by the tool for the current session.
 
 ## Run the requested command
 
-For `help`, `--help`, or `-h`, show the command table below and the accepted settings and values. Explain that no arguments enables this session, `set` changes only this session, and `defaults set` affects future sessions. Do not run a state-changing command or enable dialogue when showing help. Help does not require a session ID.
+For `help`, `--help`, or `-h`, show the command table below and the accepted settings and values, including profiles and guidelines. Explain that no arguments enables this session, `set` changes only this session, and `defaults set` affects future sessions. Do not run a state-changing command or enable dialogue when showing help. Help does not require a session ID.
 
 The tool is `../../bin/dialogue` relative to this skill directory. Resolve its absolute path from this file's location.
 In Claude, the plugin root is `${CLAUDE_PLUGIN_ROOT}` and the session ID is `${CLAUDE_SESSION_ID}`.
@@ -36,19 +36,21 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | `set focus on`             | Save one session setting and apply the returned policy                 |
 | `set compact off`          | Expand the displayed backlog without changing work order               |
 | `set threads off`          | Suspend thread tracking while retaining its records                    |
-| `set response_style plain` | Stop applying the plugin's response style                              |
+| `set communication_profile direct` | Apply the direct communication profile to this session                  |
+| `profiles`                 | List predefined profiles and the active profile                        |
+| `guidelines`               | List guidelines enabled by the active profile                          |
 | `defaults show`            | Show current values and the defaults for new sessions                  |
 | `defaults set enabled on`  | Explicitly opt future sessions into automatic startup activation       |
 | `defaults set enabled off` | Keep future sessions off until explicitly invoked                      |
 
 `set enabled on/off` is equivalent to enabling/disabling. Other settings never implicitly enable the plugin.
-The setting names are `enabled`, `threads`, `focus`, `compact`, and `response_style`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
-All settings accept `on/off` or `true/false` except `response_style`, which accepts `pyramid/plain`.
+The setting names are `enabled`, `threads`, `focus`, `compact`, and `communication_profile`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
+All settings accept `on/off` or `true/false` except `communication_profile`, which accepts `pyramid/direct/minimal/plain`. Legacy `set response_style pyramid/plain` is supported as an alias.
 Defaults affect only sessions that have not yet saved a snapshot. Existing sessions keep their values.
 A session's explicit off remains off after restart, resume, and compaction, even when defaults enable new sessions.
 The hook restores saved policy; the model must never invent a reason to turn it on.
 
-After enabling or changing settings, follow the tool's returned policy. The shared rule sources are [threads.md](threads.md) and [response.md](response.md); the tool selects the applicable parts.
+After enabling or changing settings, follow the tool's returned policy. The rule sources are [threads.md](threads.md), [guidelines.json](guidelines.json), and [profiles.json](profiles.json); the tool selects the applicable parts.
 When thread tracking is enabled, persist each transition with the tool. Run `thread --help` and its subcommand help for syntax.
 Use `state` to inspect the complete saved record, `render` to reload the effective instructions, and `thread list --details` for a full audit.
 When disabled, inspection remains available but thread mutations are refused.
