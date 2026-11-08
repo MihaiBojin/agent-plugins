@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 sys.dont_write_bytecode = True
-from state import SETTINGS, Store, setting_value
+from state import SETTINGS, Store, setting_value, state_root
 import threads
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -105,8 +105,7 @@ def parser():
     return result
 
 
-def main():
-    args = parser().parse_args()
+def main(args):
     if args.command == 'hook':
         payload = json.load(sys.stdin)
         if not isinstance(payload, dict):
@@ -155,8 +154,19 @@ def main():
 
 
 if __name__ == '__main__':
+    args = parser().parse_args()
     try:
-        main()
+        main(args)
     except (OSError, ValueError) as error:
         print(f'dialogue: {error}', file=sys.stderr)
+        if isinstance(error, PermissionError) and args.client == 'codex' and error.filename:
+            root = state_root().absolute()
+            denied = Path(error.filename).absolute()
+            if denied == root or root in denied.parents:
+                config = Path(os.environ.get('CODEX_HOME', '~/.codex')).expanduser() / 'config.toml'
+                print(f'dialogue: Check filesystem permissions for {root}. If Codex sandboxing blocks access, '
+                      f'add this directory to sandbox_workspace_write.writable_roots in {config} '
+                      '(preserve existing entries), then restart the Codex session. '
+                      'For a named permission profile, grant this directory write access in that profile. '
+                      'Dialogue does not change Codex permissions automatically.', file=sys.stderr)
         sys.exit(1)

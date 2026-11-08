@@ -35,6 +35,35 @@ class DialogueTest(unittest.TestCase):
         self.assertFalse(self.state()['settings']['enabled'])
         self.assertEqual(list(Path(self.tmp.name).iterdir()), [])
 
+    @unittest.skipIf(os.name == 'nt' or (hasattr(os, 'geteuid') and os.geteuid() == 0),
+                     'requires POSIX file permissions for a non-root user')
+    def test_denied_state_writes_explain_codex_permission_and_preserve_records(self):
+        root = Path(self.tmp.name) / 'dialogue state'
+        self.env['DIALOGUE_STATE_DIR'] = str(root)
+        self.env['CODEX_HOME'] = str(Path(self.tmp.name) / 'codex home')
+        self.run_cli('enable')
+        saved = (root / 'sessions' / 'codex' / 'a.json').read_bytes()
+        lock = root / '.lock'
+        lock.chmod(0o400)
+        self.addCleanup(lock.chmod, 0o600)
+        for args, payload in ((('thread', 'open', 'Denied'), None),
+                              (('defaults', 'set', 'enabled', 'on'), None),
+                              (('hook',), {'session_id': 'a', 'source': 'resume'})):
+            with self.subTest(args=args):
+                result = self.run_cli(*args, payload=payload, ok=False)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, '')
+                self.assertIn(str(lock), result.stderr)
+                self.assertIn('sandbox_workspace_write.writable_roots', result.stderr)
+                self.assertIn(str(root), result.stderr)
+                self.assertIn(str(Path(self.env['CODEX_HOME']) / 'config.toml'), result.stderr)
+                self.assertIn('restart', result.stderr.lower())
+                self.assertEqual((root / 'sessions' / 'codex' / 'a.json').read_bytes(), saved)
+                self.assertFalse((root / 'defaults.json').exists())
+        result = self.run_cli('enable', client='claude', ok=False)
+        self.assertIn(str(lock), result.stderr)
+        self.assertNotIn('sandbox_workspace_write', result.stderr)
+
     def test_sessions_keep_defaults_snapshot_and_explicit_off(self):
         self.run_cli('enable')
         self.run_cli('set', 'focus', 'off')

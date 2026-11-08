@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 - 2026-11-08
+
+Codex state permission errors identify the directory to authorize and explain how to configure sandbox access and restart the session.
+
 ## 0.1.2
 
 Codex labels the startup hook as `loading dialogue settings`. Its skill picker lists Dialogue subcommands; `$dialogue:dialogue help` shows their syntax and accepted settings.
