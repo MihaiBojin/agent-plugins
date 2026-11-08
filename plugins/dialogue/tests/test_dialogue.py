@@ -166,12 +166,55 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('thread', 'open', 'Kept')
         out = self.run_cli('set', 'threads', 'off').stdout
         self.assertNotIn('## 1/ Kept', out)
-        self.assertIn('## Response style', out)
+        self.assertIn('## Communication profile: pyramid', out)
         self.run_cli('thread', 'open', 'No', ok=False)
         self.run_cli('set', 'threads', 'on')
         out = self.run_cli('set', 'response_style', 'plain').stdout
         self.assertIn('## 1/ Kept', out)
-        self.assertNotIn('## Response style', out)
+        self.assertNotIn('## Communication profile: pyramid', out)
+
+    def test_communication_profiles_and_guidelines(self):
+        self.assertIn('no guidelines are active', self.run_cli('guidelines').stdout)
+        self.run_cli('enable')
+        self.assertIn('pyramid', self.run_cli('profiles').stdout)
+        self.assertIn('BLUF', self.run_cli('guidelines').stdout)
+        self.run_cli('set', 'communication_profile', 'direct')
+        self.assertEqual(self.state()['settings']['communication_profile'], 'direct')
+        enabled = self.run_cli('guidelines').stdout
+        self.assertIn('(12/12)', enabled)
+        self.assertIn('No routine narration', enabled)
+        self.assertIn('## Communication profile: direct', self.run_cli('render').stdout)
+        self.run_cli('set', 'communication_profile', 'minimal')
+        self.assertIn('(8/12)', self.run_cli('guidelines').stdout)
+        self.run_cli('set', 'communication_profile', 'plain')
+        self.assertIn('(0/12)', self.run_cli('guidelines').stdout)
+        self.run_cli('set', 'communication_profile', 'invalid', ok=False)
+
+    def test_legacy_response_style_migration(self):
+        self.run_cli('enable')
+        state_path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        original = json.loads(state_path.read_text())
+        original['settings']['response_style'] = original['settings'].pop('communication_profile')
+        state_path.write_text(json.dumps(original))
+        self.assertIn('communication_profile', self.run_cli('settings').stdout)
+        self.assertEqual(self.state()['settings']['communication_profile'], 'pyramid')
+        self.run_cli('set', 'response_style', 'plain')
+        self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
+        self.run_cli('defaults', 'set', 'communication_profile', 'direct')
+        self.assertEqual(self.state(session='new')['settings']['communication_profile'], 'direct')
+        self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
+
+    def test_legacy_defaults_migration(self):
+        defaults = Path(self.tmp.name) / 'defaults.json'
+        defaults.write_text(json.dumps({
+            'enabled': False, 'threads': True, 'focus': True,
+            'compact': True, 'response_style': 'plain'
+        }))
+        self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
+        self.run_cli('defaults', 'set', 'response_style', 'pyramid')
+        saved = json.loads(defaults.read_text())
+        self.assertEqual(saved['communication_profile'], 'pyramid')
+        self.assertNotIn('response_style', saved)
 
     def test_disabled_fork_replaces_inherited_session_policy(self):
         self.run_cli('enable', session='parent')
