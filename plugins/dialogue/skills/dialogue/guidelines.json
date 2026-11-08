@@ -1,0 +1,62 @@
+[
+  {
+    "id": "bluf",
+    "name": "BLUF",
+    "description": "Lead with the answer, result, decision, or blocker."
+  },
+  {
+    "id": "sufficient",
+    "name": "Minimum sufficient information",
+    "description": "Include only what the reader needs to understand, decide, act, or verify."
+  },
+  {
+    "id": "delta",
+    "name": "Delta-only",
+    "description": "Report changes; do not repeat established context."
+  },
+  {
+    "id": "direct",
+    "name": "Direct language",
+    "description": "Use active voice, precise nouns, and concrete verbs."
+  },
+  {
+    "id": "no_filler",
+    "name": "No filler",
+    "description": "Remove praise, pleasantries, repetition, and needless adjectives or superlatives."
+  },
+  {
+    "id": "evidence",
+    "name": "Evidence over claims",
+    "description": "Support results with tests, measurements, paths, or source references."
+  },
+  {
+    "id": "epistemic",
+    "name": "Facts before speculation",
+    "description": "Separate verified facts, inferences, and unknowns."
+  },
+  {
+    "id": "formats",
+    "name": "Standard formats",
+    "description": "Match response structure to the task; omit empty sections."
+  },
+  {
+    "id": "exceptions",
+    "name": "Exceptions first",
+    "description": "Prioritize failures, risks, blockers, and material deviations."
+  },
+  {
+    "id": "no_narration",
+    "name": "No routine narration",
+    "description": "Omit routine tool-call narration; report material changes or blockers."
+  },
+  {
+    "id": "quantify",
+    "name": "Quantify where useful",
+    "description": "Use measurements and thresholds instead of vague qualifiers when relevant."
+  },
+  {
+    "id": "risk_detail",
+    "name": "Risk-based detail",
+    "description": "Scale detail to complexity and risk; preserve material evidence and uncertainty."
+  }
+]
