@@ -62,7 +62,8 @@
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL"
       },
-      "category": "Developer Tools"
+      "category": "Developer Tools",
+      "version": "0.2.0"
     },
     {
       "name": "worktrees",
