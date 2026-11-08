@@ -1,0 +1,54 @@
+{
+  "pyramid": {
+    "description": "Answer, reasons, evidence.",
+    "instruction": "Lead with the answer, then material reasons and supporting evidence. Recommend one option unless alternatives are requested.",
+    "guidelines": [
+      "bluf",
+      "sufficient",
+      "direct",
+      "no_filler",
+      "evidence",
+      "epistemic",
+      "formats",
+      "quantify",
+      "risk_detail"
+    ]
+  },
+  "direct": {
+    "description": "Concise, factual, action-oriented.",
+    "instruction": "Use the shortest response that still supports correct action and verification.",
+    "guidelines": [
+      "bluf",
+      "sufficient",
+      "delta",
+      "direct",
+      "no_filler",
+      "evidence",
+      "epistemic",
+      "formats",
+      "exceptions",
+      "no_narration",
+      "quantify",
+      "risk_detail"
+    ]
+  },
+  "minimal": {
+    "description": "Minimal output for routine coding tasks.",
+    "instruction": "Default to 1-3 sentences; use headings only when helpful. Preserve evidence for completion claims.",
+    "guidelines": [
+      "bluf",
+      "sufficient",
+      "direct",
+      "no_filler",
+      "evidence",
+      "epistemic",
+      "no_narration",
+      "risk_detail"
+    ]
+  },
+  "plain": {
+    "description": "No extra communication rules.",
+    "instruction": "",
+    "guidelines": []
+  }
+}
