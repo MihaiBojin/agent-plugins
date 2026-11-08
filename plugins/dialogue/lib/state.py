@@ -44,6 +44,9 @@ def migrate_settings(value):
     if isinstance(value, dict) and 'response_style' in value and 'communication_profile' not in value:
         value = dict(value)
         value['communication_profile'] = value.pop('response_style')
+    if isinstance(value, dict) and value.get('communication_profile') == 'minimal':
+        value = dict(value)
+        value['communication_profile'] = 'efficient'
     return value
 
 
