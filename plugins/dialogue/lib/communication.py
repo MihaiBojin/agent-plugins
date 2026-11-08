@@ -74,14 +74,11 @@ def list_guidelines(profile, overrides=None, all_guidelines=False, group=None):
 
 def render_profile(profile, overrides=None):
     guidelines, profiles = catalog()
-    selected = profiles[profile]
     entries = effective_guidelines(profile, overrides)
     if profile in ("plain", "custom") and not entries:
         return ("Communication profile is plain: stop applying earlier dialogue "
                 "communication-profile instructions. Use client and user instructions.")
     lines = [f"## Communication profile: {profile}"]
-    if selected["instruction"]:
-        lines.append(selected["instruction"])
     for entry in entries:
         lines.append(f'- {entry["name"]}: {entry["description"]}')
     if any(entry["id"] == "formats" for entry in entries):
