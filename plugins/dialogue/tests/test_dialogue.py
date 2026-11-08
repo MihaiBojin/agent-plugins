@@ -234,6 +234,7 @@ class DialogueTest(unittest.TestCase):
         self.assertEqual(self.state()['settings']['situation'], 'ipass')
         self.assertIn('Synthesis by receiver', self.run_cli('render').stdout)
         for client in ('codex', 'claude'):
+            self.run_cli('enable', client=client)
             self.run_cli('situation', 'use', 'can', client=client)
             for source in ('resume', 'compact'):
                 result = self.run_cli('hook', client=client,
