@@ -68,3 +68,83 @@ def render_profile(profile):
                   "Omit empty sections. Honor specific user formatting requests.",
                   "Keep threads and their metadata under the separate thread protocol."])
     return "\n".join(lines)
+
+
+def situations():
+    return json.loads((ROOT / "situations.json").read_text(encoding="utf-8"))
+
+
+def language_standards():
+    return json.loads((ROOT / "language.json").read_text(encoding="utf-8"))
+
+
+def signals():
+    return json.loads((ROOT / "signals.json").read_text(encoding="utf-8"))
+
+
+def list_situations():
+    lines = ["| Situation | Purpose |", "| --- | --- |"]
+    for name, item in situations().items():
+        lines.append(f'| {name} | {item["description"]} |')
+    return "\n".join(lines)
+
+
+def render_situation(name):
+    if name == "none":
+        return "No situational framework selected."
+    items = situations()
+    if name == "auto":
+        lines = ["Situational mode: auto. Apply ONE framework when the user explicitly requests that type of communication or the task clearly demands it. Do not force a framework onto ordinary replies or coding tasks."]
+        for key, item in items.items():
+            lines.append(f'- {key}: {item["description"]} Use for {", ".join(item["uses"])}.')
+        lines.append("Preserve safety-critical qualifications. Never omit necessary fields merely to reduce tokens.")
+        return "\n".join(lines)
+    if name not in items:
+        raise ValueError("unknown situation: " + name)
+    item = items[name]
+    lines = [f'## Situational framework: {name}', item["description"]]
+    for title, meaning in item["fields"]:
+        lines.append(f'- {title}: {meaning}')
+    lines.append(item["guidance"])
+    lines.append("Use the framework only where relevant; do not invent missing details. Ask only for essential unknowns.")
+    return "\n".join(lines)
+
+
+def render_language(name):
+    catalog = language_standards()
+    if name not in catalog:
+        raise ValueError("unknown language standard: " + name)
+    if name == "plain":
+        return ""
+    return f'## Language standard: {name}\n{catalog[name]["instruction"]}'
+
+
+def list_language():
+    lines = ["| Standard | Description |", "| --- | --- |"]
+    for key, item in language_standards().items():
+        lines.append(f'| {key} | {item["description"]} |')
+    return "\n".join(lines)
+
+
+def render_signals(mode):
+    if mode == "off":
+        return ""
+    catalog = signals()
+    lines = ["## Communication signals",
+             "Use intent markers only when they disambiguate a request, decision, warning, or update. Do not prepend a marker to every message."]
+    for item in catalog["intents"]:
+        lines.append(f'- {item["id"]}: {item["meaning"]}')
+    if mode == "full":
+        lines.append("When a reply needs a response status, use these meanings precisely. Acknowledgment is not acceptance; acceptance is not completion.")
+        for item in catalog["responses"]:
+            lines.append(f'- {item["id"]}: {item["meaning"]}')
+    return "\n".join(lines)
+
+
+def list_signals():
+    catalog = signals()
+    lines = ["Intent markers:"]
+    lines += [f'- {x["id"]}: {x["meaning"]}' for x in catalog["intents"]]
+    lines += ["Response markers:"]
+    lines += [f'- {x["id"]}: {x["meaning"]}' for x in catalog["responses"]]
+    return "\n".join(lines)
