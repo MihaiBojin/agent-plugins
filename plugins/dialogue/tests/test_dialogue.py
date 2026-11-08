@@ -181,14 +181,70 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('set', 'communication_profile', 'direct')
         self.assertEqual(self.state()['settings']['communication_profile'], 'direct')
         enabled = self.run_cli('guidelines').stdout
-        self.assertIn('(12/12)', enabled)
+        self.assertIn('(12/24 enabled)', enabled)
         self.assertIn('No routine narration', enabled)
         self.assertIn('## Communication profile: direct', self.run_cli('render').stdout)
         self.run_cli('set', 'communication_profile', 'efficient')
-        self.assertIn('(8/12)', self.run_cli('guidelines').stdout)
+        self.assertIn('(8/24 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('set', 'communication_profile', 'plain')
-        self.assertIn('(0/12)', self.run_cli('guidelines').stdout)
+        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('set', 'communication_profile', 'invalid', ok=False)
+
+    def test_guideline_individual_and_group_overrides(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'comms', 'custom')
+        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
+        self.run_cli('guideline', 'on', 'bluf')
+        self.assertIn('BLUF', self.run_cli('render').stdout)
+        self.assertIn('(1/24 enabled)', self.run_cli('guidelines').stdout)
+        self.run_cli('guideline', 'off', 'bluf')
+        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
+        self.run_cli('guideline', 'reset', 'bluf')
+        self.assertEqual(self.state()['settings']['guideline_overrides'], {})
+        self.run_cli('guideline', 'group', 'procedures', 'on')
+        enabled = self.run_cli('guidelines', '--group', 'procedures').stdout
+        self.assertIn('one_action', enabled)
+        self.assertNotIn('bluf', enabled)
+        self.assertEqual(len(self.state()['settings']['guideline_overrides']), 4)
+        self.run_cli('guideline', 'group', 'procedures', 'reset')
+        self.assertEqual(self.state()['settings']['guideline_overrides'], {})
+        self.assertIn('one_action [off, profile]', self.run_cli('guidelines', '--all').stdout)
+        self.run_cli('guideline', 'group', 'invalid', 'on', ok=False)
+        self.run_cli('guideline', 'on', 'missing', ok=False)
+        self.run_cli('guideline', 'on', 'bluf', 'off', ok=False)
+
+    def test_guideline_overrides_persist_across_sessions_and_upgrade(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'comms', 'plain')
+        self.run_cli('guideline', 'on', 'terminology')
+        self.assertIn('Consistent terminology', self.run_cli('render').stdout)
+        for source in ('resume', 'compact'):
+            result = self.run_cli('hook', payload={'session_id': 'a', 'source': source})
+            rendered = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+            self.assertIn('Consistent terminology', rendered)
+        self.run_cli('set', 'comms', 'efficient')
+        self.assertTrue(self.state()['settings']['guideline_overrides']['terminology'])
+        self.run_cli('guideline', 'reset', 'all')
+        self.assertEqual(self.state()['settings']['guideline_overrides'], {})
+        self.assertNotIn('Consistent terminology', self.run_cli('render').stdout)
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        data = json.loads(path.read_text())
+        del data['settings']['guideline_overrides']
+        path.write_text(json.dumps(data))
+        self.assertEqual(self.state()['settings']['guideline_overrides'], {})
+
+    def test_bad_guideline_overrides_do_not_change_corrupt_state(self):
+        self.run_cli('enable')
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        original = json.loads(path.read_text())
+        for override in ({'typo': True}, {'bluf': 'yes'}, ['bluf']):
+            data = json.loads(json.dumps(original))
+            data['settings']['guideline_overrides'] = override
+            path.write_text(json.dumps(data))
+            saved = path.read_bytes()
+            self.run_cli('guidelines', '--all', ok=False)
+            self.assertEqual(path.read_bytes(), saved)
+        path.write_text(json.dumps(original))
 
     def test_legacy_response_style_migration(self):
         self.run_cli('enable')
