@@ -39,9 +39,11 @@ def list_profiles(current):
     return "\n".join(lines)
 
 
-def effective_guidelines(profile, overrides=None):
+def effective_guidelines(profile, overrides=None, style='plain'):
     guidelines, profiles = catalog()
     selected = set(profiles[profile]["guidelines"])
+    if style == "ste-inspired":
+        selected.update(entry["id"] for entry in guidelines if entry.get("source"))
     for key, value in (overrides or {}).items():
         if value:
             selected.add(key)
@@ -50,10 +52,10 @@ def effective_guidelines(profile, overrides=None):
     return [entry for entry in guidelines if entry["id"] in selected]
 
 
-def list_guidelines(profile, overrides=None, all_guidelines=False, group=None):
+def list_guidelines(profile, overrides=None, all_guidelines=False, group=None, style="plain"):
     guidelines, profiles = catalog()
     overrides = overrides or {}
-    enabled = {e["id"] for e in effective_guidelines(profile, overrides)}
+    enabled = {e["id"] for e in effective_guidelines(profile, overrides, style)}
     lines = [f'Guidelines for {profile} ({len(enabled)}/{len(guidelines)} enabled):']
     for kind in ("structure", "brevity", "precision", "evidence", "risk", "language", "procedures"):
         if group and group != kind:
@@ -65,16 +67,16 @@ def list_guidelines(profile, overrides=None, all_guidelines=False, group=None):
         for entry in entries:
             ident = entry["id"]
             status = "on" if ident in enabled else "off"
-            source = "override" if ident in overrides else "profile"
+            source = "override" if ident in overrides else ("style" if style == "ste-inspired" and entry.get("source") else "profile")
             lines.append(f'- {ident} [{status}, {source}]: {entry["name"]} — {entry["description"]}')
     if not enabled and not all_guidelines:
         lines.append("(none)")
     return "\n".join(lines)
 
 
-def render_profile(profile, overrides=None):
+def render_profile(profile, overrides=None, style="plain"):
     guidelines, profiles = catalog()
-    entries = effective_guidelines(profile, overrides)
+    entries = effective_guidelines(profile, overrides, style)
     if profile in ("plain", "custom") and not entries:
         return ("Communication profile is plain: stop applying earlier dialogue "
                 "communication-profile instructions. Use client and user instructions.")
@@ -239,5 +241,6 @@ def full_help():
     lines.append("Guidelines: guidelines (enabled by type), guidelines --all (include disabled), guidelines --group TYPE.")
     lines.append("Override: guideline on|off|reset ID; guideline reset all; guideline group on|off|reset TYPE.")
     lines.append("Group types: structure, brevity, precision, evidence, risk, language, procedures.")
+    lines.append("Style ste adds 12 STE-derived guidelines before per-rule overrides.")
     lines.append("Help/setup/preview do not enable Dialogue or write state.")
     return "\n".join(lines)
