@@ -24,11 +24,26 @@ SETTINGS = {
 }
 
 
+ALIASES = {
+    'response_style': 'communication_profile',
+    'comms': 'communication_profile',
+    'style': 'language_standard',
+    'signals': 'signaling',
+}
+
+
+def canonical_key(key):
+    return ALIASES.get(key, key)
+
+
 def setting_value(key, value):
-    if key == 'response_style':  # Legacy CLI alias.
-        key = 'communication_profile'
-        if value not in ('pyramid', 'plain'):
-            raise ValueError('response_style must be pyramid or plain')
+    if key == 'response_style' and value not in ('pyramid', 'plain'):
+        raise ValueError('response_style must be pyramid or plain')
+    if key == 'style' and value == 'ste':
+        value = 'ste-inspired'
+    if key in ('comms', 'communication_profile') and value == 'minimal':
+        value = 'efficient'
+    key = canonical_key(key)
     if key not in SETTINGS:
         raise ValueError(f'unknown setting: {key}')
     if key == 'situation':
@@ -192,5 +207,5 @@ class Store:
     def change_default(self, key, value):
         with locked(self.root):
             defaults = self.defaults()
-            defaults['communication_profile' if key == 'response_style' else key] = value
+            defaults[canonical_key(key)] = value
             save_json(self.root / 'defaults.json', defaults)
