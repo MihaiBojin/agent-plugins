@@ -52,11 +52,11 @@ def effective_guidelines(profile, overrides=None, style='plain'):
     return [entry for entry in guidelines if entry["id"] in selected]
 
 
-def list_guidelines(profile, overrides=None, all_guidelines=False, group=None, style="plain"):
+def list_guidelines(profile, overrides=None, all_guidelines=False, group=None, style="plain", active=True):
     guidelines, profiles = catalog()
     overrides = overrides or {}
-    enabled = {e["id"] for e in effective_guidelines(profile, overrides, style)}
-    lines = [f'Guidelines for {profile} ({len(enabled)}/{len(guidelines)} enabled):']
+    enabled = {e["id"] for e in effective_guidelines(profile, overrides, style)} if active else set()
+    lines = [f'Guidelines for {profile} ({len(enabled)}/{len(guidelines)} enabled)' + (" (Dialogue disabled):" if not active else ":")]
     for kind in ("structure", "brevity", "precision", "evidence", "risk", "language", "procedures"):
         if group and group != kind:
             continue
@@ -67,11 +67,23 @@ def list_guidelines(profile, overrides=None, all_guidelines=False, group=None, s
         for entry in entries:
             ident = entry["id"]
             status = "on" if ident in enabled else "off"
-            source = "override" if ident in overrides else ("style" if style == "ste-inspired" and entry.get("source") else "profile")
+            source = "inactive" if not active else ("override" if ident in overrides else ("style" if style == "ste-inspired" and entry.get("source") else "profile"))
             lines.append(f'- {ident} [{status}, {source}]: {entry["name"]} — {entry["description"]}')
     if not enabled and not all_guidelines:
         lines.append("(none)")
     return "\n".join(lines)
+
+
+def list_groups(profile, overrides=None, style="plain", active=True):
+    guidelines, _ = catalog()
+    enabled = {e["id"] for e in effective_guidelines(profile, overrides, style)} if active else set()
+    lines = ["Guideline groups" + (" (Dialogue disabled)" if not active else "") + ":"]
+    for kind in ("structure", "brevity", "precision", "evidence", "risk", "language", "procedures"):
+        count = sum(e["type"] == kind for e in guidelines)
+        on = sum(e["type"] == kind and e["id"] in enabled for e in guidelines)
+        lines.append(f'- {kind}: {on}/{count} enabled')
+    lines.append("Use guidelines group list TYPE to inspect a group.")
+    return "\\n".join(lines)
 
 
 def render_profile(profile, overrides=None, style="plain"):
@@ -238,8 +250,8 @@ def full_help():
     for key, item in modes.items():
         lines.append(f'- {key}: {item["description"]}')
     lines.append("Other settings: threads on/off, focus on/off, compact on/off, enabled on/off.")
-    lines.append("Guidelines: guidelines (enabled by type), guidelines --all (include disabled), guidelines --group TYPE.")
-    lines.append("Override: guideline on|off|reset ID; guideline reset all; guideline group TYPE on|off|reset.")
+    lines.append("Guidelines: guidelines list (all rules and status); guidelines group list (categories); guidelines group list TYPE (category details).")
+    lines.append("Override: guideline enable|disable|reset ID; guideline reset all; guideline group enable|disable|reset TYPE.")
     lines.append("For future sessions add --default: guideline --default on ID.")
     lines.append("Group types: structure, brevity, precision, evidence, risk, language, procedures.")
     lines.append("Style ste adds 12 STE-derived guidelines before per-rule overrides.")
