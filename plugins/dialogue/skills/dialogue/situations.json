@@ -1,7 +1,11 @@
 {
   "sbar": {
     "description": "Escalate a problem with a recommendation.",
-    "uses": ["problem escalation", "technical escalation", "request for intervention"],
+    "uses": [
+      "problem escalation",
+      "technical escalation",
+      "request for intervention"
+    ],
     "fields": [
       ["Situation", "Current problem and impact"],
       ["Background", "Relevant history and context"],
