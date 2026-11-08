@@ -1,6 +1,6 @@
 ---
 name: dialogue
-argument-hint: "[help | setup | settings | set comms <profile> | set style <style> | set situation <framework> | set signals <mode> | enable | disable]"
+argument-hint: "[help | setup | guidelines list | guidelines group list | guideline enable <id> | guideline group enable <type> | set comms <profile> | enable | disable]"
 description: Use only when the user explicitly invokes dialogue to enable, disable, inspect, or configure conversation behavior. Never activate from ordinary discussion of threads, focus, or writing style.
 disable-model-invocation: true
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/dialogue *)
@@ -30,11 +30,13 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | Arguments                          | Effect                                                                 |
 | ---------------------------------- | ---------------------------------------------------------------------- |
 | `help`                             | Show subcommands, settings, and accepted values without changing state |
-| `guidelines --all`                 | Show enabled/disabled guidelines grouped by type and source            |
-| `guideline on bluf`                | Enable BLUF even when a profile does not include it                    |
-| `guideline off bluf`               | Disable BLUF even when a profile includes it                           |
+| `guidelines list`                  | Show enabled/disabled guidelines grouped by type and source            |
+| `guidelines group list`            | List the categories with enabled counts                             |
+| `guidelines group list brevity`    | List the rules within the brevity category                           |
+| `guideline enable bluf`            | Enable BLUF even when a profile does not include it                    |
+| `guideline disable bluf`           | Disable BLUF even when a profile includes it                           |
 | `guideline reset bluf`             | Restore the profile's setting for BLUF                                 |
-| `guideline group brevity on`       | Enable all brevity guidelines                                          |
+| `guideline group enable brevity`   | Enable all brevity guidelines                                          |
 | `setup`                            | Ask three questions to configure this session                          |
 | `set comms efficient`              | Select efficient response guidance                                     |
 | `set style ste`                    | Select simplified technical English                                    |
@@ -61,7 +63,7 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 
 ## Individual guidelines
 
-Guidelines are the primary communication controls; profiles are optional bundles. Use `guidelines` for enabled rules grouped by purpose, `guidelines --all` to see disabled rules and their source, and `guidelines --group TYPE` to inspect one category. Types are structure, brevity, precision, evidence, risk, language, and procedures. Use `guideline on ID`, `guideline off ID`, or `guideline reset ID` to override or restore an individual rule; `guideline group TYPE on|off|reset` does the same for a category. `guideline reset all` clears overrides. Only the enabled effective rules apply. Changes do not implicitly enable Dialogue. Add `--default` to `guideline` commands to change defaults for future sessions without changing saved sessions. Never silently toggle guidelines as a side effect of ordinary task wording.
+Guidelines are the primary communication controls; profiles are optional bundles. Use `guidelines` for enabled rules grouped by purpose, `guidelines list` to see all rules and effective statuses, `guidelines group list` for category summaries, and `guidelines group list TYPE` to inspect one category. Types are structure, brevity, precision, evidence, risk, language, and procedures. Use `guideline enable ID`, `guideline disable ID`, or `guideline reset ID` to override or restore an individual rule; `guideline group enable|disable|reset TYPE` does the same for a category. `guideline reset all` clears overrides. The previous `on/off`, `guideline group TYPE on/off/reset`, and `guidelines --all/--group` syntaxes remain aliases. Only the enabled effective rules apply. Changes do not implicitly enable Dialogue. Add `--default` to `guideline` commands to change defaults for future sessions without changing saved sessions. Never silently toggle guidelines as a side effect of ordinary task wording.
 
 ## Guided setup
 
