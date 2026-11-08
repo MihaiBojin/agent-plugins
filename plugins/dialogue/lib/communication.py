@@ -10,6 +10,9 @@ def catalog():
     guidelines = json.loads((ROOT / "guidelines.json").read_text(encoding="utf-8"))
     profiles = json.loads((ROOT / "profiles.json").read_text(encoding="utf-8"))
     ids = [entry["id"] for entry in guidelines]
+    types = ("structure", "brevity", "precision", "reliability")
+    if any(entry.get("type") not in types for entry in guidelines):
+        raise ValueError("invalid guideline type")
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate guideline ID")
     if any(len(set(profile["guidelines"])) != len(profile["guidelines"])
@@ -36,29 +39,47 @@ def list_profiles(current):
     return "\n".join(lines)
 
 
-def list_guidelines(profile):
+def effective_guidelines(profile, overrides=None):
     guidelines, profiles = catalog()
-    enabled = set(profiles[profile]["guidelines"])
-    lines = [f'Enabled guidelines for profile {profile} ({len(enabled)}/{len(guidelines)}):']
-    for entry in guidelines:
-        if entry["id"] in enabled:
-            lines.append(f'- {entry["name"]} ({entry["id"]}): {entry["description"]}')
-    if not enabled:
+    selected = set(profiles[profile]["guidelines"])
+    for key, value in (overrides or {}).items():
+        if value:
+            selected.add(key)
+        else:
+            selected.discard(key)
+    return [entry for entry in guidelines if entry["id"] in selected]
+
+
+def list_guidelines(profile, overrides=None, all_guidelines=False):
+    guidelines, profiles = catalog()
+    overrides = overrides or {}
+    enabled = {e["id"] for e in effective_guidelines(profile, overrides)}
+    lines = [f'Guidelines for {profile} ({len(enabled)}/{len(guidelines)} enabled):']
+    for kind in ("structure", "brevity", "precision", "reliability"):
+        entries = [e for e in guidelines if e["type"] == kind and (all_guidelines or e["id"] in enabled)]
+        if not entries:
+            continue
+        lines.append(kind.title() + ":")
+        for entry in entries:
+            ident = entry["id"]
+            status = "on" if ident in enabled else "off"
+            source = "override" if ident in overrides else "profile"
+            lines.append(f'- {ident} [{status}, {source}]: {entry["description"]}')
+    if not enabled and not all_guidelines:
         lines.append("(none)")
     return "\n".join(lines)
 
 
-def render_profile(profile):
+def render_profile(profile, overrides=None):
     guidelines, profiles = catalog()
     selected = profiles[profile]
-    lines = [f"## Communication profile: {profile}", selected["instruction"]]
-    enabled = set(selected["guidelines"])
-    for entry in guidelines:
-        if entry["id"] in enabled:
-            lines.append(f'- {entry["name"]}: {entry["description"]}')
-    if profile == "plain":
+    entries = effective_guidelines(profile, overrides)
+    if profile == "plain" and not entries:
         return ("Communication profile is plain: stop applying earlier dialogue "
                 "communication-profile instructions. Use client and user instructions.")
+    lines = [f"## Communication profile: {profile}", selected["instruction"]]
+    for entry in entries:
+        lines.append(f'- {entry["name"]}: {entry["description"]}')
     lines.extend(["",
                   "Use completion: Result → Verification → Remaining issues.",
                   "Use review: Findings by severity → Evidence → Suggested fix.",
@@ -209,6 +230,7 @@ def full_help():
     for key, item in modes.items():
         lines.append(f'- {key}: {item["description"]}')
     lines.append("Other settings: threads on/off, focus on/off, compact on/off, enabled on/off.")
-    lines.append("Use guidelines to list only the guidelines active for this session.")
+    lines.append("Guidelines: guidelines (enabled, grouped), guidelines --all (all, status + source).")
+    lines.append("Override: guideline on ID | guideline off ID | guideline reset ID | guideline reset all.")
     lines.append("Help/setup/preview do not enable Dialogue or write state.")
     return "\n".join(lines)
