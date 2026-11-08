@@ -50,5 +50,10 @@
       "no_narration",
       "risk_detail"
     ]
+  },
+  "custom": {
+    "description": "No preset rules; choose guidelines individually.",
+    "instruction": "",
+    "guidelines": []
   }
 }
