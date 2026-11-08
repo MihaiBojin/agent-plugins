@@ -30,11 +30,11 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | Arguments                          | Effect                                                                 |
 | ---------------------------------- | ---------------------------------------------------------------------- |
 | `help`                             | Show subcommands, settings, and accepted values without changing state |
-| `guidelines --all`                 | Show enabled/disabled guidelines grouped by type and source             |
-| `guideline on bluf`                | Enable BLUF even when a profile does not include it                     |
-| `guideline off bluf`               | Disable BLUF even when a profile includes it                             |
-| `guideline reset bluf`             | Restore the profile's setting for BLUF                                   |
-| `guideline group brevity on`       | Enable all brevity guidelines                                            |
+| `guidelines --all`                 | Show enabled/disabled guidelines grouped by type and source            |
+| `guideline on bluf`                | Enable BLUF even when a profile does not include it                    |
+| `guideline off bluf`               | Disable BLUF even when a profile includes it                           |
+| `guideline reset bluf`             | Restore the profile's setting for BLUF                                 |
+| `guideline group brevity on`       | Enable all brevity guidelines                                          |
 | `setup`                            | Ask three questions to configure this session                          |
 | `set comms efficient`              | Select efficient response guidance                                     |
 | `set style ste`                    | Select simplified technical English                                    |
