@@ -27,21 +27,21 @@ Claude supplies `$ARGUMENTS`. Codex supplies the arguments in the user's invocat
 No arguments means `enable`. A request to inspect settings means `settings`, which never enables the plugin.
 Natural-language requests to stop dialogue or return to normal mode mean `disable` once this plugin is active.
 
-| Arguments                  | Effect                                                                 |
-| -------------------------- | ---------------------------------------------------------------------- |
-| `help`                     | Show subcommands, settings, and accepted values without changing state |
-| `enable`                   | Enable this session and apply the returned policy                      |
-| `disable`                  | Disable this session, retain its records, and stop applying its policy |
-| `settings`                 | Print the complete table of session values, defaults, and explanations |
-| `set focus on`             | Save one session setting and apply the returned policy                 |
-| `set compact off`          | Expand the displayed backlog without changing work order               |
-| `set threads off`          | Suspend thread tracking while retaining its records                    |
-| `set communication_profile direct` | Apply the direct communication profile to this session                  |
-| `profiles`                 | List predefined profiles and the active profile                        |
-| `guidelines`               | List guidelines enabled by the active profile                          |
-| `defaults show`            | Show current values and the defaults for new sessions                  |
-| `defaults set enabled on`  | Explicitly opt future sessions into automatic startup activation       |
-| `defaults set enabled off` | Keep future sessions off until explicitly invoked                      |
+| Arguments                          | Effect                                                                 |
+| ---------------------------------- | ---------------------------------------------------------------------- |
+| `help`                             | Show subcommands, settings, and accepted values without changing state |
+| `enable`                           | Enable this session and apply the returned policy                      |
+| `disable`                          | Disable this session, retain its records, and stop applying its policy |
+| `settings`                         | Print the complete table of session values, defaults, and explanations |
+| `set focus on`                     | Save one session setting and apply the returned policy                 |
+| `set compact off`                  | Expand the displayed backlog without changing work order               |
+| `set threads off`                  | Suspend thread tracking while retaining its records                    |
+| `set communication_profile direct` | Apply the direct communication profile to this session                 |
+| `profiles`                         | List predefined profiles and the active profile                        |
+| `guidelines`                       | List guidelines enabled by the active profile                          |
+| `defaults show`                    | Show current values and the defaults for new sessions                  |
+| `defaults set enabled on`          | Explicitly opt future sessions into automatic startup activation       |
+| `defaults set enabled off`         | Keep future sessions off until explicitly invoked                      |
 
 `set enabled on/off` is equivalent to enabling/disabling. Other settings never implicitly enable the plugin.
 The setting names are `enabled`, `threads`, `focus`, `compact`, and `communication_profile`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
