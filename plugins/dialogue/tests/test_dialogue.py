@@ -216,6 +216,64 @@ class DialogueTest(unittest.TestCase):
         self.assertEqual(saved['communication_profile'], 'pyramid')
         self.assertNotIn('response_style', saved)
 
+    def test_help_and_setup_are_read_only_and_explain_all_options(self):
+        help_text = self.run_cli('help').stdout
+        for word in ('efficient', 'ste', 'sbar', 'ipass', 'can', 'cus',
+                     'methane', 'intent', 'full', 'setup', 'threads'):
+            self.assertIn(word, help_text)
+        # Direct CLI help/setup can run without any session ID.
+        for command in ('help', 'setup'):
+            process = subprocess.run([sys.executable, str(CLI), '--client', 'codex', command],
+                                     env=self.env, capture_output=True, text=True)
+            self.assertEqual(process.returncode, 0, process.stderr)
+        overview = self.run_cli('setup').stdout
+        for prompt in ('1. Comms', '2. Style', '3. Workflow'):
+            self.assertIn(prompt, overview)
+        self.assertFalse(self.state()['settings']['enabled'])
+        self.assertEqual(list(Path(self.tmp.name).iterdir()), [])
+
+    def test_setup_applies_all_modes_atomically_and_preserves_activation(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'threads', 'off')
+        self.run_cli('setup', 'apply', '--comms', 'efficient', '--style', 'ste',
+                     '--workflow', 'handoff')
+        st = self.state()['settings']
+        self.assertTrue(st['enabled'])
+        self.assertFalse(st['threads'])
+        self.assertEqual(st['communication_profile'], 'efficient')
+        self.assertEqual(st['language_standard'], 'ste-inspired')
+        self.assertEqual(st['situation'], 'ipass')
+        self.assertEqual(st['signaling'], 'full')
+        saved = (Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json').read_bytes()
+        self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'invalid',
+                     '--workflow', 'quiet', ok=False)
+        self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'plain',
+                     '--workflow', 'invalid', ok=False)
+        self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'plain',
+                     ok=False)
+        self.assertEqual((Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json').read_bytes(), saved)
+        self.run_cli('disable')
+        self.run_cli('setup', 'apply', '--comms', 'pyramid', '--style', 'plain',
+                     '--workflow', 'automatic')
+        self.assertFalse(self.state()['settings']['enabled'])
+        self.assertEqual(self.state()['settings']['situation'], 'auto')
+
+    def test_short_setting_aliases(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'comms', 'efficient')
+        self.run_cli('set', 'style', 'ste')
+        self.run_cli('set', 'situation', 'sbar')
+        self.run_cli('set', 'signals', 'intent')
+        values = self.state()['settings']
+        self.assertEqual(values['communication_profile'], 'efficient')
+        self.assertEqual(values['language_standard'], 'ste-inspired')
+        self.assertEqual(values['situation'], 'sbar')
+        self.assertEqual(values['signaling'], 'intent')
+        self.run_cli('defaults', 'set', 'comms', 'direct')
+        self.run_cli('defaults', 'set', 'style', 'ste')
+        self.assertEqual(self.state(session='new')['settings']['communication_profile'], 'direct')
+        self.assertEqual(self.state(session='new')['settings']['language_standard'], 'ste-inspired')
+
     def test_minimal_profile_migrates_to_efficient(self):
         self.run_cli('enable')
         path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
