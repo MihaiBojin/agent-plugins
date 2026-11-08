@@ -8,7 +8,7 @@ import re
 import tempfile
 import time
 
-from communication import names, situations, language_standards
+from communication import names, situations, language_standards, catalog
 
 MISSING = object()
 
@@ -21,6 +21,7 @@ SETTINGS = {
     'situation': ('none', 'Situational framework: none, auto, or a named protocol.'),
     'language_standard': ('plain', 'Technical writing standard: plain or ste-inspired.'),
     'signaling': ('off', 'Communication markers: off, intent, or full.'),
+    'guideline_overrides': ({}, 'Per-guideline on/off overrides, independent of profile.'),
 }
 
 
@@ -78,7 +79,7 @@ def migrate_settings(value):
         value = dict(value)
         value['communication_profile'] = 'efficient'
     if isinstance(value, dict):
-        value = {**{k: spec[0] for k, spec in SETTINGS.items() if k in ('situation', 'language_standard', 'signaling')}, **value}
+        value = {**{k: spec[0] for k, spec in SETTINGS.items() if k in ('situation', 'language_standard', 'signaling', 'guideline_overrides')}, **value}
     return value
 
 
@@ -87,7 +88,11 @@ def validate_settings(value):
     if not isinstance(value, dict) or set(value) != set(SETTINGS):
         raise ValueError('invalid settings keys')
     for key, item in value.items():
-        if key in ('communication_profile', 'situation', 'language_standard', 'signaling'):
+        if key == 'guideline_overrides':
+            ids = {entry['id'] for entry in catalog()[0]}
+            if not isinstance(item, dict) or any(k not in ids or type(v) is not bool for k, v in item.items()):
+                raise ValueError('invalid guideline_overrides')
+        elif key in ('communication_profile', 'situation', 'language_standard', 'signaling'):
             setting_value(key, item)
         elif type(item) is not bool:
             raise ValueError(f'invalid boolean setting: {key}')
