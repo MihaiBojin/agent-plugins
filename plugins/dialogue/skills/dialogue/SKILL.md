@@ -61,13 +61,13 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 
 ## Individual guidelines
 
-Guidelines are the primary communication controls; profiles are optional bundles. Use `guidelines` for enabled rules grouped by purpose, `guidelines --all` to see disabled rules and their source, and `guidelines --group TYPE` to inspect one category. Types are structure, brevity, precision, evidence, risk, language, and procedures. Use `guideline on ID`, `guideline off ID`, or `guideline reset ID` to override or restore an individual rule; `guideline group TYPE on|off|reset` does the same for a category. `guideline reset all` clears overrides. Only the enabled effective rules apply. Changes do not implicitly enable Dialogue. Never silently toggle guidelines as a side effect of ordinary task wording.
+Guidelines are the primary communication controls; profiles are optional bundles. Use `guidelines` for enabled rules grouped by purpose, `guidelines --all` to see disabled rules and their source, and `guidelines --group TYPE` to inspect one category. Types are structure, brevity, precision, evidence, risk, language, and procedures. Use `guideline on ID`, `guideline off ID`, or `guideline reset ID` to override or restore an individual rule; `guideline group TYPE on|off|reset` does the same for a category. `guideline reset all` clears overrides. Only the enabled effective rules apply. Changes do not implicitly enable Dialogue. Add `--default` to `guideline` commands to change defaults for future sessions without changing saved sessions. Never silently toggle guidelines as a side effect of ordinary task wording.
 
 ## Guided setup
 
 When the user invokes `setup`, run the CLI `setup` overview. Present **one question at a time**. Ask exactly these three questions, using options and descriptions from the tool's output:
 
-1. **Comms**: `pyramid`, `direct`, `efficient`, `plain`, or `custom` (start with no enabled rules; configure guidelines individually). Presets only set baseline guidelines. Individual overrides remain in effect.
+1. **Comms**: `pyramid`, `direct`, `efficient`, `plain`, or `custom` (start with no enabled rules; configure guidelines individually). Presets only set baseline guidelines. The `ste` style adds the 12 ASD-derived guidelines. Individual overrides take final precedence.
 2. **Style**: `plain` or `ste` (STE-inspired, not ASD-STE100 compliant).
 3. **Workflow**: `quiet`, `automatic`, `verified`, `status`, `escalation`, `handoff`, `safety`, or `incident`. A workflow selects both situational formatting and signal semantics; explain that individual settings remain editable.
 
