@@ -1,6 +1,6 @@
 ---
 name: dialogue
-argument-hint: "[help | enable | disable | settings | profiles | guidelines | set <setting> <value> | defaults show | defaults set <setting> <value>]"
+argument-hint: "[help | enable | disable | settings | profiles | guidelines | situations | situation | languages | signals | set <setting> <value> | defaults show | defaults set <setting> <value>]"
 description: Use only when the user explicitly invokes dialogue to enable, disable, inspect, or configure conversation behavior. Never activate from ordinary discussion of threads, focus, or writing style.
 disable-model-invocation: true
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/dialogue *)
@@ -39,16 +39,25 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | `set communication_profile direct` | Apply the direct communication profile to this session                 |
 | `profiles`                         | List predefined profiles and the active profile                        |
 | `guidelines`                       | List guidelines enabled by the active profile                          |
+| `situations`                       | List I-PASS, CAN, CUS, SBAR, and incident reporting formats            |
+| `situation preview sbar`           | Inspect a framework without changing session state                     |
+| `situation use sbar`               | Apply a framework to future replies in this session                     |
+| `situation clear`                  | Remove the session's active framework                                   |
+| `languages`                        | List plain and STE-inspired language standards                          |
+| `signals`                          | List sender intent and response-status markers                          |
 | `defaults show`                    | Show current values and the defaults for new sessions                  |
 | `defaults set enabled on`          | Explicitly opt future sessions into automatic startup activation       |
 | `defaults set enabled off`         | Keep future sessions off until explicitly invoked                      |
 
 `set enabled on/off` is equivalent to enabling/disabling. Other settings never implicitly enable the plugin.
-The setting names are `enabled`, `threads`, `focus`, `compact`, and `communication_profile`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
-All settings accept `on/off` or `true/false` except `communication_profile`, which accepts `pyramid/direct/efficient/plain`. Legacy `set response_style pyramid/plain` is supported as an alias.
+The setting names are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
+Booleans accept `on/off` or `true/false`. Profiles accept `pyramid/direct/efficient/plain`; situation accepts `none/auto/sbar/ipass/can/cus/methane`; language_standard accepts `plain/ste-inspired`; signaling accepts `off/intent/full`. Legacy `set response_style pyramid/plain` is supported as an alias.
 Defaults affect only sessions that have not yet saved a snapshot. Existing sessions keep their values.
 A session's explicit off remains off after restart, resume, and compaction, even when defaults enable new sessions.
 The hook restores saved policy; the model must never invent a reason to turn it on.
+
+For situational frameworks, use `situations` to list, `situation preview NAME` to inspect without changing state, `situation use NAME` to select for the current session, and `situation clear` to remove selection. `auto` selects a framework only when a task clearly matches it. Never activate dialogue from ordinary wording. Use `languages` and `signals` to list their available options.
+A user may request a framework for one response without setting the session default: preview its definition, apply it to that response only, and preserve saved state. Do not automatically open a decision thread for an ordinary writing request.
 
 After enabling or changing settings, follow the tool's returned policy. The rule sources are [threads.md](threads.md), [guidelines.json](guidelines.json), and [profiles.json](profiles.json); the tool selects the applicable parts.
 When thread tracking is enabled, persist each transition with the tool. Run `thread --help` and its subcommand help for syntax.
