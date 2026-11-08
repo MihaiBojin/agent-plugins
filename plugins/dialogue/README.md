@@ -95,18 +95,19 @@ Use the individual guideline controls instead of a preset if you prefer a custom
 
 ```text
 /dialogue:dialogue guidelines
-/dialogue:dialogue guidelines --all
-/dialogue:dialogue guidelines --group language
-/dialogue:dialogue guideline on terminology
-/dialogue:dialogue guideline off no_narration
+/dialogue:dialogue guidelines list
+/dialogue:dialogue guidelines group list
+/dialogue:dialogue guidelines group list language
+/dialogue:dialogue guideline enable terminology
+/dialogue:dialogue guideline disable no_narration
 /dialogue:dialogue guideline reset no_narration
-/dialogue:dialogue guideline group procedures on
-/dialogue:dialogue guideline group procedures reset
+/dialogue:dialogue guideline group enable procedures
+/dialogue:dialogue guideline group reset procedures
 /dialogue:dialogue guideline reset all
-/dialogue:dialogue guideline --default on bluf
+/dialogue:dialogue guideline --default enable bluf
 ```
 
-Each guideline is grouped into **structure**, **brevity**, **precision**, **evidence**, **risk**, **language**, or **procedures**. The 12 original principles remain and 12 additional optional guidelines draw on ASD-STE100 Issue 9. Set `style ste` to enable these 12 as a bundle; use individual overrides to disable or restore any one of them. These are adaptations, not a certification of standard compliance. `guidelines --all` reports each rule's effective on/off state and whether it came from the preset or an override. Overrides persist per session and take priority over profile and style bundles; resetting one restores its inherited value. Use `guideline --default on|off|reset ID` (or `guideline --default group TYPE on|off|reset`) to change defaults for future sessions only. Disabling Dialogue disables all response policies without deleting the saved choices.
+Each guideline is grouped into **structure**, **brevity**, **precision**, **evidence**, **risk**, **language**, or **procedures**. The 12 original principles remain and 12 additional optional guidelines draw on ASD-STE100 Issue 9. Set `style ste` to enable these 12 as a bundle; use individual overrides to disable or restore any one of them. These are adaptations, not a certification of standard compliance. `guidelines list` reports each rule's effective on/off state and whether it came from the preset or an override. `guidelines group list` shows category counts; append a category to inspect its rules. Overrides persist per session and take priority over profile and style bundles; resetting one restores its inherited value. Use `guideline --default enable|disable|reset ID` (or `guideline --default group enable|disable|reset TYPE`) to change defaults for future sessions only. Disabling Dialogue disables all response policies without deleting the saved choices. Older command forms remain accepted as aliases.
 
 The `custom` preset has no initially enabled guidelines. It is an optional starting point for choosing rules individually; existing `pyramid`, `direct`, `efficient` and `plain` presets remain for compatibility.
 
