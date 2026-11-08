@@ -39,7 +39,7 @@ def render(store, data):
              'Persist changes before acknowledging them; do not edit state files by hand.',
              f'Tool: {ROOT / "bin" / "dialogue"}',
              'Effective settings: ' + json.dumps(settings, sort_keys=True)]
-    lines.append(communication.render_profile(settings['communication_profile'], settings['guideline_overrides']))
+    lines.append(communication.render_profile(settings['communication_profile'], settings['guideline_overrides'], settings['language_standard']))
     if settings['situation'] != 'none':
         lines.append(communication.render_situation(settings['situation']))
     if settings['language_standard'] != 'plain':
@@ -196,7 +196,8 @@ def main(args):
         data, _ = store.change(change_guidelines)
         print(communication.list_guidelines(
             data['settings']['communication_profile'],
-            data['settings']['guideline_overrides'], all_guidelines=True))
+            data['settings']['guideline_overrides'], all_guidelines=True,
+            style=data['settings']['language_standard']))
         return
     if args.command == 'defaults':
         if args.default_operation == 'set':
@@ -241,7 +242,8 @@ def main(args):
             print(communication.list_guidelines(
                 data['settings']['communication_profile'],
                 data['settings']['guideline_overrides'],
-                all_guidelines=args.all, group=args.group))
+                all_guidelines=args.all, group=args.group,
+                style=data['settings']['language_standard']))
         elif args.all:
             print('Dialogue disabled (no guidelines active). Available guidelines:')
             print(communication.list_guidelines('custom', all_guidelines=True, group=args.group))
