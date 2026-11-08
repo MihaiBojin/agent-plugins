@@ -17,6 +17,23 @@ Claude Code shows subcommand syntax in the autocomplete hint for `/dialogue:dial
 
 Installation does not enable response behavior. A bare invocation enables the current session. Append `settings` to inspect the table without enabling anything. Append `disable` to stop applying the policy while keeping recorded threads.
 
+### Codex state permissions
+
+Dialogue writes settings and threads outside the workspace. Codex's `workspace-write` sandbox needs permission for the state directory, including its lock and temporary files. In `~/.codex/config.toml` (or `$CODEX_HOME/config.toml`), add the directory to the existing `writable_roots` array under `[sandbox_workspace_write]`. Create the table if absent; preserve any other roots and settings.
+
+```toml
+[sandbox_workspace_write]
+writable_roots = ["/absolute/path/to/your/home/.local/state/dialogue"]
+```
+
+Use an absolute path for your machine. If `DIALOGUE_STATE_DIR` is set, authorize that directory instead. Otherwise, if `XDG_STATE_HOME` is set, authorize its `dialogue` subdirectory. The hook and tool commands must use the same state directory.
+
+Restart the Codex session after changing its permissions. For a named permission profile, grant the state directory write access in that profile. See the [official Codex sandbox configuration](https://learn.chatgpt.com/docs/config-file/config-advanced#approval-policies-and-sandbox-modes) and [permission profiles](https://learn.chatgpt.com/docs/permissions).
+
+An `Operation not permitted` or `Permission denied` error on `.lock` or a state file can indicate a sandbox restriction or filesystem permissions. Check both. Dialogue reports the affected path and Codex setup guidance; it does not change Codex permissions automatically. Authorize the state directory only. Deleting the lock does not grant access.
+
+### Session settings
+
 | Request after the skill name | Result                                                                  |
 | ---------------------------- | ----------------------------------------------------------------------- |
 | `settings`                   | Show every setting, session value, new-session default, and explanation |
