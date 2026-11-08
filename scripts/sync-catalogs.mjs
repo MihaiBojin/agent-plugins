@@ -25,15 +25,21 @@ import {
   CODEX_MANIFEST,
   MARKETPLACE_NAME,
   PLUGINS_DIR,
+  REMOTE_PLUGINS,
   claudeEntry,
   codexEntry,
   readJson,
+  readRemotePlugins,
+  remoteClaudeEntry,
+  remoteCodexEntry,
+  remoteErrors,
   serializeJson,
 } from "./catalogs.mjs";
 import { REPOSITORY_ROOT, validatePlugin } from "./validate-plugin.mjs";
 
 /**
- * Rewrites both catalogs from the plugins in `plugins/`.
+ * Rewrites both catalogs from the plugins in `plugins/` and the ones
+ * `remote-plugins.json` declares in other repositories.
  *
  *     npm run sync              write them
  *     npm run sync -- --check   say whether they are already right
@@ -71,6 +77,25 @@ export function syncCatalogs({ root = REPOSITORY_ROOT, check = false } = {}) {
     entries[name] = {
       claude: claudeEntry(readJson(path.join(at, CLAUDE_MANIFEST))),
       codex: codexEntry(readJson(path.join(at, CODEX_MANIFEST))),
+    };
+  }
+
+  // Listed after the local plugins, from their declaration alone: the plugin
+  // itself is in another repository, at a tag this checkout cannot read.
+  for (const remote of readRemotePlugins(marketplace)) {
+    const failures = remoteErrors(remote);
+    if (plugins.includes(remote?.name)) {
+      failures.push(`'${remote.name}' is already a plugin here`);
+    }
+    if (failures.length > 0) {
+      const label = `${REMOTE_PLUGINS} ${remote?.name}`;
+      errors.push(...failures.map((failure) => `${label}: ${failure}`));
+      continue;
+    }
+    plugins.push(remote.name);
+    entries[remote.name] = {
+      claude: remoteClaudeEntry(remote),
+      codex: remoteCodexEntry(remote),
     };
   }
   if (errors.length > 0) {

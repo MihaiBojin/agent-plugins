@@ -53,6 +53,16 @@ export const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
  */
 export const PLUGIN_NAME = /^[a-z0-9][a-z0-9-]*$/;
 
+/**
+ * The plugins this marketplace lists from another repository.
+ *
+ * Each names a subdirectory of that repository at a tag. Both clients clone it
+ * and read the plugin's own manifests from there, so nothing about the plugin
+ * is copied here: the declaration is the one place the url, path and tag are
+ * written, and both catalog entries are generated from it.
+ */
+export const REMOTE_PLUGINS = "remote-plugins.json";
+
 /** Every published plugin's source path, in the form each client expects. */
 export const claudeSource = (name) => `./${PLUGINS_DIR}/${name}`;
 export const codexSource = (name) => ({
@@ -97,6 +107,100 @@ export function codexEntry(manifest) {
     policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
     category: manifest.interface.category,
   };
+}
+
+/**
+ * A remote plugin's source. Both clients take the same object: Claude Code and
+ * Codex each clone `url` at `ref` and read the plugin from `path`.
+ */
+export const remoteSource = (remote) => ({
+  source: "git-subdir",
+  url: remote.url,
+  path: remote.path,
+  ref: remote.ref,
+});
+
+/**
+ * Claude Code's entry for a remote plugin: the source and the description it
+ * shows before installing. The version and the rest of the metadata are read
+ * from the plugin's own manifest at `ref`, which this repository cannot see.
+ */
+export function remoteClaudeEntry(remote) {
+  return {
+    name: remote.name,
+    source: remoteSource(remote),
+    description: remote.description,
+  };
+}
+
+/** Codex's entry for a remote plugin, with the policy a local one carries. */
+export function remoteCodexEntry(remote) {
+  return {
+    name: remote.name,
+    source: remoteSource(remote),
+    policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+    category: remote.category,
+  };
+}
+
+/**
+ * What is wrong with a remote source, as a list of reasons.
+ *
+ * The url is https, so a client without an SSH key can clone it. The path is
+ * relative and stays inside the cloned repository, checked on the normalised
+ * path because `plugin/../..` reads as relative until it is resolved. The ref
+ * is a tag or a branch, and cannot be read as an option.
+ */
+export function remoteSourceErrors(source) {
+  const errors = [];
+  if (source?.source !== "git-subdir") {
+    errors.push("source is not 'git-subdir'");
+  }
+  if (typeof source?.url !== "string" || !/^https:\/\/\S+$/.test(source.url)) {
+    errors.push("url is not an https URL");
+  }
+  const at = source?.path;
+  if (typeof at !== "string" || at.trim() === "") {
+    errors.push("path is missing");
+  } else {
+    const normal = path.posix.normalize(at);
+    if (
+      path.posix.isAbsolute(at) ||
+      at.includes("\\") ||
+      normal === "." ||
+      normal === ".." ||
+      normal.startsWith("../")
+    ) {
+      errors.push(`path '${at}' is not a subdirectory of the repository`);
+    }
+  }
+  if (
+    typeof source?.ref !== "string" ||
+    !/^[A-Za-z0-9._/][A-Za-z0-9._/-]*$/.test(source.ref)
+  ) {
+    errors.push("ref is missing or is not a tag or branch name");
+  }
+  return errors;
+}
+
+/** What is wrong with one declaration in `remote-plugins.json`. */
+export function remoteErrors(remote) {
+  const errors = [];
+  if (typeof remote?.name !== "string" || !PLUGIN_NAME.test(remote.name)) {
+    errors.push(`'${remote?.name}' is not a usable plugin name`);
+  }
+  for (const field of ["description", "category"]) {
+    if (typeof remote?.[field] !== "string" || remote[field].trim() === "") {
+      errors.push(`${field} is missing`);
+    }
+  }
+  return [...errors, ...remoteSourceErrors(remoteSource(remote ?? {}))];
+}
+
+/** The remote declarations under `root`, or none when there is no file. */
+export function readRemotePlugins(root) {
+  const file = path.join(root, REMOTE_PLUGINS);
+  return fs.existsSync(file) ? readJson(file) : [];
 }
 
 function withoutUndefined(entry) {

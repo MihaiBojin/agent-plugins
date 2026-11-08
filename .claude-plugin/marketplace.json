@@ -103,6 +103,16 @@
       "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/dialogue#readme",
       "repository": "https://github.com/MihaiBojin/agent-plugins",
       "license": "Apache-2.0"
+    },
+    {
+      "name": "worktrees",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/MihaiBojin/worktrees.git",
+        "path": "plugin",
+        "ref": "v0.7.0"
+      },
+      "description": "Remove the git worktrees and branches the worktrees CLI proves finished, after asking"
     }
   ]
 }

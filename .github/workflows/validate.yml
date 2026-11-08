@@ -113,13 +113,17 @@ jobs:
             claude plugin validate --strict .
           fi
 
+      # The plugins under plugins/, which the install steps read their
+      # versions from. A remote plugin's files are in its own repository at
+      # a tag, so it has nothing here for them to read.
       - name: 📋 List what is published
         id: inventory
         run: |
           set -euo pipefail
           plugins="$(node -e '
             const catalog = JSON.parse(require("node:fs").readFileSync(".claude-plugin/marketplace.json", "utf8"));
-            process.stdout.write(JSON.stringify(catalog.plugins.map((entry) => entry.name)));
+            const local = catalog.plugins.filter((entry) => typeof entry.source === "string");
+            process.stdout.write(JSON.stringify(local.map((entry) => entry.name)));
           ')"
           echo "plugins=${plugins}" >> "$GITHUB_OUTPUT"
           [ "$plugins" = "[]" ] && echo "any=false" >> "$GITHUB_OUTPUT" || echo "any=true" >> "$GITHUB_OUTPUT"

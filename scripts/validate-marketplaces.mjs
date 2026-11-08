@@ -27,11 +27,17 @@ import {
   MARKETPLACE_NAME,
   PLUGINS_DIR,
   PLUGIN_NAME,
+  REMOTE_PLUGINS,
   SEMVER,
   claudeEntry,
   claudeSource,
   codexEntry,
   codexSource,
+  readRemotePlugins,
+  remoteClaudeEntry,
+  remoteCodexEntry,
+  remoteErrors,
+  remoteSourceErrors,
   serializeJson,
 } from "./catalogs.mjs";
 
@@ -119,8 +125,27 @@ export function validateMarketplaces({ root = REPOSITORY_ROOT } = {}) {
     );
   }
 
+  let remotes = [];
+  try {
+    remotes = readRemotePlugins(marketplace);
+  } catch (error) {
+    errors.push(`cannot read ${REMOTE_PLUGINS}: ${error.message}`);
+  }
+  for (const remote of remotes) {
+    if (!names.includes(remote?.name)) {
+      errors.push(
+        `${REMOTE_PLUGINS} declares '${remote?.name}', which neither catalog lists`,
+      );
+    }
+  }
+
   for (const name of names) {
-    validatePlugin(marketplace, name, claude, codex, errors);
+    const remote = remotes.find((candidate) => candidate?.name === name);
+    if (remote) {
+      validateRemote(marketplace, remote, claude, codex, errors);
+    } else {
+      validatePlugin(marketplace, name, claude, codex, errors);
+    }
   }
 
   validateNoOrphans(marketplace, names, errors);
@@ -293,6 +318,62 @@ function validatePlugin(marketplace, name, claude, codex, errors) {
   }
 
   validateContents(marketplace, directory, errors);
+}
+
+/**
+ * A plugin that lives in another repository, listed by url, path and tag.
+ *
+ * Its files and manifests are at a ref this checkout cannot read, so what can
+ * be held here is the listing: both entries are what the declaration
+ * generates, both name the same repository, path and tag, and the path stays
+ * inside that repository. Installing it is the clients' check.
+ */
+function validateRemote(marketplace, remote, claude, codex, errors) {
+  const name = remote.name;
+  for (const failure of remoteErrors(remote)) {
+    errors.push(`${REMOTE_PLUGINS} entry '${name}': ${failure}`);
+  }
+  if (fs.existsSync(path.join(marketplace, PLUGINS_DIR, name))) {
+    errors.push(
+      `'${name}' is both ${PLUGINS_DIR}/${name}/ and a plugin in ${REMOTE_PLUGINS}`,
+    );
+  }
+
+  const listed = {
+    [CLAUDE_CATALOG]: claude.plugins.find((entry) => entry?.name === name),
+    [CODEX_CATALOG]: codex.plugins.find((entry) => entry?.name === name),
+  };
+  for (const [relative, entry] of Object.entries(listed)) {
+    for (const failure of remoteSourceErrors(entry?.source)) {
+      errors.push(`${relative} entry '${name}': ${failure}`);
+    }
+  }
+
+  const where = (entry) =>
+    JSON.stringify([
+      entry?.source?.url,
+      entry?.source?.path,
+      entry?.source?.ref,
+    ]);
+  if (where(listed[CLAUDE_CATALOG]) !== where(listed[CODEX_CATALOG])) {
+    errors.push(
+      `the catalogs fetch '${name}' from different places: ${CLAUDE_CATALOG} ` +
+        `has ${where(listed[CLAUDE_CATALOG])}, ${CODEX_CATALOG} has ` +
+        `${where(listed[CODEX_CATALOG])}`,
+    );
+  }
+
+  for (const [relative, expected] of [
+    [CLAUDE_CATALOG, remoteClaudeEntry(remote)],
+    [CODEX_CATALOG, remoteCodexEntry(remote)],
+  ]) {
+    if (serializeJson(listed[relative]) !== serializeJson(expected)) {
+      errors.push(
+        `${relative} entry '${name}' is not what the publisher generates from ` +
+          `${REMOTE_PLUGINS}; run the publisher rather than editing it`,
+      );
+    }
+  }
 }
 
 function validateContents(marketplace, directory, errors) {

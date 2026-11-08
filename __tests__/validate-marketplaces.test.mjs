@@ -23,6 +23,7 @@ import {
   marketplace,
   plugin,
   readJson,
+  remote,
   write,
   writeJson,
 } from "./fixtures.mjs";
@@ -61,6 +62,81 @@ describe("validateMarketplaces", () => {
     expect(validateMarketplaces({ root })).toEqual({
       plugins: ["docket", "scaffold"],
       errors: [],
+    });
+  });
+
+  describe("a plugin from another repository", () => {
+    const withRemote = () => {
+      const root = marketplace();
+      roots.push(root);
+      plugin(root, "docket", { version: "0.1.0" });
+      remote(root, "worktrees");
+      syncCatalogs({ root });
+      return root;
+    };
+    const edit = (root, catalog, change) => {
+      const value = readJson(root, catalog);
+      change(value.plugins.find((entry) => entry.name === "worktrees"));
+      writeJson(root, catalog, value);
+    };
+
+    it("passes on what the sync wrote", () => {
+      expect(validateMarketplaces({ root: withRemote() })).toEqual({
+        plugins: ["docket", "worktrees"],
+        errors: [],
+      });
+    });
+
+    it("catches catalogs that fetch it at different refs", () => {
+      const root = withRemote();
+      edit(root, CODEX, (entry) => (entry.source.ref = "v2.0.0"));
+
+      expect(failure(root)).toMatch(/fetch 'worktrees' from different places/);
+    });
+
+    it("catches a path that climbs out of its repository", () => {
+      const root = withRemote();
+      for (const catalog of [CLAUDE, CODEX]) {
+        edit(root, catalog, (entry) => (entry.source.path = "../elsewhere"));
+      }
+
+      expect(failure(root)).toMatch(
+        /marketplace\.json entry 'worktrees': path '\.\.\/elsewhere' is not a subdirectory/,
+      );
+    });
+
+    it("catches an entry with no ref", () => {
+      const root = withRemote();
+      edit(root, CLAUDE, (entry) => delete entry.source.ref);
+
+      expect(failure(root)).toMatch(/'worktrees': ref is missing/);
+    });
+
+    it("catches an entry somebody edited by hand", () => {
+      const root = withRemote();
+      edit(root, CLAUDE, (entry) => (entry.description = "typed in"));
+
+      expect(failure(root)).toMatch(
+        /entry 'worktrees' is not what the publisher generates from remote-plugins\.json/,
+      );
+    });
+
+    it("catches a declaration neither catalog lists", () => {
+      const root = withRemote();
+      remote(root, "stowaway");
+
+      expect(failure(root)).toMatch(
+        /declares 'stowaway', which neither catalog lists/,
+      );
+    });
+
+    it("catches a remote plugin that is also a directory here", () => {
+      const root = withRemote();
+      plugin(root, "worktrees", {});
+
+      expect(failure(root)).toMatch(
+        /'worktrees' is both plugins\/worktrees\/ and a plugin/,
+      );
     });
   });
 
