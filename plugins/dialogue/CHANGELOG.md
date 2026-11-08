@@ -2,7 +2,7 @@
 
 ## 0.2.0 - 2026-11-08
 
-Communication profiles (`pyramid`, `direct`, `efficient`, `plain`) select guidelines from one catalog. Added profile and guideline inspection, SBAR/I-PASS/CAN/CUS/M-ETHANE situational modes, optional STE-inspired language, and intent/response markers. Help-first navigation and atomic three-question setup configure `comms`, `style`, and a workflow preset. Short setting aliases are supported. Guidelines can be toggled individually or by purpose (structure, brevity, precision, evidence, risk, language, procedures); profiles remain optional. Twelve STE-derived guidelines can be selected by `style ste` or individually, with opt-in per-session and future-session overrides. Legacy `response_style` and `minimal` settings are migrated.
+Communication profiles (`pyramid`, `direct`, `efficient`, `plain`) select guidelines from one catalog. Added profile and guideline inspection, SBAR/I-PASS/CAN/CUS/M-ETHANE situational modes, optional STE-inspired language, and intent/response markers. Help-first navigation and atomic three-question setup configure `comms`, `style`, and a workflow preset. Short setting aliases are supported. Guideline command hierarchy uses `guidelines list`, `guidelines group list`, `guideline enable|disable|reset ID`, and `guideline group enable|disable|reset TYPE` with backward-compatible aliases. Guidelines can be toggled individually or by purpose (structure, brevity, precision, evidence, risk, language, procedures); profiles remain optional. Twelve STE-derived guidelines can be selected by `style ste` or individually, with opt-in per-session and future-session overrides. Legacy `response_style` and `minimal` settings are migrated.
 
 ## 0.1.3 - 2026-11-08
 
