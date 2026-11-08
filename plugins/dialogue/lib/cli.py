@@ -9,6 +9,7 @@ import sys
 sys.dont_write_bytecode = True
 from state import SETTINGS, Store, setting_value, state_root
 import threads
+import communication
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -38,11 +39,7 @@ def render(store, data):
              'Persist changes before acknowledging them; do not edit state files by hand.',
              f'Tool: {ROOT / "bin" / "dialogue"}',
              'Effective settings: ' + json.dumps(settings, sort_keys=True)]
-    if settings['response_style'] == 'pyramid':
-        lines.append((ROOT / 'skills' / 'dialogue' / 'response.md').read_text(encoding='utf-8'))
-    else:
-        lines.append('Response style is plain: stop applying earlier dialogue response-style instructions. '
-                     'Use the client and user instructions without the dialogue style.')
+    lines.append(communication.render_profile(settings['communication_profile']))
     if settings['threads']:
         lines.append((ROOT / 'skills' / 'dialogue' / 'threads.md').read_text(encoding='utf-8'))
         if settings['focus']:
@@ -72,15 +69,15 @@ def parser():
     result.add_argument('--client', choices=('codex', 'claude'), required=True)
     result.add_argument('--session', help='Client session ID; defaults to CODEX_THREAD_ID for Codex or CLAUDE_SESSION_ID for Claude')
     sub = result.add_subparsers(dest='command', required=True)
-    for name in ('enable', 'disable', 'settings', 'state', 'render', 'hook'):
+    for name in ('enable', 'disable', 'settings', 'state', 'render', 'hook', 'profiles', 'guidelines'):
         sub.add_parser(name)
     setting = sub.add_parser('set')
-    setting.add_argument('key', choices=SETTINGS)
+    setting.add_argument('key', choices=(*SETTINGS, 'response_style'))
     setting.add_argument('value')
     defaults = sub.add_parser('defaults').add_subparsers(dest='default_operation', required=True)
     defaults.add_parser('show')
     default_set = defaults.add_parser('set')
-    default_set.add_argument('key', choices=SETTINGS)
+    default_set.add_argument('key', choices=(*SETTINGS, 'response_style'))
     default_set.add_argument('value')
     commands = sub.add_parser('thread').add_subparsers(dest='operation', required=True)
     add = commands.add_parser('open')
@@ -129,12 +126,17 @@ def main(args):
     if args.command in ('enable', 'disable', 'set'):
         key = args.key if args.command == 'set' else 'enabled'
         value = setting_value(key, args.value) if args.command == 'set' else args.command == 'enable'
+        key = 'communication_profile' if key == 'response_style' else key
         data, _ = store.change(lambda data: data['settings'].__setitem__(key, value))
         print(render(store, data))
         return
     data = store.read()
     if args.command == 'settings':
         print(table(store, data))
+    elif args.command == 'profiles':
+        print(communication.list_profiles(data['settings']['communication_profile']))
+    elif args.command == 'guidelines':
+        print(communication.list_guidelines(data['settings']['communication_profile']))
     elif args.command == 'state':
         print(json.dumps(data, ensure_ascii=False, indent=2))
     elif args.command == 'render':
