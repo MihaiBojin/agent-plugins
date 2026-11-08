@@ -233,6 +233,19 @@ class DialogueTest(unittest.TestCase):
         path.write_text(json.dumps(data))
         self.assertEqual(self.state()['settings']['guideline_overrides'], {})
 
+    def test_ste_style_rules_can_be_overridden(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'comms', 'custom')
+        self.run_cli('set', 'style', 'ste')
+        self.assertIn('(12/24 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('terminology [on, style]', self.run_cli('guidelines', '--all').stdout)
+        self.run_cli('guideline', 'off', 'terminology')
+        enabled = self.run_cli('guidelines', '--all').stdout
+        self.assertIn('terminology [off, override]', enabled)
+        self.assertNotIn('Consistent terminology', self.run_cli('render').stdout)
+        self.run_cli('guideline', 'reset', 'terminology')
+        self.assertIn('terminology [on, style]', self.run_cli('guidelines', '--all').stdout)
+
     def test_bad_guideline_overrides_do_not_change_corrupt_state(self):
         self.run_cli('enable')
         path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
