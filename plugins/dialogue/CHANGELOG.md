@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+Communication profiles (`pyramid`, `direct`, `minimal`, `plain`) select guidelines from one catalog. Added `profiles` and `guidelines` CLI commands. Legacy `response_style` settings are migrated.
+
 ## 0.1.3 - 2026-11-08
 
 Codex state permission errors identify the directory to authorize and explain how to configure sandbox access and restart the session.
