@@ -2,7 +2,7 @@
 
 ## 0.2.0 - 2026-11-08
 
-Communication profiles (`pyramid`, `direct`, `efficient`, `plain`) select guidelines from one catalog. Added profile and guideline inspection, SBAR/I-PASS/CAN/CUS/M-ETHANE situational modes, optional STE-inspired language, and intent/response markers. Legacy `response_style` and `minimal` settings are migrated.
+Communication profiles (`pyramid`, `direct`, `efficient`, `plain`) select guidelines from one catalog. Added profile and guideline inspection, SBAR/I-PASS/CAN/CUS/M-ETHANE situational modes, optional STE-inspired language, and intent/response markers. Help-first navigation and atomic three-question setup configure `comms`, `style`, and a workflow preset. Short setting aliases are supported. Legacy `response_style` and `minimal` settings are migrated.
 
 ## 0.1.3 - 2026-11-08
 
