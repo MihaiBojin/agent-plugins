@@ -136,7 +136,10 @@ def main(args):
     elif args.command == 'profiles':
         print(communication.list_profiles(data['settings']['communication_profile']))
     elif args.command == 'guidelines':
-        print(communication.list_guidelines(data['settings']['communication_profile']))
+        if data['settings']['enabled']:
+            print(communication.list_guidelines(data['settings']['communication_profile']))
+        else:
+            print('Dialogue is disabled; no guidelines are active.')
     elif args.command == 'state':
         print(json.dumps(data, ensure_ascii=False, indent=2))
     elif args.command == 'render':
