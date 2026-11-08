@@ -34,17 +34,17 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 
 ### Session settings
 
-| Request after the skill name | Result                                                                  |
-| ---------------------------- | ----------------------------------------------------------------------- |
-| `settings`                   | Show every setting, session value, new-session default, and explanation |
-| `set focus off`              | Allow discussion of several relevant issues                             |
-| `set compact on`             | Show relevant threads with a count of other open threads                |
-| `set threads off`            | Suspend numbering and tracking, retaining the records                   |
-| `set communication_profile direct` | Apply the direct communication profile                              |
-| `profiles`                   | Show preset descriptions and the selected profile                    |
-| `guidelines`                 | List the guidelines enabled in the current session                  |
-| `defaults set enabled on`    | Explicitly enable automatic activation for future sessions              |
-| `defaults set enabled off`   | Make future sessions opt-in again                                       |
+| Request after the skill name       | Result                                                                  |
+| ---------------------------------- | ----------------------------------------------------------------------- |
+| `settings`                         | Show every setting, session value, new-session default, and explanation |
+| `set focus off`                    | Allow discussion of several relevant issues                             |
+| `set compact on`                   | Show relevant threads with a count of other open threads                |
+| `set threads off`                  | Suspend numbering and tracking, retaining the records                   |
+| `set communication_profile direct` | Apply the direct communication profile                                  |
+| `profiles`                         | Show preset descriptions and the selected profile                       |
+| `guidelines`                       | List the guidelines enabled in the current session                      |
+| `defaults set enabled on`          | Explicitly enable automatic activation for future sessions              |
+| `defaults set enabled off`         | Make future sessions opt-in again                                       |
 
 The available settings are `enabled`, `threads`, `focus`, `compact`, and `communication_profile`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/minimal/plain`. Legacy `response_style pyramid/plain` commands and saved settings are migrated without changing their meaning. Focus and compact have no effect while threads are disabled.
 
@@ -52,12 +52,12 @@ The available settings are `enabled`, `threads`, `focus`, `compact`, and `commun
 
 Communication rules are defined once in [guidelines.json](skills/dialogue/guidelines.json), each with an ID, name, and short explanation. [profiles.json](skills/dialogue/profiles.json) selects which guidelines apply, without duplicating their text.
 
-| Profile | Behavior |
-| --- | --- |
+| Profile   | Behavior                                                                                  |
+| --------- | ----------------------------------------------------------------------------------------- |
 | `pyramid` | Answer first, then material reasons and evidence; preserves the previous default approach |
-| `direct` | All 12 guidelines; concise, factual, and action-oriented |
-| `minimal` | Smaller set of guidelines for routine coding tasks |
-| `plain` | No additional communication guidelines |
+| `direct`  | All 12 guidelines; concise, factual, and action-oriented                                  |
+| `minimal` | Smaller set of guidelines for routine coding tasks                                        |
+| `plain`   | No additional communication guidelines                                                    |
 
 Use `profiles` to compare presets and `guidelines` to see only the rules currently active. Change the current session with `set communication_profile direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
 
