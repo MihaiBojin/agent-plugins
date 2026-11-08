@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 - 2026-11-08
 
 Communication profiles (`pyramid`, `direct`, `minimal`, `plain`) select guidelines from one catalog. Added `profiles` and `guidelines` CLI commands. Legacy `response_style` settings are migrated.
 
