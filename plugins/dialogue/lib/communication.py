@@ -42,7 +42,7 @@ def list_guidelines(profile):
     lines = [f'Enabled guidelines for profile {profile} ({len(enabled)}/{len(guidelines)}):']
     for entry in guidelines:
         if entry["id"] in enabled:
-            lines.append(f'- {entry["id"]}: {entry["description"]}')
+            lines.append(f'- {entry["name"]} ({entry["id"]}): {entry["description"]}')
     if not enabled:
         lines.append("(none)")
     return "\n".join(lines)
