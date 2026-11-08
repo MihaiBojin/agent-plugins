@@ -190,6 +190,43 @@ class DialogueTest(unittest.TestCase):
         self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('set', 'communication_profile', 'invalid', ok=False)
 
+    def test_consistent_guideline_commands(self):
+        self.assertIn('Guideline groups (Dialogue disabled)', self.run_cli('guidelines', 'group', 'list').stdout)
+        self.assertIn('bluf [off, inactive]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('enable')
+        all_rules = self.run_cli('guidelines', 'list').stdout
+        self.assertIn('bluf [on, profile]', all_rules)
+        self.assertIn('one_action [off, profile]', all_rules)
+        groups = self.run_cli('guidelines', 'group', 'list').stdout
+        self.assertIn('brevity: 2/4 enabled', groups)
+        assert_group = self.run_cli('guidelines', 'group', 'list', 'procedures').stdout
+        self.assertIn('one_action', assert_group)
+        self.assertNotIn('bluf', assert_group)
+        self.run_cli('guideline', 'group', 'enable', 'procedures')
+        self.assertIn('one_action [on, override]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'disable', 'terminology')
+        self.assertIn('terminology [off, override]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'enable', 'terminology')
+        self.assertIn('terminology [on, override]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'reset', 'terminology')
+        self.assertIn('terminology [off, profile]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'group', 'disable', 'procedures')
+        self.assertIn('one_action [off, override]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'group', 'reset', 'procedures')
+        self.assertIn('one_action [off, profile]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'group', 'enable', 'invalid', ok=False)
+        self.run_cli('guidelines', 'group', 'list', 'invalid', ok=False)
+        self.run_cli('guideline', 'group', 'enable', ok=False)
+
+    def test_guideline_legacy_forms_still_work(self):
+        self.run_cli('enable')
+        self.run_cli('guideline', 'on', 'terminology')
+        self.assertIn('terminology [on, override]', self.run_cli('guidelines', '--all').stdout)
+        self.run_cli('guideline', 'group', 'brevity', 'off')
+        self.assertIn('sufficient [off, override]', self.run_cli('guidelines', '--group', 'brevity').stdout)
+        self.run_cli('guideline', 'group', 'brevity', 'reset')
+        self.assertIn('sufficient [on, profile]', self.run_cli('guidelines', 'list').stdout)
+
     def test_guideline_individual_and_group_overrides(self):
         self.run_cli('enable')
         self.run_cli('set', 'comms', 'custom')
