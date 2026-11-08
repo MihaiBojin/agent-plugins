@@ -18,7 +18,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { syncCatalogs } from "../scripts/sync-catalogs.mjs";
-import { marketplace, plugin, readJson, writeJson } from "./fixtures.mjs";
+import {
+  marketplace,
+  plugin,
+  readJson,
+  remote,
+  writeJson,
+} from "./fixtures.mjs";
 
 /**
  * The catalogs are the only generated files. What matters is that both
@@ -163,6 +169,62 @@ describe("syncCatalogs", () => {
     plugin(root, "docket", {});
 
     expect(syncCatalogs({ root }).errors[0]).toContain("not 'mihaibojin'");
+  });
+
+  it("lists a remote plugin after the local ones, from its declaration", () => {
+    const root = build(["docket", {}]);
+    remote(root, "worktrees", { ref: "v0.7.0" });
+
+    const { errors } = syncCatalogs({ root });
+
+    expect(errors).toEqual([]);
+    expect(names(root, CLAUDE)).toEqual(["docket", "worktrees"]);
+    expect(names(root, CODEX)).toEqual(["docket", "worktrees"]);
+    const source = {
+      source: "git-subdir",
+      url: "https://github.com/example/worktrees.git",
+      path: "plugin",
+      ref: "v0.7.0",
+    };
+    expect(readJson(root, CLAUDE).plugins[1]).toEqual({
+      name: "worktrees",
+      source,
+      description: "The worktrees plugin",
+    });
+    expect(readJson(root, CODEX).plugins[1]).toEqual({
+      name: "worktrees",
+      source,
+      policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+      category: "Developer Tools",
+    });
+    expect(syncCatalogs({ root }).changed).toEqual([]);
+  });
+
+  it.each([
+    ["a path that climbs out", { path: "plugin/../.." }, /not a subdirectory/],
+    ["an absolute path", { path: "/etc" }, /not a subdirectory/],
+    ["no path", { path: undefined }, /path is missing/],
+    ["no ref", { ref: undefined }, /ref is missing/],
+    ["a ref that reads as an option", { ref: "--upload-pack=x" }, /ref is/],
+    ["an ssh url", { url: "git@github.com:a/b.git" }, /not an https URL/],
+  ])("writes no catalog for a remote plugin with %s", (_, overrides, why) => {
+    const root = build(["docket", {}]);
+    remote(root, "worktrees", overrides);
+
+    const { errors, changed } = syncCatalogs({ root });
+
+    expect(errors.join("\n")).toMatch(why);
+    expect(changed).toEqual([]);
+    expect(names(root, CLAUDE)).toEqual([]);
+  });
+
+  it("refuses a remote plugin with the name of a local one", () => {
+    const root = build(["docket", {}]);
+    remote(root, "docket");
+
+    expect(syncCatalogs({ root }).errors.join("\n")).toMatch(
+      /'docket' is already a plugin here/,
+    );
   });
 
   it("writes the JSON a formatter would leave alone", () => {

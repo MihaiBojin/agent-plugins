@@ -27,17 +27,22 @@ codex plugin add <name>@mihaibojin
 
 ## What is published
 
-| Plugin                                  | What it does                                                                           |
-| --------------------------------------- | -------------------------------------------------------------------------------------- |
-| [dialogue](./plugins/dialogue#readme)   | Opt-in conversation settings and a persistent thread backlog                           |
-| [docket](./plugins/docket#readme)       | Numbered document collections, argued through review, frozen into an immutable archive |
-| [origin](./plugins/origin#readme)       | Git worktrees, pull request merges, and rebasing onto the head branch                  |
-| [decisions](./plugins/decisions#readme) | A decision log written while the work happens, in the repositories that ask for one    |
-| [readme](./plugins/readme#readme)       | A README checked against the code it describes, then rewritten                         |
+| Plugin                                                                       | What it does                                                                           |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [dialogue](./plugins/dialogue#readme)                                        | Opt-in conversation settings and a persistent thread backlog                           |
+| [docket](./plugins/docket#readme)                                            | Numbered document collections, argued through review, frozen into an immutable archive |
+| [origin](./plugins/origin#readme)                                            | Git worktrees, pull request merges, and rebasing onto the head branch                  |
+| [decisions](./plugins/decisions#readme)                                      | A decision log written while the work happens, in the repositories that ask for one    |
+| [readme](./plugins/readme#readme)                                            | A README checked against the code it describes, then rewritten                         |
+| [worktrees](https://github.com/MihaiBojin/worktrees/tree/main/plugin#readme) | Remove finished git worktrees and branches, after asking                               |
 
 Each plugin lives in `plugins/<name>/` in this repository: the source, not a
 copy of one. Editing a plugin is an ordinary pull request, and the merge is the
-release. See [AGENTS.md](./AGENTS.md) for how that works.
+release. `worktrees` is the exception: it lives in
+[MihaiBojin/worktrees](https://github.com/MihaiBojin/worktrees/tree/main/plugin)
+beside the CLI it drives, and both catalogs fetch it from there at a release
+tag. It needs the `worktrees` CLI, which `uv tool install git-worktrees`
+installs. See [AGENTS.md](./AGENTS.md) for how that works.
 
 ## Development
 

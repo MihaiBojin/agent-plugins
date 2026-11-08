@@ -119,3 +119,21 @@ export function plugin(root, name, overrides = {}) {
   }
   return path.join(root, at);
 }
+
+/** A plugin in another repository, declared in `remote-plugins.json`. */
+export function remote(root, name, overrides = {}) {
+  const file = path.join(root, "remote-plugins.json");
+  const declared = fs.existsSync(file)
+    ? JSON.parse(fs.readFileSync(file, "utf8"))
+    : [];
+  declared.push({
+    name,
+    url: `https://github.com/example/${name}.git`,
+    path: "plugin",
+    ref: "v1.0.0",
+    description: `The ${name} plugin`,
+    category: "Developer Tools",
+    ...overrides,
+  });
+  writeJson(root, "remote-plugins.json", declared);
+}
