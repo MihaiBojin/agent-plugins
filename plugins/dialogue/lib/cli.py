@@ -12,6 +12,7 @@ import threads
 import communication
 
 ROOT = Path(__file__).resolve().parents[1]
+USER_SETTINGS = tuple(key for key in SETTINGS if key != 'guideline_overrides')
 
 
 def table(store, data):
@@ -81,6 +82,7 @@ def parser():
     listing_guidelines.add_argument('--all', action='store_true')
     listing_guidelines.add_argument('--group')
     guideline = sub.add_parser('guideline')
+    guideline.add_argument('--default', dest='for_defaults', action='store_true')
     guideline.add_argument('action', choices=('on', 'off', 'reset', 'group'))
     guideline.add_argument('target')
     guideline.add_argument('type_action', nargs='?', choices=('on', 'off', 'reset'))
@@ -93,12 +95,12 @@ def parser():
     situation_cmd.add_argument('operation', choices=('preview', 'use', 'clear'))
     situation_cmd.add_argument('name', nargs='?')
     setting = sub.add_parser('set')
-    setting.add_argument('key', choices=(*SETTINGS, 'response_style', 'comms', 'style', 'signals'))
+    setting.add_argument('key', choices=(*USER_SETTINGS, 'response_style', 'comms', 'style', 'signals'))
     setting.add_argument('value')
     defaults = sub.add_parser('defaults').add_subparsers(dest='default_operation', required=True)
     defaults.add_parser('show')
     default_set = defaults.add_parser('set')
-    default_set.add_argument('key', choices=(*SETTINGS, 'response_style', 'comms', 'style', 'signals'))
+    default_set.add_argument('key', choices=(*USER_SETTINGS, 'response_style', 'comms', 'style', 'signals'))
     default_set.add_argument('value')
     commands = sub.add_parser('thread').add_subparsers(dest='operation', required=True)
     add = commands.add_parser('open')
@@ -193,11 +195,18 @@ def main(args):
                     overrides.pop(identifier, None)
                 else:
                     overrides[identifier] = action == 'on'
-        data, _ = store.change(change_guidelines)
-        print(communication.list_guidelines(
-            data['settings']['communication_profile'],
-            data['settings']['guideline_overrides'], all_guidelines=True,
-            style=data['settings']['language_standard']))
+        if args.for_defaults:
+            defaults = store.change_guideline_defaults(affected, action)
+            print('Updated defaults for future sessions:')
+            print(communication.list_guidelines(
+                defaults['communication_profile'], defaults['guideline_overrides'],
+                all_guidelines=True, style=defaults['language_standard']))
+        else:
+            data, _ = store.change(change_guidelines)
+            print(communication.list_guidelines(
+                data['settings']['communication_profile'],
+                data['settings']['guideline_overrides'], all_guidelines=True,
+                style=data['settings']['language_standard']))
         return
     if args.command == 'defaults':
         if args.default_operation == 'set':
