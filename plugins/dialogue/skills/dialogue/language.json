@@ -4,7 +4,7 @@
     "instruction": "Use the selected communication profile; no additional language constraints."
   },
   "ste-inspired": {
-    "description": "Controlled, simplified technical English inspired by ASD-STE100.",
-    "instruction": "Use one term for each concept; use the same term consistently. Prefer familiar words, short declarative sentences, active voice, one instruction per sentence, and explicit conditions. Avoid unnecessary noun clusters, synonyms, and idioms. Keep necessary technical identifiers unchanged. This is inspired by ASD-STE100, not a claim of compliance."
+    "description": "STE-derived guideline bundle; independently adjustable rules.",
+    "instruction": "Apply enabled STE-derived guidelines listed in the communication policy. Per-guideline overrides take precedence. This is not ASD-STE100 compliance."
   }
 }
