@@ -148,3 +148,67 @@ def list_signals():
     lines += ["Response markers:"]
     lines += [f'- {x["id"]}: {x["meaning"]}' for x in catalog["responses"]]
     return "\n".join(lines)
+
+
+def workflows():
+    return json.loads((ROOT / "workflows.json").read_text(encoding="utf-8"))
+
+
+def wizard_questions(current=None):
+    """Three choices, each showing names and short meanings."""
+    current = current or {}
+    _, profiles = catalog()
+    languages = language_standards()
+    modes = workflows()
+    lines = [
+        "Dialogue setup: answer three questions. Nothing changes until all answers are applied.",
+        "1. Comms — how concise should responses be?"]
+    for key, item in profiles.items():
+        lines.append(f'   - {key}: {item["description"]}')
+    lines.append("2. Style — how should technical English be written?")
+    for key, item in languages.items():
+        lines.append(f'   - {"ste" if key == "ste-inspired" else key}: {item["description"]}')
+    lines.append("3. Workflow — how should structured messages and acknowledgments work?")
+    for key, item in modes.items():
+        lines.append(f'   - {key}: {item["description"]}')
+    if current:
+        lines.extend([
+            "Current: comms={communication_profile}, style={language_standard}, "
+            "situation={situation}, signals={signaling}".format(**current),
+            "Select all three. Session stays enabled/disabled as it was."
+        ])
+    lines.append("Apply: setup apply --comms VALUE --style VALUE --workflow VALUE")
+    lines.append("For finer control use set situation NAME and set signals off|intent|full.")
+    return "\n".join(lines)
+
+
+def full_help():
+    _, profiles = catalog()
+    languages = language_standards()
+    modes = workflows()
+    lines = [
+        "# Dialogue help",
+        "Start: help (this overview), setup (guided three-question configuration), enable/disable.",
+        "Inspect: settings, profiles, guidelines, situations, languages, signals, state, render.",
+        "Change: set comms VALUE | set style VALUE | set situation VALUE | set signals VALUE.",
+        "Apply wizard: setup apply --comms VALUE --style VALUE --workflow VALUE.",
+        "Defaults: defaults show | defaults set KEY VALUE (future sessions only).",
+        "Legacy: set communication_profile, language_standard, signaling, response_style; situation use/preview/clear.",
+        "",
+        "Comms profiles:"]
+    for key, item in profiles.items():
+        lines.append(f'- {key}: {item["description"]}')
+    lines.append("Language styles:")
+    for key, item in languages.items():
+        lines.append(f'- {"ste" if key == "ste-inspired" else key}: {item["description"]}')
+    lines.append("Situational frameworks: none, auto, " + ", ".join(situations()))
+    for key, item in situations().items():
+        lines.append(f'- {key}: {item["description"]}')
+    lines.append("Signals: off (none), intent (sender-intent labels), full (intent and response-status labels).")
+    lines.append("Workflow presets for setup:")
+    for key, item in modes.items():
+        lines.append(f'- {key}: {item["description"]}')
+    lines.append("Other settings: threads on/off, focus on/off, compact on/off, enabled on/off.")
+    lines.append("Use guidelines to list only the guidelines active for this session.")
+    lines.append("Help/setup/preview do not enable Dialogue or write state.")
+    return "\n".join(lines)
