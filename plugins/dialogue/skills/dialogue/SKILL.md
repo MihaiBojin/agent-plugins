@@ -30,11 +30,11 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | Arguments                          | Effect                                                                 |
 | ---------------------------------- | ---------------------------------------------------------------------- |
 | `help`                             | Show subcommands, settings, and accepted values without changing state |
-| `setup`                            | Ask three questions to configure this session                           |
-| `set comms efficient`             | Select efficient response guidance                                      |
-| `set style ste`                   | Select simplified technical English                                     |
-| `set situation sbar`              | Set the situational framework directly                                  |
-| `set signals intent`              | Enable selective intent markers                                         |
+| `setup`                            | Ask three questions to configure this session                          |
+| `set comms efficient`              | Select efficient response guidance                                     |
+| `set style ste`                    | Select simplified technical English                                    |
+| `set situation sbar`               | Set the situational framework directly                                 |
+| `set signals intent`               | Enable selective intent markers                                        |
 | `enable`                           | Enable this session and apply the returned policy                      |
 | `disable`                          | Disable this session, retain its records, and stop applying its policy |
 | `settings`                         | Print the complete table of session values, defaults, and explanations |
@@ -46,10 +46,10 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | `guidelines`                       | List guidelines enabled by the active profile                          |
 | `situations`                       | List I-PASS, CAN, CUS, SBAR, and incident reporting formats            |
 | `situation preview sbar`           | Inspect a framework without changing session state                     |
-| `situation use sbar`               | Apply a framework to future replies in this session                     |
-| `situation clear`                  | Remove the session's active framework                                   |
-| `languages`                        | List plain and STE-inspired language standards                          |
-| `signals`                          | List sender intent and response-status markers                          |
+| `situation use sbar`               | Apply a framework to future replies in this session                    |
+| `situation clear`                  | Remove the session's active framework                                  |
+| `languages`                        | List plain and STE-inspired language standards                         |
+| `signals`                          | List sender intent and response-status markers                         |
 | `defaults show`                    | Show current values and the defaults for new sessions                  |
 | `defaults set enabled on`          | Explicitly opt future sessions into automatic startup activation       |
 | `defaults set enabled off`         | Keep future sessions off until explicitly invoked                      |
