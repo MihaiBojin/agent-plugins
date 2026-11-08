@@ -1,6 +1,6 @@
 # dialogue
 
-Dialogue stores conversation settings and unresolved decisions for each Claude Code or Codex session. Enable it explicitly, focus on one issue, and keep the rest in a saved backlog.
+Dialogue stores configurable communication guidelines and unresolved decisions for each Claude Code or Codex session. Enable it explicitly, focus on one issue, and keep the rest in a saved backlog.
 
 Python 3.9 or newer and Bash are required. The Python implementation uses only the standard library; no pip or npm packages are needed at runtime. The command and hook adapters support macOS and Linux. Native Windows is not validated.
 
@@ -28,7 +28,7 @@ Codex uses `$dialogue:dialogue`. Help lists commands, profiles, language styles,
 
 Setup asks **three questions, one at a time**:
 
-1. **Comms**: `pyramid` (answer + reasons), `direct` (all 12 guidelines), `efficient` (low-token), `plain` (no response rules).
+1. **Comms**: `pyramid` (answer + evidence), `direct` (12 core guidelines), `efficient` (low-token), `plain` (no response rules), or `custom` (start empty and enable guidelines individually). Presets select guideline baselines; individual overrides take precedence.
 2. **Style**: `plain` (normal technical English), `ste` (STE-inspired controlled English; not official compliance).
 3. **Workflow**: `quiet` (no framework/signals), `automatic` (auto framework + intent), `verified` (auto + full acknowledgments), `status` (CAN), `escalation` (SBAR), `handoff` (I-PASS), `safety` (CUS), `incident` (M/ETHANE).
 
@@ -78,7 +78,7 @@ The available settings are `enabled`, `threads`, `focus`, `compact`, `communicat
 
 ## Communication profiles
 
-Communication rules are defined once in [guidelines.json](skills/dialogue/guidelines.json), each with an ID, name, and short explanation. [profiles.json](skills/dialogue/profiles.json) selects which guidelines apply, without duplicating their text.
+Communication rules are defined once in [guidelines.json](skills/dialogue/guidelines.json), each with an ID, category, name, and short description. [profiles.json](skills/dialogue/profiles.json) contains optional baseline bundles. Individual guideline overrides take precedence; presets do not add hidden instructions.
 
 | Profile     | Behavior                                                                                  |
 | ----------- | ----------------------------------------------------------------------------------------- |
@@ -87,7 +87,27 @@ Communication rules are defined once in [guidelines.json](skills/dialogue/guidel
 | `efficient` | Smaller set of guidelines for routine coding tasks                                        |
 | `plain`     | No additional communication guidelines                                                    |
 
-Use `profiles` to compare presets and `guidelines` to see only the rules currently active. Change the current session with `set comms direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
+Use `profiles` to compare optional presets and `guidelines` to see effective rules grouped by type. Change the current session with `set comms direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
+
+## Individual guidelines
+
+Use the individual guideline controls instead of a preset if you prefer a custom combination.
+
+```text
+/dialogue:dialogue guidelines
+/dialogue:dialogue guidelines --all
+/dialogue:dialogue guidelines --group language
+/dialogue:dialogue guideline on terminology
+/dialogue:dialogue guideline off no_narration
+/dialogue:dialogue guideline reset no_narration
+/dialogue:dialogue guideline group procedures on
+/dialogue:dialogue guideline group procedures reset
+/dialogue:dialogue guideline reset all
+```
+
+Each guideline is grouped into **structure**, **brevity**, **precision**, **evidence**, **risk**, **language**, or **procedures**. The 12 original principles remain and 12 additional optional guidelines draw on ASD-STE100 Issue 9. These are adaptations, not a certification of standard compliance. `guidelines --all` reports each rule's effective on/off state and whether it came from the preset or an override. Overrides persist per session and take priority over profile choices; resetting one restores the preset's value. Disabling Dialogue disables all response policies without deleting the saved choices.
+
+The `custom` preset has no initially enabled guidelines. It is an optional starting point for choosing rules individually; existing `pyramid`, `direct`, `efficient` and `plain` presets remain for compatibility.
 
 ## Situational frameworks
 
