@@ -32,9 +32,14 @@
       "risk_detail"
     ]
   },
-  "minimal": {
-    "description": "Minimal output for routine coding tasks.",
-    "instruction": "Default to 1-3 sentences; use headings only when helpful. Preserve evidence for completion claims.",
+  "plain": {
+    "description": "No extra communication rules.",
+    "instruction": "",
+    "guidelines": []
+  },
+  "efficient": {
+    "description": "Token-efficient output for routine coding tasks.",
+    "instruction": "Default to 1-3 sentences; keep headings optional. Preserve evidence for completion claims.",
     "guidelines": [
       "bluf",
       "sufficient",
@@ -45,10 +50,5 @@
       "no_narration",
       "risk_detail"
     ]
-  },
-  "plain": {
-    "description": "No extra communication rules.",
-    "instruction": "",
-    "guidelines": []
   }
 }
