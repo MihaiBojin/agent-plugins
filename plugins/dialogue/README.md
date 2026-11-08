@@ -62,17 +62,17 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 
 ### Session settings
 
-| Request after the skill name       | Result                                                                  |
-| ---------------------------------- | ----------------------------------------------------------------------- |
-| `settings`                         | Show every setting, session value, new-session default, and explanation |
-| `set focus off`                    | Allow discussion of several relevant issues                             |
-| `set compact on`                   | Show relevant threads with a count of other open threads                |
-| `set threads off`                  | Suspend numbering and tracking, retaining the records                   |
-| `set comms direct` | Apply the direct communication profile                                  |
-| `profiles`                         | Show preset descriptions and the selected profile                       |
-| `guidelines`                       | List the guidelines enabled in the current session                      |
-| `defaults set enabled on`          | Explicitly enable automatic activation for future sessions              |
-| `defaults set enabled off`         | Make future sessions opt-in again                                       |
+| Request after the skill name | Result                                                                  |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| `settings`                   | Show every setting, session value, new-session default, and explanation |
+| `set focus off`              | Allow discussion of several relevant issues                             |
+| `set compact on`             | Show relevant threads with a count of other open threads                |
+| `set threads off`            | Suspend numbering and tracking, retaining the records                   |
+| `set comms direct`           | Apply the direct communication profile                                  |
+| `profiles`                   | Show preset descriptions and the selected profile                       |
+| `guidelines`                 | List the guidelines enabled in the current session                      |
+| `defaults set enabled on`    | Explicitly enable automatic activation for future sessions              |
+| `defaults set enabled off`   | Make future sessions opt-in again                                       |
 
 The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain`. Legacy `response_style pyramid/plain` commands and saved settings are migrated without changing their meaning. Focus and compact have no effect while threads are disabled.
 
@@ -80,18 +80,18 @@ The available settings are `enabled`, `threads`, `focus`, `compact`, `communicat
 
 Communication rules are defined once in [guidelines.json](skills/dialogue/guidelines.json), each with an ID, name, and short explanation. [profiles.json](skills/dialogue/profiles.json) selects which guidelines apply, without duplicating their text.
 
-| Profile   | Behavior                                                                                  |
-| --------- | ----------------------------------------------------------------------------------------- |
-| `pyramid` | Answer first, then material reasons and evidence; preserves the previous default approach |
-| `direct`  | All 12 guidelines; concise, factual, and action-oriented                                  |
+| Profile     | Behavior                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| `pyramid`   | Answer first, then material reasons and evidence; preserves the previous default approach |
+| `direct`    | All 12 guidelines; concise, factual, and action-oriented                                  |
 | `efficient` | Smaller set of guidelines for routine coding tasks                                        |
-| `plain`   | No additional communication guidelines                                                    |
+| `plain`     | No additional communication guidelines                                                    |
 
 Use `profiles` to compare presets and `guidelines` to see only the rules currently active. Change the current session with `set comms direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
 
 ## Situational frameworks
 
-The [situational catalog](skills/dialogue/situations.json) defines SBAR (escalation), I-PASS (handoff and responsibility transfer), CAN (operational updates), CUS (safety escalation), and an engineering adaptation of M/ETHANE (initial major-incident report). These are *optional response structures*, separate from the selected communication profile.
+The [situational catalog](skills/dialogue/situations.json) defines SBAR (escalation), I-PASS (handoff and responsibility transfer), CAN (operational updates), CUS (safety escalation), and an engineering adaptation of M/ETHANE (initial major-incident report). These are _optional response structures_, separate from the selected communication profile.
 
 ```text
 /dialogue:dialogue situations
@@ -111,7 +111,7 @@ Preview is read-only. Use selects the protocol for this session. Clear resets it
 
 ## Templates and plugin boundaries
 
-Dialogue controls *how* a response is communicated. Drafting reusable artifacts such as decision requests, status updates, handoffs, incident reports, project kickoffs, and PR descriptions can use these frameworks, but a future template library should own the actual document bodies and field schemas. Docket is for numbered, reviewed, immutable records, such as RFCs and decision records; it is not a natural owner of one-off status messages or PR templates.
+Dialogue controls _how_ a response is communicated. Drafting reusable artifacts such as decision requests, status updates, handoffs, incident reports, project kickoffs, and PR descriptions can use these frameworks, but a future template library should own the actual document bodies and field schemas. Docket is for numbered, reviewed, immutable records, such as RFCs and decision records; it is not a natural owner of one-off status messages or PR templates.
 
 ## Session persistence
 
