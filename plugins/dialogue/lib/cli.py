@@ -121,8 +121,10 @@ def main(args):
         print(communication.full_help())
         return
     if args.command == 'setup' and args.operation == 'show':
-        # Read-only and valid without an existing session ID.
-        print(communication.wizard_questions())
+        # Read-only even for an existing session; works without a session ID.
+        session = args.session or os.environ.get('CODEX_THREAD_ID' if args.client == 'codex' else 'CLAUDE_SESSION_ID')
+        current = Store(args.client, session).read()['settings'] if session else None
+        print(communication.wizard_questions(current))
         return
     if args.command == 'hook':
         payload = json.load(sys.stdin)
