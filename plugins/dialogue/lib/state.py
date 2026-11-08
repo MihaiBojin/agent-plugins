@@ -8,6 +8,8 @@ import re
 import tempfile
 import time
 
+from communication import names
+
 MISSING = object()
 
 SETTINGS = {
@@ -15,16 +17,20 @@ SETTINGS = {
     'threads': (True, 'Track decisions with stable IDs and saved state.'),
     'focus': (True, 'Finish the active issue before presenting unrelated issues; requires threads.'),
     'compact': (True, 'Show relevant threads and count other open threads; requires threads.'),
-    'response_style': ('pyramid', 'pyramid: answer, reasons, evidence; plain: no additional style instructions.'),
+    'communication_profile': ('pyramid', 'Named communication profile controlling response guidelines.'),
 }
 
 
 def setting_value(key, value):
-    if key not in SETTINGS:
-        raise ValueError(f'unknown setting: {key}')
-    if key == 'response_style':
+    if key == 'response_style':  # Legacy CLI alias.
+        key = 'communication_profile'
         if value not in ('pyramid', 'plain'):
             raise ValueError('response_style must be pyramid or plain')
+    if key not in SETTINGS:
+        raise ValueError(f'unknown setting: {key}')
+    if key == 'communication_profile':
+        if value not in names():
+            raise ValueError('communication_profile must be ' + ', '.join(names()))
         return value
     if value in ('on', 'true'):
         return True
@@ -33,13 +39,22 @@ def setting_value(key, value):
     raise ValueError(f'{key} must be on or off')
 
 
+def migrate_settings(value):
+    """Read old session/default settings without changing their meaning."""
+    if isinstance(value, dict) and 'response_style' in value and 'communication_profile' not in value:
+        value = dict(value)
+        value['communication_profile'] = value.pop('response_style')
+    return value
+
+
 def validate_settings(value):
+    value = migrate_settings(value)
     if not isinstance(value, dict) or set(value) != set(SETTINGS):
         raise ValueError('invalid settings keys')
     for key, item in value.items():
-        if key == 'response_style':
-            if item not in ('pyramid', 'plain'):
-                raise ValueError('invalid response_style')
+        if key == 'communication_profile':
+            if item not in names():
+                raise ValueError('invalid communication_profile')
         elif type(item) is not bool:
             raise ValueError(f'invalid boolean setting: {key}')
     return value
@@ -144,7 +159,7 @@ class Store:
                 or data.get('version') != 1
                 or data.get('client') != self.client or data.get('session') != self.session):
             raise ValueError(f'invalid session state: {self.path}; state was not reset')
-        validate_settings(data.get('settings'))
+        data['settings'] = validate_settings(data.get('settings'))
         validate_threads(data)
         return data
 
@@ -158,5 +173,5 @@ class Store:
     def change_default(self, key, value):
         with locked(self.root):
             defaults = self.defaults()
-            defaults[key] = value
+            defaults['communication_profile' if key == 'response_style' else key] = value
             save_json(self.root / 'defaults.json', defaults)
