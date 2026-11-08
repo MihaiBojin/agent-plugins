@@ -45,7 +45,7 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 
 `set enabled on/off` is equivalent to enabling/disabling. Other settings never implicitly enable the plugin.
 The setting names are `enabled`, `threads`, `focus`, `compact`, and `communication_profile`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
-All settings accept `on/off` or `true/false` except `communication_profile`, which accepts `pyramid/direct/minimal/plain`. Legacy `set response_style pyramid/plain` is supported as an alias.
+All settings accept `on/off` or `true/false` except `communication_profile`, which accepts `pyramid/direct/efficient/plain`. Legacy `set response_style pyramid/plain` is supported as an alias.
 Defaults affect only sessions that have not yet saved a snapshot. Existing sessions keep their values.
 A session's explicit off remains off after restart, resume, and compaction, even when defaults enable new sessions.
 The hook restores saved policy; the model must never invent a reason to turn it on.
