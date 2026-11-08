@@ -8,7 +8,7 @@ import re
 import tempfile
 import time
 
-from communication import names
+from communication import names, situations, language_standards
 
 MISSING = object()
 
@@ -18,6 +18,9 @@ SETTINGS = {
     'focus': (True, 'Finish the active issue before presenting unrelated issues; requires threads.'),
     'compact': (True, 'Show relevant threads and count other open threads; requires threads.'),
     'communication_profile': ('pyramid', 'Named communication profile controlling response guidelines.'),
+    'situation': ('none', 'Situational framework: none, auto, or a named protocol.'),
+    'language_standard': ('plain', 'Technical writing standard: plain or ste-inspired.'),
+    'signaling': ('off', 'Communication markers: off, intent, or full.'),
 }
 
 
@@ -28,6 +31,18 @@ def setting_value(key, value):
             raise ValueError('response_style must be pyramid or plain')
     if key not in SETTINGS:
         raise ValueError(f'unknown setting: {key}')
+    if key == 'situation':
+        if value not in ('none', 'auto', *situations()):
+            raise ValueError('situation must be none, auto, or a known framework')
+        return value
+    if key == 'language_standard':
+        if value not in language_standards():
+            raise ValueError('language_standard must be a known standard')
+        return value
+    if key == 'signaling':
+        if value not in ('off', 'intent', 'full'):
+            raise ValueError('signaling must be off, intent, or full')
+        return value
     if key == 'communication_profile':
         if value not in names():
             raise ValueError('communication_profile must be ' + ', '.join(names()))
@@ -47,6 +62,8 @@ def migrate_settings(value):
     if isinstance(value, dict) and value.get('communication_profile') == 'minimal':
         value = dict(value)
         value['communication_profile'] = 'efficient'
+    if isinstance(value, dict):
+        value = {**{k: spec[0] for k, spec in SETTINGS.items() if k in ('situation', 'language_standard', 'signaling')}, **value}
     return value
 
 
@@ -55,9 +72,8 @@ def validate_settings(value):
     if not isinstance(value, dict) or set(value) != set(SETTINGS):
         raise ValueError('invalid settings keys')
     for key, item in value.items():
-        if key == 'communication_profile':
-            if item not in names():
-                raise ValueError('invalid communication_profile')
+        if key in ('communication_profile', 'situation', 'language_standard', 'signaling'):
+            setting_value(key, item)
         elif type(item) is not bool:
             raise ValueError(f'invalid boolean setting: {key}')
     return value
