@@ -1,0 +1,144 @@
+{
+  "sbar": {
+    "description": "Escalate a problem with a recommendation.",
+    "uses": [
+      "problem escalation",
+      "technical escalation",
+      "request for intervention"
+    ],
+    "fields": [
+      [
+        "Situation",
+        "Current problem and impact"
+      ],
+      [
+        "Background",
+        "Relevant history and context"
+      ],
+      [
+        "Assessment",
+        "Evidence, interpretation, and uncertainty"
+      ],
+      [
+        "Recommendation",
+        "Specific requested action, owner, and timing"
+      ]
+    ],
+    "guidance": "Keep observations separate from hypotheses. End with the request."
+  },
+  "ipass": {
+    "description": "Transfer work and responsibility safely.",
+    "uses": [
+      "handoff",
+      "ownership transfer",
+      "on-call rotation"
+    ],
+    "fields": [
+      [
+        "Severity",
+        "Current risk: stable, concerning, or critical"
+      ],
+      [
+        "Summary",
+        "Current state, impact, and essential history"
+      ],
+      [
+        "Actions",
+        "Open tasks, owners, and deadlines"
+      ],
+      [
+        "Situational awareness",
+        "Risks, warning signs, and if-then contingencies"
+      ],
+      [
+        "Synthesis by receiver",
+        "Receiver restates priorities and accepts ownership"
+      ]
+    ],
+    "guidance": "Do not treat sending the handoff as acceptance. Confirm ownership on consequential transfers."
+  },
+  "can": {
+    "description": "Share a concise operational update.",
+    "uses": [
+      "status update",
+      "incident update",
+      "operational check-in"
+    ],
+    "fields": [
+      [
+        "Conditions",
+        "Current state and impact"
+      ],
+      [
+        "Actions",
+        "What is being done, by whom"
+      ],
+      [
+        "Needs",
+        "Decision, help, or resources required; state none if relevant"
+      ]
+    ],
+    "guidance": "Lead with material changes. Avoid a chronological activity log."
+  },
+  "cus": {
+    "description": "Escalate a safety-critical concern.",
+    "uses": [
+      "safety concern",
+      "urgent risk escalation"
+    ],
+    "fields": [
+      [
+        "Concerned",
+        "State the concern"
+      ],
+      [
+        "Uncomfortable",
+        "Explain why the current course is unsafe"
+      ],
+      [
+        "Safety issue",
+        "Name the hazard and required stop or escalation"
+      ]
+    ],
+    "guidance": "Use only when an actual safety or high-consequence risk warrants explicit escalation. Not a generic severity label."
+  },
+  "methane": {
+    "description": "Share the initial picture of a major incident.",
+    "uses": [
+      "major incident",
+      "cross-team emergency",
+      "first incident report"
+    ],
+    "fields": [
+      [
+        "Major incident",
+        "Declared or suspected, and severity"
+      ],
+      [
+        "Exact location",
+        "Affected system, region, or location"
+      ],
+      [
+        "Type",
+        "Incident category"
+      ],
+      [
+        "Hazards",
+        "Known or suspected risks"
+      ],
+      [
+        "Access",
+        "Access constraints, dependencies, or safe intervention path"
+      ],
+      [
+        "Number affected",
+        "Scope, impact, and severity"
+      ],
+      [
+        "Emergency response",
+        "Teams involved and help required"
+      ]
+    ],
+    "guidance": "This is an engineering adaptation of M/ETHANE; do not imply it is the official emergency-service form."
+  }
+}
