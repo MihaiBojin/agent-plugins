@@ -2,61 +2,73 @@
   {
     "id": "bluf",
     "name": "BLUF",
+    "type": "structure",
     "description": "Lead with the answer, result, decision, or blocker."
   },
   {
     "id": "sufficient",
     "name": "Minimum sufficient information",
+    "type": "brevity",
     "description": "Include only what the reader needs to understand, decide, act, or verify."
   },
   {
     "id": "delta",
     "name": "Delta-only",
+    "type": "brevity",
     "description": "Report changes; do not repeat established context."
   },
   {
     "id": "direct",
     "name": "Direct language",
+    "type": "precision",
     "description": "Use active voice, precise nouns, and concrete verbs."
   },
   {
     "id": "no_filler",
     "name": "No filler",
+    "type": "brevity",
     "description": "Remove praise, pleasantries, repetition, and needless adjectives or superlatives."
   },
   {
     "id": "evidence",
     "name": "Evidence over claims",
+    "type": "reliability",
     "description": "Support results with tests, measurements, paths, or source references."
   },
   {
     "id": "epistemic",
     "name": "Facts before speculation",
+    "type": "precision",
     "description": "Separate verified facts, inferences, and unknowns."
   },
   {
     "id": "formats",
     "name": "Standard formats",
+    "type": "structure",
     "description": "Match response structure to the task; omit empty sections."
   },
   {
     "id": "exceptions",
     "name": "Exceptions first",
+    "type": "reliability",
     "description": "Prioritize failures, risks, blockers, and material deviations."
   },
   {
     "id": "no_narration",
     "name": "No routine narration",
+    "type": "brevity",
     "description": "Omit routine tool-call narration; report material changes or blockers."
   },
   {
     "id": "quantify",
     "name": "Quantify where useful",
+    "type": "precision",
     "description": "Use measurements and thresholds instead of vague qualifiers when relevant."
   },
   {
     "id": "risk_detail",
     "name": "Risk-based detail",
+    "type": "reliability",
     "description": "Scale detail to complexity and risk; preserve material evidence and uncertainty."
   }
 ]
