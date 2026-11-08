@@ -84,14 +84,19 @@ def render_profile(profile, overrides=None):
         lines.append(selected["instruction"])
     for entry in entries:
         lines.append(f'- {entry["name"]}: {entry["description"]}')
-    lines.extend(["",
-                  "Use completion: Result → Verification → Remaining issues.",
-                  "Use review: Findings by severity → Evidence → Suggested fix.",
-                  "Use blocker: Blocker → Cause → Required action.",
-                  "Use decision: Recommendation → Reason → Trade-off.",
-                  "Use progress: Material change → Next action.",
-                  "Omit empty sections. Honor specific user formatting requests.",
-                  "Keep threads and their metadata under the separate thread protocol."])
+    if any(entry["id"] == "formats" for entry in entries):
+        lines.extend([
+            "Use completion: Result → Verification → Remaining issues.",
+            "Use review: Findings by severity → Evidence → Suggested fix.",
+            "Use blocker: Blocker → Cause → Required action.",
+            "Use decision: Recommendation → Reason → Trade-off.",
+            "Use progress: Material change → Next action.",
+            "Omit empty sections."
+        ])
+    lines.extend([
+        "Honor specific user formatting requests.",
+        "Keep threads and their metadata under the separate thread protocol."
+    ])
     return "\n".join(lines)
 
 
