@@ -46,7 +46,7 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 | `defaults set enabled on`          | Explicitly enable automatic activation for future sessions              |
 | `defaults set enabled off`         | Make future sessions opt-in again                                       |
 
-The available settings are `enabled`, `threads`, `focus`, `compact`, and `communication_profile`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain`. Legacy `response_style pyramid/plain` commands and saved settings are migrated without changing their meaning. Focus and compact have no effect while threads are disabled.
+The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain`. Legacy `response_style pyramid/plain` commands and saved settings are migrated without changing their meaning. Focus and compact have no effect while threads are disabled.
 
 ## Communication profiles
 
@@ -60,6 +60,30 @@ Communication rules are defined once in [guidelines.json](skills/dialogue/guidel
 | `plain`   | No additional communication guidelines                                                    |
 
 Use `profiles` to compare presets and `guidelines` to see only the rules currently active. Change the current session with `set communication_profile direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
+
+## Situational frameworks
+
+The [situational catalog](skills/dialogue/situations.json) defines SBAR (escalation), I-PASS (handoff and responsibility transfer), CAN (operational updates), CUS (safety escalation), and an engineering adaptation of M/ETHANE (initial major-incident report). These are *optional response structures*, separate from the selected communication profile.
+
+```text
+/dialogue:dialogue situations
+/dialogue:dialogue situation preview sbar
+/dialogue:dialogue situation use can
+/dialogue:dialogue situation clear
+/dialogue:dialogue set situation auto
+```
+
+Preview is read-only. Use selects the protocol for this session. Clear resets it to none. Auto instructs the agent to select a framework only for an explicit matching request; it does not format every message. A single-message framework request can be answered without changing saved settings. Do not invent details to fill fields.
+
+## Language and communication signals
+
+`languages` lists the language standards; `set language_standard ste-inspired` applies a simplified, controlled technical-English style inspired by ASD-STE100. This is not official ASD-STE100 compliance or a vocabulary validator. `set language_standard plain` removes it.
+
+`signals` lists the intent and response markers from [signals.json](skills/dialogue/signals.json). `set signaling intent` permits appropriate sender-intent markers (FYI, REQUEST, DECISION, WARNING, etc.). `set signaling full` also defines response statuses (ACK, ACCEPTED, BLOCKED, DONE, etc.). `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
+
+## Templates and plugin boundaries
+
+Dialogue controls *how* a response is communicated. Drafting reusable artifacts such as decision requests, status updates, handoffs, incident reports, project kickoffs, and PR descriptions can use these frameworks, but a future template library should own the actual document bodies and field schemas. Docket is for numbered, reviewed, immutable records, such as RFCs and decision records; it is not a natural owner of one-off status messages or PR templates.
 
 ## Session persistence
 
