@@ -79,13 +79,16 @@ def parser():
     for name in ('help', 'enable', 'disable', 'settings', 'state', 'render', 'hook', 'profiles', 'situations', 'languages', 'signals'):
         sub.add_parser(name)
     listing_guidelines = sub.add_parser('guidelines')
-    listing_guidelines.add_argument('--all', action='store_true')
-    listing_guidelines.add_argument('--group')
+    listing_guidelines.add_argument('operation', nargs='?', choices=('list', 'group'))
+    listing_guidelines.add_argument('suboperation', nargs='?')
+    listing_guidelines.add_argument('group_name', nargs='?')
+    listing_guidelines.add_argument('--all', action='store_true')  # Legacy.
+    listing_guidelines.add_argument('--group')  # Legacy.
     guideline = sub.add_parser('guideline')
     guideline.add_argument('--default', dest='for_defaults', action='store_true')
-    guideline.add_argument('action', choices=('on', 'off', 'reset', 'group'))
+    guideline.add_argument('action', choices=('enable', 'disable', 'reset', 'group', 'on', 'off'))
     guideline.add_argument('target')
-    guideline.add_argument('type_action', nargs='?', choices=('on', 'off', 'reset'))
+    guideline.add_argument('type_action', nargs='?')  # Legacy group TYPE on|off|reset.
     wizard = sub.add_parser('setup', help='Three-question configuration wizard.')
     wizard.add_argument('operation', nargs='?', choices=('show', 'apply'), default='show')
     wizard.add_argument('--comms')
@@ -176,11 +179,15 @@ def main(args):
         group_names = {entry['type'] for entry in all_entries}
         ids = {entry['id'] for entry in all_entries}
         if args.action == 'group':
-            # Syntax: guideline group TYPE on|off|reset
-            if args.target not in group_names or not args.type_action:
-                raise ValueError('guideline group requires a valid type and on/off/reset')
-            affected = [entry['id'] for entry in all_entries if entry['type'] == args.target]
-            action = args.type_action
+            # Preferred: guideline group enable|disable|reset TYPE.
+            # Legacy: guideline group TYPE on|off|reset.
+            if args.target in ('enable', 'disable', 'reset', 'on', 'off'):
+                action, group_name = args.target, args.type_action
+            else:
+                action, group_name = args.type_action, args.target
+            if group_name not in group_names or action not in ('enable', 'disable', 'reset', 'on', 'off'):
+                raise ValueError('use guideline group enable|disable|reset TYPE')
+            affected = [entry['id'] for entry in all_entries if entry['type'] == group_name]
         else:
             if args.type_action is not None:
                 raise ValueError('unexpected third argument for guideline')
@@ -188,15 +195,16 @@ def main(args):
                 raise ValueError('unknown guideline: ' + args.target)
             affected = list(ids) if args.target == 'all' else [args.target]
             action = args.action
+        action = {'on': 'enable', 'off': 'disable'}.get(action, action)
         def change_guidelines(data):
             overrides = data['settings']['guideline_overrides']
             for identifier in affected:
                 if action == 'reset':
                     overrides.pop(identifier, None)
                 else:
-                    overrides[identifier] = action == 'on'
+                    overrides[identifier] = action == 'enable'
         if args.for_defaults:
-            defaults = store.change_guideline_defaults(affected, action)
+            defaults = store.change_guideline_defaults(affected, {'enable': 'on', 'disable': 'off'}.get(action, action))
             print('Updated defaults for future sessions:')
             print(communication.list_guidelines(
                 defaults['communication_profile'], defaults['guideline_overrides'],
@@ -244,20 +252,42 @@ def main(args):
     elif args.command == 'profiles':
         print(communication.list_profiles(data['settings']['communication_profile']))
     elif args.command == 'guidelines':
-        types = {entry['type'] for entry in communication.catalog()[0]}
-        if args.group and args.group not in types:
-            raise ValueError('unknown guideline group: ' + args.group)
-        if data['settings']['enabled']:
-            print(communication.list_guidelines(
-                data['settings']['communication_profile'],
-                data['settings']['guideline_overrides'],
-                all_guidelines=args.all, group=args.group,
-                style=data['settings']['language_standard']))
-        elif args.all:
-            print('Dialogue disabled (no guidelines active). Available guidelines:')
-            print(communication.list_guidelines('custom', all_guidelines=True, group=args.group))
+        entries = communication.catalog()[0]
+        types = {entry['type'] for entry in entries}
+        if args.operation == 'group':
+            if args.suboperation != 'list' or args.group or args.all:
+                raise ValueError('use guidelines group list [TYPE]')
+            if args.group_name and args.group_name not in types:
+                raise ValueError('unknown guideline group: ' + args.group_name)
+            if args.group_name:
+                print(communication.list_guidelines(
+                    data['settings']['communication_profile'],
+                    data['settings']['guideline_overrides'],
+                    all_guidelines=True, group=args.group_name,
+                    style=data['settings']['language_standard'],
+                    active=data['settings']['enabled']))
+            else:
+                print(communication.list_groups(
+                    data['settings']['communication_profile'],
+                    data['settings']['guideline_overrides'],
+                    data['settings']['language_standard'],
+                    active=data['settings']['enabled']))
         else:
-            print('Dialogue is disabled; no guidelines are active.')
+            if args.group_name or (args.suboperation and args.operation != 'list'):
+                raise ValueError('use guidelines list [TYPE] or guidelines group list')
+            group = args.suboperation or args.group
+            if group and group not in types:
+                raise ValueError('unknown guideline group: ' + group)
+            all_guidelines = args.operation == 'list' or args.all
+            if data['settings']['enabled'] or all_guidelines:
+                print(communication.list_guidelines(
+                    data['settings']['communication_profile'],
+                    data['settings']['guideline_overrides'],
+                    all_guidelines=all_guidelines, group=group,
+                    style=data['settings']['language_standard'],
+                    active=data['settings']['enabled']))
+            else:
+                print('Dialogue is disabled; no guidelines are active.')
     elif args.command == 'situations':
         print(communication.list_situations())
     elif args.command == 'languages':
