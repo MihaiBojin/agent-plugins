@@ -246,6 +246,21 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('guideline', 'reset', 'terminology')
         self.assertIn('terminology [on, style]', self.run_cli('guidelines', '--all').stdout)
 
+    def test_default_guideline_overrides_apply_only_to_new_sessions(self):
+        self.run_cli('enable')
+        self.run_cli('guideline', '--default', 'on', 'one_action')
+        self.run_cli('guideline', '--default', 'group', 'brevity', 'off')
+        current = self.state()['settings']
+        self.assertEqual(current['guideline_overrides'], {})
+        future = self.state(session='future')['settings']['guideline_overrides']
+        self.assertTrue(future['one_action'])
+        self.assertFalse(future['sufficient'])
+        self.run_cli('guideline', '--default', 'reset', 'one_action')
+        later = self.state(session='later')['settings']['guideline_overrides']
+        self.assertNotIn('one_action', later)
+        self.assertIn('one_action', future)
+        self.assertNotIn('one_action', current['guideline_overrides'])
+
     def test_bad_guideline_overrides_do_not_change_corrupt_state(self):
         self.run_cli('enable')
         path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
