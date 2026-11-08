@@ -1,0 +1,62 @@
+{
+  "intents": [
+    {
+      "id": "FYI",
+      "meaning": "Information only; no action required."
+    },
+    {
+      "id": "REQUEST",
+      "meaning": "A specific action or response is needed."
+    },
+    {
+      "id": "DECISION",
+      "meaning": "A choice was made or approval is needed."
+    },
+    {
+      "id": "PROPOSAL",
+      "meaning": "An option for consideration, not an approved decision."
+    },
+    {
+      "id": "RISK",
+      "meaning": "A consequential risk needs attention."
+    },
+    {
+      "id": "WARNING",
+      "meaning": "Immediate or high-consequence hazard requires attention."
+    },
+    {
+      "id": "QUESTION",
+      "meaning": "Clarification is requested."
+    },
+    {
+      "id": "UPDATE",
+      "meaning": "A material state change since the prior report."
+    }
+  ],
+  "responses": [
+    {
+      "id": "ACK",
+      "meaning": "Received; no acceptance or execution implied."
+    },
+    {
+      "id": "ACCEPTED",
+      "meaning": "I understand and own the specified next action."
+    },
+    {
+      "id": "NEED-INFO",
+      "meaning": "Cannot decide or act; specify missing information."
+    },
+    {
+      "id": "BLOCKED",
+      "meaning": "Cannot proceed; provide cause and required intervention."
+    },
+    {
+      "id": "DONE",
+      "meaning": "Action completed; provide verifiable evidence."
+    },
+    {
+      "id": "CANCELLED",
+      "meaning": "The previously requested action is no longer required."
+    }
+  ]
+}
