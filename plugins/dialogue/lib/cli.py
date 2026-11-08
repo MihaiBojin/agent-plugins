@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 
 sys.dont_write_bytecode = True
-from state import SETTINGS, Store, setting_value, state_root
+from state import SETTINGS, Store, setting_value, state_root, canonical_key
 import threads
 import communication
 
@@ -75,18 +75,23 @@ def parser():
     result.add_argument('--client', choices=('codex', 'claude'), required=True)
     result.add_argument('--session', help='Client session ID; defaults to CODEX_THREAD_ID for Codex or CLAUDE_SESSION_ID for Claude')
     sub = result.add_subparsers(dest='command', required=True)
-    for name in ('enable', 'disable', 'settings', 'state', 'render', 'hook', 'profiles', 'guidelines', 'situations', 'languages', 'signals'):
+    for name in ('help', 'enable', 'disable', 'settings', 'state', 'render', 'hook', 'profiles', 'guidelines', 'situations', 'languages', 'signals'):
         sub.add_parser(name)
+    wizard = sub.add_parser('setup', help='Three-question configuration wizard.')
+    wizard.add_argument('operation', nargs='?', choices=('show', 'apply'), default='show')
+    wizard.add_argument('--comms')
+    wizard.add_argument('--style')
+    wizard.add_argument('--workflow')
     situation_cmd = sub.add_parser('situation', help='Preview or select a situational framework.')
     situation_cmd.add_argument('operation', choices=('preview', 'use', 'clear'))
     situation_cmd.add_argument('name', nargs='?')
     setting = sub.add_parser('set')
-    setting.add_argument('key', choices=(*SETTINGS, 'response_style'))
+    setting.add_argument('key', choices=(*SETTINGS, 'response_style', 'comms', 'style', 'signals'))
     setting.add_argument('value')
     defaults = sub.add_parser('defaults').add_subparsers(dest='default_operation', required=True)
     defaults.add_parser('show')
     default_set = defaults.add_parser('set')
-    default_set.add_argument('key', choices=(*SETTINGS, 'response_style'))
+    default_set.add_argument('key', choices=(*SETTINGS, 'response_style', 'comms', 'style', 'signals'))
     default_set.add_argument('value')
     commands = sub.add_parser('thread').add_subparsers(dest='operation', required=True)
     add = commands.add_parser('open')
@@ -112,6 +117,13 @@ def parser():
 
 
 def main(args):
+    if args.command == 'help':
+        print(communication.full_help())
+        return
+    if args.command == 'setup' and args.operation == 'show':
+        # Read-only and valid without an existing session ID.
+        print(communication.wizard_questions())
+        return
     if args.command == 'hook':
         payload = json.load(sys.stdin)
         if not isinstance(payload, dict):
@@ -126,6 +138,27 @@ def main(args):
         inherited_history = payload.get('source') == 'fork' or (is_new and payload.get('source') == 'resume')
         if data['settings']['enabled'] or inherited_history:
             print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': render(store, data)}}))
+        return
+    if args.command == 'setup' and args.operation == 'apply':
+        if not (args.comms and args.style and args.workflow):
+            raise ValueError('setup apply requires --comms, --style, and --workflow')
+        profile = setting_value('comms', args.comms)
+        style = setting_value('style', args.style)
+        choices = communication.workflows()
+        if args.workflow not in choices:
+            raise ValueError('unknown workflow: ' + args.workflow)
+        workflow = choices[args.workflow]
+        situation = setting_value('situation', workflow['situation'])
+        signaling = setting_value('signals', workflow['signaling'])
+        def apply(data):
+            data['settings'].update(communication_profile=profile,
+                                    language_standard=style,
+                                    situation=situation, signaling=signaling)
+        data, _ = store.change(apply)
+        print('Configuration saved: comms=' + profile + ', style=' + style +
+              ', workflow=' + args.workflow + '. Dialogue ' +
+              ('enabled.' if data['settings']['enabled'] else 'disabled; enable to apply policy.'))
+        print(render(store, data))
         return
     if args.command == 'defaults':
         if args.default_operation == 'set':
@@ -153,7 +186,7 @@ def main(args):
     if args.command in ('enable', 'disable', 'set'):
         key = args.key if args.command == 'set' else 'enabled'
         value = setting_value(key, args.value) if args.command == 'set' else args.command == 'enable'
-        key = 'communication_profile' if key == 'response_style' else key
+        key = canonical_key(key)
         data, _ = store.change(lambda data: data['settings'].__setitem__(key, value))
         print(render(store, data))
         return
