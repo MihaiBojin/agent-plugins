@@ -15,7 +15,35 @@ Add `MihaiBojin/agent-plugins` as a marketplace first if it is not already regis
 
 Claude Code shows subcommand syntax in the autocomplete hint for `/dialogue:dialogue`. Codex lists subcommands in the skill picker description. Use `/dialogue:dialogue help` or `$dialogue:dialogue help` to see commands, setting names, and accepted values without enabling the plugin.
 
-Installation does not enable response behavior. A bare invocation enables the current session. Append `settings` to inspect the table without enabling anything. Append `disable` to stop applying the policy while keeping recorded threads.
+Installation does not enable response behavior. **Start with `help`** to see every option or `setup` for a guided three-question configuration. A bare invocation enables the current session. Append `settings` to inspect current values without enabling anything. Append `disable` to stop applying the policy while retaining records.
+
+## Start here: help and setup
+
+```text
+/dialogue:dialogue help
+/dialogue:dialogue setup
+```
+
+Codex uses `$dialogue:dialogue`. Help lists commands, profiles, language styles, situational frameworks, signaling modes, and thread controls. It does not require an active session or change state.
+
+Setup asks **three questions, one at a time**:
+
+1. **Comms**: `pyramid` (answer + reasons), `direct` (all 12 guidelines), `efficient` (low-token), `plain` (no response rules).
+2. **Style**: `plain` (normal technical English), `ste` (STE-inspired controlled English; not official compliance).
+3. **Workflow**: `quiet` (no framework/signals), `automatic` (auto framework + intent), `verified` (auto + full acknowledgments), `status` (CAN), `escalation` (SBAR), `handoff` (I-PASS), `safety` (CUS), `incident` (M/ETHANE).
+
+All choices are saved **once after the third answer**. Cancelling does not change state. Setup preserves whether Dialogue is enabled and leaves decision-thread settings unchanged. The workflow choice maps to `situation` and `signals`; both can be adjusted independently afterward.
+
+### Short commands
+
+```text
+/dialogue:dialogue set comms efficient
+/dialogue:dialogue set style ste
+/dialogue:dialogue set situation sbar
+/dialogue:dialogue set signals intent
+```
+
+The longer settings (`communication_profile`, `language_standard`, `signaling`) remain valid for compatibility. `situation use sbar` also remains supported, but `set situation sbar` is the preferred form.
 
 ### Codex state permissions
 
@@ -40,7 +68,7 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 | `set focus off`                    | Allow discussion of several relevant issues                             |
 | `set compact on`                   | Show relevant threads with a count of other open threads                |
 | `set threads off`                  | Suspend numbering and tracking, retaining the records                   |
-| `set communication_profile direct` | Apply the direct communication profile                                  |
+| `set comms direct` | Apply the direct communication profile                                  |
 | `profiles`                         | Show preset descriptions and the selected profile                       |
 | `guidelines`                       | List the guidelines enabled in the current session                      |
 | `defaults set enabled on`          | Explicitly enable automatic activation for future sessions              |
@@ -59,7 +87,7 @@ Communication rules are defined once in [guidelines.json](skills/dialogue/guidel
 | `efficient` | Smaller set of guidelines for routine coding tasks                                        |
 | `plain`   | No additional communication guidelines                                                    |
 
-Use `profiles` to compare presets and `guidelines` to see only the rules currently active. Change the current session with `set communication_profile direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
+Use `profiles` to compare presets and `guidelines` to see only the rules currently active. Change the current session with `set comms direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
 
 ## Situational frameworks
 
@@ -77,9 +105,9 @@ Preview is read-only. Use selects the protocol for this session. Clear resets it
 
 ## Language and communication signals
 
-`languages` lists the language standards; `set language_standard ste-inspired` applies a simplified, controlled technical-English style inspired by ASD-STE100. This is not official ASD-STE100 compliance or a vocabulary validator. `set language_standard plain` removes it.
+`languages` lists the language standards; `set style ste` applies a simplified, controlled technical-English style inspired by ASD-STE100. This is not official ASD-STE100 compliance or a vocabulary validator. `set style plain` removes it.
 
-`signals` lists the intent and response markers from [signals.json](skills/dialogue/signals.json). `set signaling intent` permits appropriate sender-intent markers (FYI, REQUEST, DECISION, WARNING, etc.). `set signaling full` also defines response statuses (ACK, ACCEPTED, BLOCKED, DONE, etc.). `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
+`signals` lists the intent and response markers from [signals.json](skills/dialogue/signals.json). `set signals intent` permits appropriate sender-intent markers (FYI, REQUEST, DECISION, WARNING, etc.). `set signals full` also defines response statuses (ACK, ACCEPTED, BLOCKED, DONE, etc.). `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
 
 ## Templates and plugin boundaries
 
