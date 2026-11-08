@@ -184,7 +184,7 @@ class DialogueTest(unittest.TestCase):
         self.assertIn('(12/12)', enabled)
         self.assertIn('No routine narration', enabled)
         self.assertIn('## Communication profile: direct', self.run_cli('render').stdout)
-        self.run_cli('set', 'communication_profile', 'minimal')
+        self.run_cli('set', 'communication_profile', 'efficient')
         self.assertIn('(8/12)', self.run_cli('guidelines').stdout)
         self.run_cli('set', 'communication_profile', 'plain')
         self.assertIn('(0/12)', self.run_cli('guidelines').stdout)
