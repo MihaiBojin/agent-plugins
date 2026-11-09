@@ -1,6 +1,6 @@
 ---
 name: dialogue
-argument-hint: "[help | setup | guidelines list | guidelines group list | guideline enable <id> | guideline group enable <type> | set comms <profile> | enable | disable]"
+argument-hint: "[help | setup | settings | set <key> <value> | disable]"
 description: Use only when the user explicitly invokes dialogue to enable, disable, inspect, or configure conversation behavior. Never activate from ordinary discussion of threads, focus, or writing style.
 disable-model-invocation: true
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/dialogue *)
