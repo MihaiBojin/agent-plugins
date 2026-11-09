@@ -3,7 +3,7 @@
     "name": "worktrees",
     "url": "https://github.com/MihaiBojin/worktrees.git",
     "path": "plugin",
-    "ref": "v0.8.0",
+    "ref": "v0.9.0",
     "description": "Start branches, read CI, rebase onto the head branch, describe, ship and merge pull requests, and prune finished worktrees through the worktrees CLI",
     "category": "Developer Tools"
   }
