@@ -31,7 +31,6 @@ codex plugin add <name>@mihaibojin
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | [dialogue](./plugins/dialogue#readme)                                        | Opt-in conversation settings and a persistent thread backlog                           |
 | [docket](./plugins/docket#readme)                                            | Numbered document collections, argued through review, frozen into an immutable archive |
-| [origin](./plugins/origin#readme)                                            | Git worktrees, pull request merges, and rebasing onto the head branch                  |
 | [decisions](./plugins/decisions#readme)                                      | A decision log written while the work happens, in the repositories that ask for one    |
 | [readme](./plugins/readme#readme)                                            | A README checked against the code it describes, then rewritten                         |
 | [worktrees](https://github.com/MihaiBojin/worktrees/tree/main/plugin#readme) | Start branches, read CI, ship and merge pull requests, and prune finished worktrees    |
