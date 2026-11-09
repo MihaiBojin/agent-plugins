@@ -109,8 +109,8 @@ release increments one because somebody was asked and said so.
 Write the entry with `/release-notes:write`, from the `release-notes` plugin
 in the `release-tools` marketplace. It reads the same `.releasetools.yaml`, so
 the note lands in the changelog of the plugin the change is in, and it puts
-the same note in the pull request as a `release-note` block, which
-`origin merge` carries into the commit that lands on `main`.
+the same note in the pull request as a `release-note` block, which the
+squash merge carries into the commit that lands on `main`.
 
 ## Recording a choice
 

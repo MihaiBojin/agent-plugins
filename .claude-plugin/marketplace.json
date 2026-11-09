@@ -30,27 +30,6 @@
       ]
     },
     {
-      "name": "origin",
-      "source": "./plugins/origin",
-      "description": "Git worktrees, pull request merges, and keeping a branch on top of the head branch, from one tested CLI.",
-      "version": "0.19.1",
-      "author": {
-        "name": "Mihai Bojin",
-        "url": "https://github.com/MihaiBojin"
-      },
-      "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/origin#readme",
-      "repository": "https://github.com/MihaiBojin/agent-plugins",
-      "license": "Apache-2.0",
-      "keywords": [
-        "git",
-        "github",
-        "gitlab",
-        "worktree",
-        "merge",
-        "pull-request"
-      ]
-    },
-    {
       "name": "decisions",
       "source": "./plugins/decisions",
       "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",

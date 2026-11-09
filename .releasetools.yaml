@@ -15,7 +15,6 @@ projects:
       - plugins/dialogue
       - plugins/decisions
       - plugins/docket
-      - plugins/origin
       - plugins/readme
     manifest:
       - .claude-plugin/plugin.json
