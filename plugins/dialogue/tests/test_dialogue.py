@@ -223,7 +223,7 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('guideline', 'on', 'terminology')
         self.assertIn('terminology [on, override]', self.run_cli('guidelines', '--all').stdout)
         self.run_cli('guideline', 'group', 'brevity', 'off')
-        self.assertIn('sufficient [off, override]', self.run_cli('guidelines', '--group', 'brevity').stdout)
+        self.assertIn('sufficient [off, override]', self.run_cli('guidelines', '--all', '--group', 'brevity').stdout)
         self.run_cli('guideline', 'group', 'brevity', 'reset')
         self.assertIn('sufficient [on, profile]', self.run_cli('guidelines', 'list').stdout)
 
