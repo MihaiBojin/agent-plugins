@@ -3,8 +3,8 @@
     "name": "worktrees",
     "url": "https://github.com/MihaiBojin/worktrees.git",
     "path": "plugin",
-    "ref": "v0.7.0",
-    "description": "Remove the git worktrees and branches the worktrees CLI proves finished, after asking",
+    "ref": "v0.8.0",
+    "description": "Start branches, read CI, rebase onto the head branch, describe, ship and merge pull requests, and prune finished worktrees through the worktrees CLI",
     "category": "Developer Tools"
   }
 ]
