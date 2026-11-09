@@ -31,8 +31,8 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 | ---------------------------------- | ---------------------------------------------------------------------- |
 | `help`                             | Show subcommands, settings, and accepted values without changing state |
 | `guidelines list`                  | Show enabled/disabled guidelines grouped by type and source            |
-| `guidelines group list`            | List the categories with enabled counts                             |
-| `guidelines group list brevity`    | List the rules within the brevity category                           |
+| `guidelines group list`            | List the categories with enabled counts                                |
+| `guidelines group list brevity`    | List the rules within the brevity category                             |
 | `guideline enable bluf`            | Enable BLUF even when a profile does not include it                    |
 | `guideline disable bluf`           | Disable BLUF even when a profile includes it                           |
 | `guideline reset bluf`             | Restore the profile's setting for BLUF                                 |
