@@ -166,12 +166,294 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('thread', 'open', 'Kept')
         out = self.run_cli('set', 'threads', 'off').stdout
         self.assertNotIn('## 1/ Kept', out)
-        self.assertIn('## Response style', out)
+        self.assertIn('## Communication profile: pyramid', out)
         self.run_cli('thread', 'open', 'No', ok=False)
         self.run_cli('set', 'threads', 'on')
         out = self.run_cli('set', 'response_style', 'plain').stdout
         self.assertIn('## 1/ Kept', out)
-        self.assertNotIn('## Response style', out)
+        self.assertNotIn('## Communication profile: pyramid', out)
+
+    def test_communication_profiles_and_guidelines(self):
+        self.assertIn('no guidelines are active', self.run_cli('guidelines').stdout)
+        self.run_cli('enable')
+        self.assertIn('pyramid', self.run_cli('profiles').stdout)
+        self.assertIn('BLUF', self.run_cli('guidelines').stdout)
+        self.run_cli('set', 'communication_profile', 'direct')
+        self.assertEqual(self.state()['settings']['communication_profile'], 'direct')
+        enabled = self.run_cli('guidelines').stdout
+        self.assertIn('(12/24 enabled)', enabled)
+        self.assertIn('No routine narration', enabled)
+        self.assertIn('## Communication profile: direct', self.run_cli('render').stdout)
+        self.run_cli('set', 'communication_profile', 'efficient')
+        self.assertIn('(8/24 enabled)', self.run_cli('guidelines').stdout)
+        self.run_cli('set', 'communication_profile', 'plain')
+        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
+        self.run_cli('set', 'communication_profile', 'invalid', ok=False)
+
+    def test_consistent_guideline_commands(self):
+        self.assertIn('Guideline groups (Dialogue disabled)', self.run_cli('guidelines', 'group', 'list').stdout)
+        self.assertIn('bluf [off, inactive]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('enable')
+        all_rules = self.run_cli('guidelines', 'list').stdout
+        self.assertIn('bluf [on, profile]', all_rules)
+        self.assertIn('one_action [off, profile]', all_rules)
+        groups = self.run_cli('guidelines', 'group', 'list').stdout
+        self.assertIn('brevity: 2/4 enabled', groups)
+        assert_group = self.run_cli('guidelines', 'group', 'list', 'procedures').stdout
+        self.assertIn('one_action', assert_group)
+        self.assertNotIn('bluf', assert_group)
+        self.run_cli('guideline', 'group', 'enable', 'procedures')
+        self.assertIn('one_action [on, override]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'disable', 'terminology')
+        self.assertIn('terminology [off, override]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'enable', 'terminology')
+        self.assertIn('terminology [on, override]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'reset', 'terminology')
+        self.assertIn('terminology [off, profile]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'group', 'disable', 'procedures')
+        self.assertIn('one_action [off, override]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'group', 'reset', 'procedures')
+        self.assertIn('one_action [off, profile]', self.run_cli('guidelines', 'list').stdout)
+        self.run_cli('guideline', 'group', 'enable', 'invalid', ok=False)
+        self.run_cli('guidelines', 'group', 'list', 'invalid', ok=False)
+        self.run_cli('guideline', 'group', 'enable', ok=False)
+
+    def test_guideline_legacy_forms_still_work(self):
+        self.run_cli('enable')
+        self.run_cli('guideline', 'on', 'terminology')
+        self.assertIn('terminology [on, override]', self.run_cli('guidelines', '--all').stdout)
+        self.run_cli('guideline', 'group', 'brevity', 'off')
+        self.assertIn('sufficient [off, override]', self.run_cli('guidelines', '--all', '--group', 'brevity').stdout)
+        self.run_cli('guideline', 'group', 'brevity', 'reset')
+        self.assertIn('sufficient [on, profile]', self.run_cli('guidelines', 'list').stdout)
+
+    def test_guideline_individual_and_group_overrides(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'comms', 'custom')
+        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
+        self.run_cli('guideline', 'on', 'bluf')
+        self.assertIn('BLUF', self.run_cli('render').stdout)
+        self.assertIn('(1/24 enabled)', self.run_cli('guidelines').stdout)
+        self.run_cli('guideline', 'off', 'bluf')
+        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
+        self.run_cli('guideline', 'reset', 'bluf')
+        self.assertEqual(self.state()['settings']['guideline_overrides'], {})
+        self.run_cli('guideline', 'group', 'procedures', 'on')
+        enabled = self.run_cli('guidelines', '--group', 'procedures').stdout
+        self.assertIn('one_action', enabled)
+        self.assertNotIn('bluf', enabled)
+        self.assertEqual(len(self.state()['settings']['guideline_overrides']), 4)
+        self.run_cli('guideline', 'group', 'procedures', 'reset')
+        self.assertEqual(self.state()['settings']['guideline_overrides'], {})
+        self.assertIn('one_action [off, profile]', self.run_cli('guidelines', '--all').stdout)
+        self.run_cli('guideline', 'group', 'invalid', 'on', ok=False)
+        self.run_cli('guideline', 'on', 'missing', ok=False)
+        self.run_cli('guideline', 'on', 'bluf', 'off', ok=False)
+
+    def test_guideline_overrides_persist_across_sessions_and_upgrade(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'comms', 'plain')
+        self.run_cli('guideline', 'on', 'terminology')
+        self.assertIn('Consistent terminology', self.run_cli('render').stdout)
+        for source in ('resume', 'compact'):
+            result = self.run_cli('hook', payload={'session_id': 'a', 'source': source})
+            rendered = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+            self.assertIn('Consistent terminology', rendered)
+        self.run_cli('set', 'comms', 'efficient')
+        self.assertTrue(self.state()['settings']['guideline_overrides']['terminology'])
+        self.run_cli('guideline', 'reset', 'all')
+        self.assertEqual(self.state()['settings']['guideline_overrides'], {})
+        self.assertNotIn('Consistent terminology', self.run_cli('render').stdout)
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        data = json.loads(path.read_text())
+        del data['settings']['guideline_overrides']
+        path.write_text(json.dumps(data))
+        self.assertEqual(self.state()['settings']['guideline_overrides'], {})
+
+    def test_ste_style_rules_can_be_overridden(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'comms', 'custom')
+        self.run_cli('set', 'style', 'ste')
+        self.assertIn('(12/24 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('terminology [on, style]', self.run_cli('guidelines', '--all').stdout)
+        self.run_cli('guideline', 'off', 'terminology')
+        enabled = self.run_cli('guidelines', '--all').stdout
+        self.assertIn('terminology [off, override]', enabled)
+        self.assertNotIn('Consistent terminology', self.run_cli('render').stdout)
+        self.run_cli('guideline', 'reset', 'terminology')
+        self.assertIn('terminology [on, style]', self.run_cli('guidelines', '--all').stdout)
+
+    def test_default_guideline_overrides_apply_only_to_new_sessions(self):
+        self.run_cli('enable')
+        self.run_cli('guideline', '--default', 'on', 'one_action')
+        self.run_cli('guideline', '--default', 'group', 'brevity', 'off')
+        current = self.state()['settings']
+        self.assertEqual(current['guideline_overrides'], {})
+        future = self.state(session='future')['settings']['guideline_overrides']
+        self.assertTrue(future['one_action'])
+        self.assertFalse(future['sufficient'])
+        self.run_cli('guideline', '--default', 'reset', 'one_action')
+        later = self.state(session='later')['settings']['guideline_overrides']
+        self.assertNotIn('one_action', later)
+        self.assertIn('one_action', future)
+        self.assertNotIn('one_action', current['guideline_overrides'])
+
+    def test_bad_guideline_overrides_do_not_change_corrupt_state(self):
+        self.run_cli('enable')
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        original = json.loads(path.read_text())
+        for override in ({'typo': True}, {'bluf': 'yes'}, ['bluf']):
+            data = json.loads(json.dumps(original))
+            data['settings']['guideline_overrides'] = override
+            path.write_text(json.dumps(data))
+            saved = path.read_bytes()
+            self.run_cli('guidelines', '--all', ok=False)
+            self.assertEqual(path.read_bytes(), saved)
+        path.write_text(json.dumps(original))
+
+    def test_legacy_response_style_migration(self):
+        self.run_cli('enable')
+        state_path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        original = json.loads(state_path.read_text())
+        original['settings']['response_style'] = original['settings'].pop('communication_profile')
+        state_path.write_text(json.dumps(original))
+        self.assertIn('communication_profile', self.run_cli('settings').stdout)
+        self.assertEqual(self.state()['settings']['communication_profile'], 'pyramid')
+        self.run_cli('set', 'response_style', 'plain')
+        self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
+        self.run_cli('defaults', 'set', 'communication_profile', 'direct')
+        self.assertEqual(self.state(session='new')['settings']['communication_profile'], 'direct')
+        self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
+
+    def test_legacy_defaults_migration(self):
+        defaults = Path(self.tmp.name) / 'defaults.json'
+        defaults.write_text(json.dumps({
+            'enabled': False, 'threads': True, 'focus': True,
+            'compact': True, 'response_style': 'plain'
+        }))
+        self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
+        self.run_cli('defaults', 'set', 'response_style', 'pyramid')
+        saved = json.loads(defaults.read_text())
+        self.assertEqual(saved['communication_profile'], 'pyramid')
+        self.assertNotIn('response_style', saved)
+
+    def test_help_and_setup_are_read_only_and_explain_all_options(self):
+        help_text = self.run_cli('help').stdout
+        for word in ('efficient', 'ste', 'sbar', 'ipass', 'can', 'cus',
+                     'methane', 'intent', 'full', 'setup', 'threads'):
+            self.assertIn(word, help_text)
+        # Direct CLI help/setup can run without any session ID.
+        for command in ('help', 'setup'):
+            process = subprocess.run([sys.executable, str(CLI), '--client', 'codex', command],
+                                     env=self.env, capture_output=True, text=True)
+            self.assertEqual(process.returncode, 0, process.stderr)
+        overview = self.run_cli('setup').stdout
+        for prompt in ('1. Comms', '2. Style', '3. Workflow'):
+            self.assertIn(prompt, overview)
+        self.assertFalse(self.state()['settings']['enabled'])
+        self.assertEqual(list(Path(self.tmp.name).iterdir()), [])
+
+    def test_setup_applies_all_modes_atomically_and_preserves_activation(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'threads', 'off')
+        self.run_cli('setup', 'apply', '--comms', 'efficient', '--style', 'ste',
+                     '--workflow', 'handoff')
+        st = self.state()['settings']
+        self.assertTrue(st['enabled'])
+        self.assertFalse(st['threads'])
+        self.assertEqual(st['communication_profile'], 'efficient')
+        self.assertEqual(st['language_standard'], 'ste-inspired')
+        self.assertEqual(st['situation'], 'ipass')
+        self.assertEqual(st['signaling'], 'full')
+        saved = (Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json').read_bytes()
+        self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'invalid',
+                     '--workflow', 'quiet', ok=False)
+        self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'plain',
+                     '--workflow', 'invalid', ok=False)
+        self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'plain',
+                     ok=False)
+        self.assertEqual((Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json').read_bytes(), saved)
+        self.run_cli('disable')
+        self.run_cli('setup', 'apply', '--comms', 'pyramid', '--style', 'plain',
+                     '--workflow', 'automatic')
+        self.assertFalse(self.state()['settings']['enabled'])
+        self.assertEqual(self.state()['settings']['situation'], 'auto')
+
+    def test_short_setting_aliases(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'comms', 'efficient')
+        self.run_cli('set', 'style', 'ste')
+        self.run_cli('set', 'situation', 'sbar')
+        self.run_cli('set', 'signals', 'intent')
+        values = self.state()['settings']
+        self.assertEqual(values['communication_profile'], 'efficient')
+        self.assertEqual(values['language_standard'], 'ste-inspired')
+        self.assertEqual(values['situation'], 'sbar')
+        self.assertEqual(values['signaling'], 'intent')
+        self.run_cli('defaults', 'set', 'comms', 'direct')
+        self.run_cli('defaults', 'set', 'style', 'ste')
+        self.assertEqual(self.state(session='new')['settings']['communication_profile'], 'direct')
+        self.assertEqual(self.state(session='new')['settings']['language_standard'], 'ste-inspired')
+
+    def test_minimal_profile_migrates_to_efficient(self):
+        self.run_cli('enable')
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        data = json.loads(path.read_text())
+        data['settings']['communication_profile'] = 'minimal'
+        path.write_text(json.dumps(data))
+        self.assertEqual(self.state()['settings']['communication_profile'], 'efficient')
+
+    def test_situations_preview_and_selection(self):
+        self.run_cli('enable')
+        self.assertIn('sbar', self.run_cli('situations').stdout)
+        preview = self.run_cli('situation', 'preview', 'sbar').stdout
+        self.assertIn('Situation:', preview)
+        self.assertEqual(self.state()['settings']['situation'], 'none')
+        self.run_cli('situation', 'use', 'ipass')
+        self.assertEqual(self.state()['settings']['situation'], 'ipass')
+        self.assertIn('Synthesis by receiver', self.run_cli('render').stdout)
+        for client in ('codex', 'claude'):
+            self.run_cli('enable', client=client)
+            self.run_cli('situation', 'use', 'can', client=client)
+            for source in ('resume', 'compact'):
+                result = self.run_cli('hook', client=client,
+                                      payload={'session_id': 'a', 'source': source})
+                context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+                self.assertIn('Situational framework: can', context)
+        self.run_cli('situation', 'clear')
+        self.assertNotIn('Situational framework: can', self.run_cli('render').stdout)
+        self.run_cli('situation', 'preview', 'invalid', ok=False)
+
+    def test_auto_situations_and_language_signals(self):
+        self.run_cli('enable')
+        self.run_cli('set', 'situation', 'auto')
+        self.run_cli('set', 'language_standard', 'ste-inspired')
+        self.run_cli('set', 'signaling', 'full')
+        rendered = self.run_cli('render').stdout
+        self.assertIn('Situational mode: auto', rendered)
+        self.assertIn('Language standard: ste-inspired', rendered)
+        self.assertIn('Response markers:', self.run_cli('signals').stdout)
+        self.assertIn('ACK:', rendered)
+        self.assertIn('STE', self.run_cli('languages').stdout.upper())
+        self.run_cli('set', 'signaling', 'invalid', ok=False)
+        self.run_cli('set', 'language_standard', 'invalid', ok=False)
+        self.run_cli('set', 'situation', 'invalid', ok=False)
+        self.run_cli('set', 'signaling', 'off')
+        self.assertNotIn('ACK:', self.run_cli('render').stdout)
+
+    def test_old_session_settings_receive_new_defaults(self):
+        self.run_cli('enable')
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        data = json.loads(path.read_text())
+        for name in ('situation', 'language_standard', 'signaling'):
+            data['settings'].pop(name)
+        path.write_text(json.dumps(data))
+        settings = self.state()['settings']
+        self.assertEqual(settings['situation'], 'none')
+        self.assertEqual(settings['language_standard'], 'plain')
+        self.assertEqual(settings['signaling'], 'off')
+        self.run_cli('set', 'situation', 'sbar')
+        self.assertEqual(self.state()['settings']['situation'], 'sbar')
 
     def test_disabled_fork_replaces_inherited_session_policy(self):
         self.run_cli('enable', session='parent')

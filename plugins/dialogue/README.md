@@ -1,6 +1,6 @@
 # dialogue
 
-Dialogue stores conversation settings and unresolved decisions for each Claude Code or Codex session. Enable it explicitly, focus on one issue, and keep the rest in a saved backlog.
+Dialogue stores configurable communication guidelines and unresolved decisions for each Claude Code or Codex session. Enable it explicitly, focus on one issue, and keep the rest in a saved backlog.
 
 Python 3.9 or newer and Bash are required. The Python implementation uses only the standard library; no pip or npm packages are needed at runtime. The command and hook adapters support macOS and Linux. Native Windows is not validated.
 
@@ -15,7 +15,35 @@ Add `MihaiBojin/agent-plugins` as a marketplace first if it is not already regis
 
 Claude Code shows subcommand syntax in the autocomplete hint for `/dialogue:dialogue`. Codex lists subcommands in the skill picker description. Use `/dialogue:dialogue help` or `$dialogue:dialogue help` to see commands, setting names, and accepted values without enabling the plugin.
 
-Installation does not enable response behavior. A bare invocation enables the current session. Append `settings` to inspect the table without enabling anything. Append `disable` to stop applying the policy while keeping recorded threads.
+Installation does not enable response behavior. **Start with `help`** to see every option or `setup` for a guided three-question configuration. A bare invocation enables the current session. Append `settings` to inspect current values without enabling anything. Append `disable` to stop applying the policy while retaining records.
+
+## Start here: help and setup
+
+```text
+/dialogue:dialogue help
+/dialogue:dialogue setup
+```
+
+Codex uses `$dialogue:dialogue`. Help lists commands, profiles, language styles, situational frameworks, signaling modes, and thread controls. It does not require an active session or change state.
+
+Setup asks **three questions, one at a time**:
+
+1. **Comms**: `pyramid` (answer + evidence), `direct` (12 core guidelines), `efficient` (low-token), `plain` (no response rules), or `custom` (start empty and enable guidelines individually). Presets select guideline baselines; individual overrides take precedence.
+2. **Style**: `plain` (normal technical English), `ste` (STE-inspired controlled English; not official compliance).
+3. **Workflow**: `quiet` (no framework/signals), `automatic` (auto framework + intent), `verified` (auto + full acknowledgments), `status` (CAN), `escalation` (SBAR), `handoff` (I-PASS), `safety` (CUS), `incident` (M/ETHANE).
+
+All choices are saved **once after the third answer**. Cancelling does not change state. Setup preserves whether Dialogue is enabled and leaves decision-thread settings unchanged. The workflow choice maps to `situation` and `signals`; both can be adjusted independently afterward.
+
+### Short commands
+
+```text
+/dialogue:dialogue set comms efficient
+/dialogue:dialogue set style ste
+/dialogue:dialogue set situation sbar
+/dialogue:dialogue set signals intent
+```
+
+The longer settings (`communication_profile`, `language_standard`, `signaling`) remain valid for compatibility. `situation use sbar` also remains supported, but `set situation sbar` is the preferred form.
 
 ### Codex state permissions
 
@@ -40,11 +68,72 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 | `set focus off`              | Allow discussion of several relevant issues                             |
 | `set compact on`             | Show relevant threads with a count of other open threads                |
 | `set threads off`            | Suspend numbering and tracking, retaining the records                   |
-| `set response_style plain`   | Stop applying the plugin's response style                               |
+| `set comms direct`           | Apply the direct communication profile                                  |
+| `profiles`                   | Show preset descriptions and the selected profile                       |
+| `guidelines`                 | List the guidelines enabled in the current session                      |
 | `defaults set enabled on`    | Explicitly enable automatic activation for future sessions              |
 | `defaults set enabled off`   | Make future sessions opt-in again                                       |
 
-The available settings are `enabled`, `threads`, `focus`, `compact`, and `response_style`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and Pyramid response style. Booleans accept `on/off` or `true/false`; response style accepts `pyramid/plain`. Focus and compact have no effect while threads are disabled.
+The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain`. Legacy `response_style pyramid/plain` commands and saved settings are migrated without changing their meaning. Focus and compact have no effect while threads are disabled.
+
+## Communication profiles
+
+Communication rules are defined once in [guidelines.json](skills/dialogue/guidelines.json), each with an ID, category, name, and short description. [profiles.json](skills/dialogue/profiles.json) contains optional baseline bundles. Individual guideline overrides take precedence; presets do not add hidden instructions.
+
+| Profile     | Behavior                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| `pyramid`   | Answer first, then material reasons and evidence; preserves the previous default approach |
+| `direct`    | All 12 guidelines; concise, factual, and action-oriented                                  |
+| `efficient` | Smaller set of guidelines for routine coding tasks                                        |
+| `plain`     | No additional communication guidelines                                                    |
+
+Use `profiles` to compare optional presets and `guidelines` to see effective rules grouped by type. Change the current session with `set comms direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
+
+## Individual guidelines
+
+Use the individual guideline controls instead of a preset if you prefer a custom combination.
+
+```text
+/dialogue:dialogue guidelines
+/dialogue:dialogue guidelines list
+/dialogue:dialogue guidelines group list
+/dialogue:dialogue guidelines group list language
+/dialogue:dialogue guideline enable terminology
+/dialogue:dialogue guideline disable no_narration
+/dialogue:dialogue guideline reset no_narration
+/dialogue:dialogue guideline group enable procedures
+/dialogue:dialogue guideline group reset procedures
+/dialogue:dialogue guideline reset all
+/dialogue:dialogue guideline --default enable bluf
+```
+
+Each guideline is grouped into **structure**, **brevity**, **precision**, **evidence**, **risk**, **language**, or **procedures**. The 12 original principles remain and 12 additional optional guidelines draw on ASD-STE100 Issue 9. Set `style ste` to enable these 12 as a bundle; use individual overrides to disable or restore any one of them. These are adaptations, not a certification of standard compliance. `guidelines list` reports each rule's effective on/off state and whether it came from the preset or an override. `guidelines group list` shows category counts; append a category to inspect its rules. Overrides persist per session and take priority over profile and style bundles; resetting one restores its inherited value. Use `guideline --default enable|disable|reset ID` (or `guideline --default group enable|disable|reset TYPE`) to change defaults for future sessions only. Disabling Dialogue disables all response policies without deleting the saved choices. Older command forms remain accepted as aliases.
+
+The `custom` preset has no initially enabled guidelines. It is an optional starting point for choosing rules individually; existing `pyramid`, `direct`, `efficient` and `plain` presets remain for compatibility.
+
+## Situational frameworks
+
+The [situational catalog](skills/dialogue/situations.json) defines SBAR (escalation), I-PASS (handoff and responsibility transfer), CAN (operational updates), CUS (safety escalation), and an engineering adaptation of M/ETHANE (initial major-incident report). These are _optional response structures_, separate from the selected communication profile.
+
+```text
+/dialogue:dialogue situations
+/dialogue:dialogue situation preview sbar
+/dialogue:dialogue situation use can
+/dialogue:dialogue situation clear
+/dialogue:dialogue set situation auto
+```
+
+Preview is read-only. Use selects the protocol for this session. Clear resets it to none. Auto instructs the agent to select a framework only for an explicit matching request; it does not format every message. A single-message framework request can be answered without changing saved settings. Do not invent details to fill fields.
+
+## Language and communication signals
+
+`languages` lists the language standards; `set style ste` applies a simplified, controlled technical-English style inspired by ASD-STE100. This is not official ASD-STE100 compliance or a vocabulary validator. `set style plain` removes it.
+
+`signals` lists the intent and response markers from [signals.json](skills/dialogue/signals.json). `set signals intent` permits appropriate sender-intent markers (FYI, REQUEST, DECISION, WARNING, etc.). `set signals full` also defines response statuses (ACK, ACCEPTED, BLOCKED, DONE, etc.). `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
+
+## Templates and plugin boundaries
+
+Dialogue controls _how_ a response is communicated. Drafting reusable artifacts such as decision requests, status updates, handoffs, incident reports, project kickoffs, and PR descriptions can use these frameworks, but a future template library should own the actual document bodies and field schemas. Docket is for numbered, reviewed, immutable records, such as RFCs and decision records; it is not a natural owner of one-off status messages or PR templates.
 
 ## Session persistence
 

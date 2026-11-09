@@ -1,0 +1,10 @@
+{
+  "plain": {
+    "description": "Unrestricted technical English.",
+    "instruction": "Use the selected communication profile; no additional language constraints."
+  },
+  "ste-inspired": {
+    "description": "STE-derived guideline bundle; independently adjustable rules.",
+    "instruction": "Apply enabled STE-derived guidelines listed in the communication policy. Per-guideline overrides take precedence. This is not ASD-STE100 compliance."
+  }
+}

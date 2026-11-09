@@ -7,10 +7,12 @@ from pathlib import Path
 import sys
 
 sys.dont_write_bytecode = True
-from state import SETTINGS, Store, setting_value, state_root
+from state import SETTINGS, Store, setting_value, state_root, canonical_key
 import threads
+import communication
 
 ROOT = Path(__file__).resolve().parents[1]
+USER_SETTINGS = tuple(key for key in SETTINGS if key != 'guideline_overrides')
 
 
 def table(store, data):
@@ -38,11 +40,13 @@ def render(store, data):
              'Persist changes before acknowledging them; do not edit state files by hand.',
              f'Tool: {ROOT / "bin" / "dialogue"}',
              'Effective settings: ' + json.dumps(settings, sort_keys=True)]
-    if settings['response_style'] == 'pyramid':
-        lines.append((ROOT / 'skills' / 'dialogue' / 'response.md').read_text(encoding='utf-8'))
-    else:
-        lines.append('Response style is plain: stop applying earlier dialogue response-style instructions. '
-                     'Use the client and user instructions without the dialogue style.')
+    lines.append(communication.render_profile(settings['communication_profile'], settings['guideline_overrides'], settings['language_standard']))
+    if settings['situation'] != 'none':
+        lines.append(communication.render_situation(settings['situation']))
+    if settings['language_standard'] != 'plain':
+        lines.append(communication.render_language(settings['language_standard']))
+    if settings['signaling'] != 'off':
+        lines.append(communication.render_signals(settings['signaling']))
     if settings['threads']:
         lines.append((ROOT / 'skills' / 'dialogue' / 'threads.md').read_text(encoding='utf-8'))
         if settings['focus']:
@@ -72,15 +76,34 @@ def parser():
     result.add_argument('--client', choices=('codex', 'claude'), required=True)
     result.add_argument('--session', help='Client session ID; defaults to CODEX_THREAD_ID for Codex or CLAUDE_SESSION_ID for Claude')
     sub = result.add_subparsers(dest='command', required=True)
-    for name in ('enable', 'disable', 'settings', 'state', 'render', 'hook'):
+    for name in ('help', 'enable', 'disable', 'settings', 'state', 'render', 'hook', 'profiles', 'situations', 'languages', 'signals'):
         sub.add_parser(name)
+    listing_guidelines = sub.add_parser('guidelines')
+    listing_guidelines.add_argument('operation', nargs='?', choices=('list', 'group'))
+    listing_guidelines.add_argument('suboperation', nargs='?')
+    listing_guidelines.add_argument('group_name', nargs='?')
+    listing_guidelines.add_argument('--all', action='store_true')  # Legacy.
+    listing_guidelines.add_argument('--group')  # Legacy.
+    guideline = sub.add_parser('guideline')
+    guideline.add_argument('--default', dest='for_defaults', action='store_true')
+    guideline.add_argument('action', choices=('enable', 'disable', 'reset', 'group', 'on', 'off'))
+    guideline.add_argument('target')
+    guideline.add_argument('type_action', nargs='?')  # Legacy group TYPE on|off|reset.
+    wizard = sub.add_parser('setup', help='Three-question configuration wizard.')
+    wizard.add_argument('operation', nargs='?', choices=('show', 'apply'), default='show')
+    wizard.add_argument('--comms')
+    wizard.add_argument('--style')
+    wizard.add_argument('--workflow')
+    situation_cmd = sub.add_parser('situation', help='Preview or select a situational framework.')
+    situation_cmd.add_argument('operation', choices=('preview', 'use', 'clear'))
+    situation_cmd.add_argument('name', nargs='?')
     setting = sub.add_parser('set')
-    setting.add_argument('key', choices=SETTINGS)
+    setting.add_argument('key', choices=(*USER_SETTINGS, 'response_style', 'comms', 'style', 'signals'))
     setting.add_argument('value')
     defaults = sub.add_parser('defaults').add_subparsers(dest='default_operation', required=True)
     defaults.add_parser('show')
     default_set = defaults.add_parser('set')
-    default_set.add_argument('key', choices=SETTINGS)
+    default_set.add_argument('key', choices=(*USER_SETTINGS, 'response_style', 'comms', 'style', 'signals'))
     default_set.add_argument('value')
     commands = sub.add_parser('thread').add_subparsers(dest='operation', required=True)
     add = commands.add_parser('open')
@@ -106,6 +129,15 @@ def parser():
 
 
 def main(args):
+    if args.command == 'help':
+        print(communication.full_help())
+        return
+    if args.command == 'setup' and args.operation == 'show':
+        # Read-only even for an existing session; works without a session ID.
+        session = args.session or os.environ.get('CODEX_THREAD_ID' if args.client == 'codex' else 'CLAUDE_SESSION_ID')
+        current = Store(args.client, session).read()['settings'] if session else None
+        print(communication.wizard_questions(current))
+        return
     if args.command == 'hook':
         payload = json.load(sys.stdin)
         if not isinstance(payload, dict):
@@ -121,20 +153,147 @@ def main(args):
         if data['settings']['enabled'] or inherited_history:
             print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': render(store, data)}}))
         return
+    if args.command == 'setup' and args.operation == 'apply':
+        if not (args.comms and args.style and args.workflow):
+            raise ValueError('setup apply requires --comms, --style, and --workflow')
+        profile = setting_value('comms', args.comms)
+        style = setting_value('style', args.style)
+        choices = communication.workflows()
+        if args.workflow not in choices:
+            raise ValueError('unknown workflow: ' + args.workflow)
+        workflow = choices[args.workflow]
+        situation = setting_value('situation', workflow['situation'])
+        signaling = setting_value('signals', workflow['signaling'])
+        def apply(data):
+            data['settings'].update(communication_profile=profile,
+                                    language_standard=style,
+                                    situation=situation, signaling=signaling)
+        data, _ = store.change(apply)
+        print('Configuration saved: comms=' + profile + ', style=' + style +
+              ', workflow=' + args.workflow + '. Dialogue ' +
+              ('enabled.' if data['settings']['enabled'] else 'disabled; enable to apply policy.'))
+        print(render(store, data))
+        return
+    if args.command == 'guideline':
+        all_entries = communication.catalog()[0]
+        group_names = {entry['type'] for entry in all_entries}
+        ids = {entry['id'] for entry in all_entries}
+        if args.action == 'group':
+            # Preferred: guideline group enable|disable|reset TYPE.
+            # Legacy: guideline group TYPE on|off|reset.
+            if args.target in ('enable', 'disable', 'reset', 'on', 'off'):
+                action, group_name = args.target, args.type_action
+            else:
+                action, group_name = args.type_action, args.target
+            if group_name not in group_names or action not in ('enable', 'disable', 'reset', 'on', 'off'):
+                raise ValueError('use guideline group enable|disable|reset TYPE')
+            affected = [entry['id'] for entry in all_entries if entry['type'] == group_name]
+        else:
+            if args.type_action is not None:
+                raise ValueError('unexpected third argument for guideline')
+            if args.target not in ids and not (args.action == 'reset' and args.target == 'all'):
+                raise ValueError('unknown guideline: ' + args.target)
+            affected = list(ids) if args.target == 'all' else [args.target]
+            action = args.action
+        action = {'on': 'enable', 'off': 'disable'}.get(action, action)
+        def change_guidelines(data):
+            overrides = data['settings']['guideline_overrides']
+            for identifier in affected:
+                if action == 'reset':
+                    overrides.pop(identifier, None)
+                else:
+                    overrides[identifier] = action == 'enable'
+        if args.for_defaults:
+            defaults = store.change_guideline_defaults(affected, {'enable': 'on', 'disable': 'off'}.get(action, action))
+            print('Updated defaults for future sessions:')
+            print(communication.list_guidelines(
+                defaults['communication_profile'], defaults['guideline_overrides'],
+                all_guidelines=True, style=defaults['language_standard']))
+        else:
+            data, _ = store.change(change_guidelines)
+            print(communication.list_guidelines(
+                data['settings']['communication_profile'],
+                data['settings']['guideline_overrides'], all_guidelines=True,
+                style=data['settings']['language_standard']))
+        return
     if args.command == 'defaults':
         if args.default_operation == 'set':
             store.change_default(args.key, setting_value(args.key, args.value))
         print(table(store, store.read()))
         return
+    if args.command == 'situation':
+        if args.operation == 'clear':
+            if args.name is not None:
+                raise ValueError('clear takes no framework name')
+            data, _ = store.change(lambda data: data['settings'].__setitem__('situation', 'none'))
+            print(render(store, data))
+            return
+        if not args.name:
+            raise ValueError('a situational framework is required')
+        name = setting_value('situation', args.name)
+        if name == 'none' and args.operation == 'preview':
+            raise ValueError('preview requires a framework')
+        if args.operation == 'use':
+            data, _ = store.change(lambda data: data['settings'].__setitem__('situation', name))
+            print(render(store, data))
+        else:
+            print(communication.render_situation(name))
+        return
     if args.command in ('enable', 'disable', 'set'):
         key = args.key if args.command == 'set' else 'enabled'
         value = setting_value(key, args.value) if args.command == 'set' else args.command == 'enable'
+        key = canonical_key(key)
         data, _ = store.change(lambda data: data['settings'].__setitem__(key, value))
         print(render(store, data))
         return
     data = store.read()
     if args.command == 'settings':
         print(table(store, data))
+    elif args.command == 'profiles':
+        print(communication.list_profiles(data['settings']['communication_profile']))
+    elif args.command == 'guidelines':
+        entries = communication.catalog()[0]
+        types = {entry['type'] for entry in entries}
+        if args.operation == 'group':
+            if args.suboperation != 'list' or args.group or args.all:
+                raise ValueError('use guidelines group list [TYPE]')
+            if args.group_name and args.group_name not in types:
+                raise ValueError('unknown guideline group: ' + args.group_name)
+            if args.group_name:
+                print(communication.list_guidelines(
+                    data['settings']['communication_profile'],
+                    data['settings']['guideline_overrides'],
+                    all_guidelines=True, group=args.group_name,
+                    style=data['settings']['language_standard'],
+                    active=data['settings']['enabled']))
+            else:
+                print(communication.list_groups(
+                    data['settings']['communication_profile'],
+                    data['settings']['guideline_overrides'],
+                    data['settings']['language_standard'],
+                    active=data['settings']['enabled']))
+        else:
+            if args.group_name or (args.suboperation and args.operation != 'list'):
+                raise ValueError('use guidelines list [TYPE] or guidelines group list')
+            group = args.suboperation or args.group
+            if group and group not in types:
+                raise ValueError('unknown guideline group: ' + group)
+            all_guidelines = args.operation == 'list' or args.all
+            if data['settings']['enabled'] or all_guidelines:
+                print(communication.list_guidelines(
+                    data['settings']['communication_profile'],
+                    data['settings']['guideline_overrides'],
+                    all_guidelines=all_guidelines, group=group,
+                    style=data['settings']['language_standard'],
+                    active=data['settings']['enabled']))
+            else:
+                print('Dialogue is disabled; no guidelines are active.')
+    elif args.command == 'situations':
+        print(communication.list_situations())
+    elif args.command == 'languages':
+        print(communication.list_language())
+    elif args.command == 'signals':
+        print(communication.list_signals())
     elif args.command == 'state':
         print(json.dumps(data, ensure_ascii=False, indent=2))
     elif args.command == 'render':
