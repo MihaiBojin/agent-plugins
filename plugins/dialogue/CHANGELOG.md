@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.0 - 2026-11-11
+
+The `pyramid` profile renders the reply rules it was missing: a verdict first for implementation questions, reasons that do not overlap and together cover the answer, one recommendation, a table for any comparison, no preamble or closing recap, the current state rather than its history, one question at a time in an interview, and no em-dashes.
+
+`pyramid`, `direct` and `efficient` ask the agent to define a term the reader may not know and to replace an unclear pronoun with its noun. `efficient` keeps routine replies to one to three sentences.
+
+The STE-derived guidelines state their limits: 20 words in an instruction and 25 in a description, noun stacks of three words, paragraphs of six sentences at most, notes with no steps or risks, list mechanics, and no contractions. `direct` asks the agent to name the actor or say it is unknown, and `epistemic` separates proposals from facts and names missing evidence.
+
+Warnings, intent signals, I-PASS, CUS and M/ETHANE use two risk levels, WARNING for irreversible harm and CAUTION for recoverable harm, and print their definitions wherever they appear. The intent signal CAUTION replaces RISK.
+
+`delta` restates context when the reader may have lost it: after a resume, a reopened thread or a handoff. The blocker format asks for the exact error and the violated constraint.
+
+The thread protocol adds four rules: a choice written as a sentence still gets options, a skill's own output format does not suspend threads, a reply puts settled items first and decisions last with no recap, and when a task holds decisions only the user can make, the reply carries those decisions alone.
+
+`guidelines group list` printed every group on one line, separated by a literal `\n`; it now prints one group per line. The guideline list and the setup questions contain no em-dashes, and the first setup question asks which communication profile to use instead of how concise replies should be.
+
+### Choices
+
+The profile keeps the name `pyramid`. The name already is Barbara Minto's Pyramid Principle; what the profile lacked was the principle's grouping rule, which `reasons` now states. Renaming it to `minto` would have added one more alias to migrate.
+
+Profiles carry no instruction text. Every rule a profile applies is a guideline, so `guidelines` shows all of it, and the instruction fields that were never rendered are gone.
+
+WARNING and CAUTION are defined once, in `signals.json`, and each part of the policy that uses them prints that definition, so the places that use them cannot drift apart. They adapt ASD-STE100 7.1, where a warning guards against injury and a caution against damage to equipment, to irreversible and recoverable harm.
+
+`define_terms` and `pronouns` sit in all three non-empty profiles, because the brevity guidelines in each cause the failures they prevent. `pronouns` cites ASD-STE100 and so joins the `ste` bundle; `define_terms` comes from Google's Technical Writing One and does not.
+
 ## 0.2.1 - 2026-11-09
 
 In Claude Code, the `/dialogue` autocomplete hint ran past the terminal's width and was cut off, hiding most subcommands. It now lists `help`, `setup`, `settings`, `set <key> <value>` and `disable`, which fits an 80-column terminal; `/dialogue help` lists the rest.

@@ -63,13 +63,17 @@ Natural-language requests to stop dialogue or return to normal mode mean `disabl
 
 ## Individual guidelines
 
-Guidelines are the primary communication controls; profiles are optional bundles. Use `guidelines` for enabled rules grouped by purpose, `guidelines list` to see all rules and effective statuses, `guidelines group list` for category summaries, and `guidelines group list TYPE` to inspect one category. Types are structure, brevity, precision, evidence, risk, language, and procedures. Use `guideline enable ID`, `guideline disable ID`, or `guideline reset ID` to override or restore an individual rule; `guideline group enable|disable|reset TYPE` does the same for a category. `guideline reset all` clears overrides. The previous `on/off`, `guideline group TYPE on/off/reset`, and `guidelines --all/--group` syntaxes remain aliases. Only the enabled effective rules apply. Changes do not implicitly enable Dialogue. Add `--default` to `guideline` commands to change defaults for future sessions without changing saved sessions. Never silently toggle guidelines as a side effect of ordinary task wording.
+Guidelines are the primary communication controls; profiles are optional bundles. `guidelines` lists the enabled rules grouped by purpose, `guidelines list` shows every rule with its effective status, `guidelines group list` summarizes the categories, and `guidelines group list TYPE` inspects one. Types are structure, brevity, precision, evidence, risk, language, and procedures.
+
+`guideline enable ID`, `guideline disable ID` and `guideline reset ID` override or restore one rule, and `guideline group enable|disable|reset TYPE` does the same for a category. `guideline reset all` clears overrides. `guideline on|off ID`, `guideline group TYPE on|off|reset` and `guidelines --all|--group` are aliases of these commands. Add `--default` to change defaults for future sessions without changing saved sessions.
+
+Only the enabled effective rules apply. Changes do not enable Dialogue. Never silently toggle guidelines as a side effect of ordinary task wording.
 
 ## Guided setup
 
 When the user invokes `setup`, run the CLI `setup` overview. Present **one question at a time**. Ask exactly these three questions, using options and descriptions from the tool's output:
 
-1. **Comms**: `pyramid`, `direct`, `efficient`, `plain`, or `custom` (start with no enabled rules; configure guidelines individually). Presets only set baseline guidelines. The `ste` style adds the 12 ASD-derived guidelines. Individual overrides take final precedence.
+1. **Comms**: `pyramid`, `direct`, `efficient`, `plain`, or `custom` (start with no enabled rules; configure guidelines individually). Presets only set baseline guidelines. The `ste` style adds the ASD-STE100-derived guidelines. Individual overrides take final precedence.
 2. **Style**: `plain` or `ste` (STE-inspired, not ASD-STE100 compliant).
 3. **Workflow**: `quiet`, `automatic`, `verified`, `status`, `escalation`, `handoff`, `safety`, or `incident`. A workflow selects both situational formatting and signal semantics; explain that individual settings remain editable.
 
@@ -78,13 +82,13 @@ Retain the selected values in the current conversation only until question three
 ## Manual configuration
 
 `set enabled on/off` is equivalent to enabling/disabling. Other settings never implicitly enable the plugin.
-The simple setting names are `comms`, `style`, `situation`, `signals`, `enabled`, `threads`, `focus`, and `compact`. Per-guideline changes use the `guideline` command, not `set`. Existing full names `communication_profile`, `language_standard`, and `signaling` remain supported. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
-Booleans accept `on/off` or `true/false`. `comms` accepts `pyramid/direct/efficient/plain/custom`; `style` accepts `plain/ste` (`ste-inspired` is the stored value); `situation` accepts `none/auto/sbar/ipass/can/cus/methane`; `signals` accepts `off/intent/full`. Legacy `set response_style pyramid/plain` is supported as an alias.
+The simple setting names are `comms`, `style`, `situation`, `signals`, `enabled`, `threads`, `focus`, and `compact`. Per-guideline changes use the `guideline` command, not `set`. `communication_profile`, `language_standard` and `signaling` are the full names of `comms`, `style` and `signals`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
+Booleans accept `on/off` or `true/false`. `comms` accepts `pyramid/direct/efficient/plain/custom`; `style` accepts `plain/ste` (`ste-inspired` is the stored value); `situation` accepts `none/auto/sbar/ipass/can/cus/methane`; `signals` accepts `off/intent/full`. `set response_style pyramid|plain` is an alias of `set comms`.
 Defaults affect only sessions that have not yet saved a snapshot. Existing sessions keep their values.
 A session's explicit off remains off after restart, resume, and compaction, even when defaults enable new sessions.
 The hook restores saved policy; the model must never invent a reason to turn it on.
 
-For situational frameworks, use `situations` to list, `situation preview NAME` to inspect without changing state, and `set situation NAME` to change the current session. Legacy `situation use NAME` and `situation clear` remain supported. `auto` selects a framework only when a task clearly matches it. Never activate dialogue from ordinary wording. Use `languages` and `signals` to list their available options.
+For situational frameworks, use `situations` to list, `situation preview NAME` to inspect without changing state, and `set situation NAME` to change the current session. `situation use NAME` and `situation clear` do the same as `set situation NAME` and `set situation none`. `auto` selects a framework only when a task clearly matches it. Never activate dialogue from ordinary wording. Use `languages` and `signals` to list their available options.
 A user may request a framework for one response without setting the session default: preview its definition, apply it to that response only, and preserve saved state. Do not automatically open a decision thread for an ordinary writing request.
 
 After enabling or changing settings, follow the tool's returned policy. The rule sources are [threads.md](threads.md), [guidelines.json](guidelines.json), and [profiles.json](profiles.json); the tool selects the applicable parts.

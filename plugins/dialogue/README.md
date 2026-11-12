@@ -28,7 +28,7 @@ Codex uses `$dialogue:dialogue`. Help lists commands, profiles, language styles,
 
 Setup asks **three questions, one at a time**:
 
-1. **Comms**: `pyramid` (answer + evidence), `direct` (12 core guidelines), `efficient` (low-token), `plain` (no response rules), or `custom` (start empty and enable guidelines individually). Presets select guideline baselines; individual overrides take precedence.
+1. **Comms**: `pyramid` (answer, reasons and evidence), `direct` (concise and action-oriented), `efficient` (low-token), `plain` (no response rules), or `custom` (start empty and enable guidelines individually). Presets select guideline baselines; individual overrides take precedence.
 2. **Style**: `plain` (normal technical English), `ste` (STE-inspired controlled English; not official compliance).
 3. **Workflow**: `quiet` (no framework/signals), `automatic` (auto framework + intent), `verified` (auto + full acknowledgments), `status` (CAN), `escalation` (SBAR), `handoff` (I-PASS), `safety` (CUS), `incident` (M/ETHANE).
 
@@ -43,7 +43,7 @@ All choices are saved **once after the third answer**. Cancelling does not chang
 /dialogue:dialogue set signals intent
 ```
 
-The longer settings (`communication_profile`, `language_standard`, `signaling`) remain valid for compatibility. `situation use sbar` also remains supported, but `set situation sbar` is the preferred form.
+`comms`, `style` and `signals` are short names for `communication_profile`, `language_standard` and `signaling`, and either name works. `situation use sbar` does the same as `set situation sbar`.
 
 ### Codex state permissions
 
@@ -74,18 +74,19 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 | `defaults set enabled on`    | Explicitly enable automatic activation for future sessions              |
 | `defaults set enabled off`   | Make future sessions opt-in again                                       |
 
-The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain`. Legacy `response_style pyramid/plain` commands and saved settings are migrated without changing their meaning. Focus and compact have no effect while threads are disabled.
+The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain/custom`. `response_style` is an alias of `communication_profile` that accepts `pyramid` or `plain`, and saved settings that use it load as `communication_profile`. Focus and compact have no effect while threads are disabled.
 
 ## Communication profiles
 
 Communication rules are defined once in [guidelines.json](skills/dialogue/guidelines.json), each with an ID, category, name, and short description. [profiles.json](skills/dialogue/profiles.json) contains optional baseline bundles. Individual guideline overrides take precedence; presets do not add hidden instructions.
 
-| Profile     | Behavior                                                                                  |
-| ----------- | ----------------------------------------------------------------------------------------- |
-| `pyramid`   | Answer first, then material reasons and evidence; preserves the previous default approach |
-| `direct`    | All 12 guidelines; concise, factual, and action-oriented                                  |
-| `efficient` | Smaller set of guidelines for routine coding tasks                                        |
-| `plain`     | No additional communication guidelines                                                    |
+| Profile     | Behavior                                                                                                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pyramid`   | Answer first, then reasons that do not overlap, each with its evidence; a verdict for implementation questions, one recommendation, and tables for comparisons |
+| `direct`    | Concise, factual, and action-oriented; reports changes only and puts exceptions first                                                                          |
+| `efficient` | Fewer guidelines for routine coding tasks; routine replies take one to three sentences                                                                         |
+| `plain`     | No communication guidelines                                                                                                                                    |
+| `custom`    | No preset guidelines; enable them individually                                                                                                                 |
 
 Use `profiles` to compare optional presets and `guidelines` to see effective rules grouped by type. Change the current session with `set comms direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
 
@@ -107,9 +108,11 @@ Use the individual guideline controls instead of a preset if you prefer a custom
 /dialogue:dialogue guideline --default enable bluf
 ```
 
-Each guideline is grouped into **structure**, **brevity**, **precision**, **evidence**, **risk**, **language**, or **procedures**. The 12 original principles remain and 12 additional optional guidelines draw on ASD-STE100 Issue 9. Set `style ste` to enable these 12 as a bundle; use individual overrides to disable or restore any one of them. These are adaptations, not a certification of standard compliance. `guidelines list` reports each rule's effective on/off state and whether it came from the preset or an override. `guidelines group list` shows category counts; append a category to inspect its rules. Overrides persist per session and take priority over profile and style bundles; resetting one restores its inherited value. Use `guideline --default enable|disable|reset ID` (or `guideline --default group enable|disable|reset TYPE`) to change defaults for future sessions only. Disabling Dialogue disables all response policies without deleting the saved choices. Older command forms remain accepted as aliases.
+Each guideline belongs to one group: **structure**, **brevity**, **precision**, **evidence**, **risk**, **language**, or **procedures**. Guidelines with an ASD-STE100 Issue 9 source form the `style ste` bundle. They are adaptations, not a certification of compliance with the standard. Individual overrides disable or restore any one of them.
 
-The `custom` preset has no initially enabled guidelines. It is an optional starting point for choosing rules individually; existing `pyramid`, `direct`, `efficient` and `plain` presets remain for compatibility.
+`guidelines list` reports each rule's effective state and whether the profile, the style or an override set it. `guidelines group list` shows the count per group; append a group to inspect its rules. Overrides persist per session and take priority over profile and style bundles, and resetting one restores the inherited value. `guideline --default enable|disable|reset ID` and `guideline --default group enable|disable|reset TYPE` change the defaults for future sessions only. `guideline on|off ID`, `guideline group TYPE on|off|reset` and `guidelines --all|--group` are aliases of these commands. Disabling Dialogue turns off every response policy and keeps the saved choices.
+
+The `custom` preset starts with no guidelines enabled, for choosing rules one at a time.
 
 ## Situational frameworks
 
@@ -129,7 +132,7 @@ Preview is read-only. Use selects the protocol for this session. Clear resets it
 
 `languages` lists the language standards; `set style ste` applies a simplified, controlled technical-English style inspired by ASD-STE100. This is not official ASD-STE100 compliance or a vocabulary validator. `set style plain` removes it.
 
-`signals` lists the intent and response markers from [signals.json](skills/dialogue/signals.json). `set signals intent` permits appropriate sender-intent markers (FYI, REQUEST, DECISION, WARNING, etc.). `set signals full` also defines response statuses (ACK, ACCEPTED, BLOCKED, DONE, etc.). `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
+`signals` lists the intent and response markers from [signals.json](skills/dialogue/signals.json). `set signals intent` permits sender-intent markers such as FYI, REQUEST, DECISION and WARNING. `set signals full` also defines response statuses such as ACK, ACCEPTED, BLOCKED and DONE. WARNING and CAUTION are the two risk levels: `signals.json` defines them, and the `warnings` guideline, I-PASS, CUS and M/ETHANE use the same two words and print the same definitions. `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
 
 ## Templates and plugin boundaries
 
