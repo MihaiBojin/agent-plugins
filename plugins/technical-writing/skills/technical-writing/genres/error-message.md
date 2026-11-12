@@ -31,7 +31,7 @@ The message itself follows seven rules:
   server CPU load.
 - Put the message next to the location of the error.
 - Never rely on color alone. In a terminal, a color comes with a word such as
-  FAIL or WARN (`not_by_sight`).
+  FAIL or WARN (`no_visual_only`).
 
 The code behind the message follows three:
 

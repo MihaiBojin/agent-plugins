@@ -314,7 +314,7 @@ Before you hand a document over, edit it as its reader would read it:
 Sources: TW2 Self-editing; Tech Writing for Accessibility, Edit for
 accessibility; practice.
 
-### `not_by_sight`
+### `no_visual_only`
 
 Meaning never depends on sight alone. Color, shape, pattern, font styling and
 directional words such as "top-right corner" always come with text: a label, a
@@ -335,7 +335,7 @@ empty one (`alt=""`).
 Sources: Tech Writing for Accessibility, Edit for accessibility and Write
 helpful alt text.
 
-### `describing_people`
+### `inclusive_language`
 
 When a person appears in the text or in an image, give the role that matters,
 such as musician or teacher, and give demographics only when they are the

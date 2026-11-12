@@ -4,7 +4,7 @@
 
 The first release: one skill that picks the shape of a piece of software writing from its reader, and sentence rules for all of it. A genre file covers each of bug reports, postmortems, incident updates, design docs and RFCs, decision records, runbooks, error messages, PR descriptions, commit messages, code comments, READMEs and tutorials, status updates, review comments, deprecation notices, decision requests, escalations and handoffs, agent briefs, release notes, and short forms such as alt text and CLI help. The agent loads the skill when asked to write or review one of them, and reads only the genre file it needs.
 
-The rules adapt ASD-STE100 Issue 9 and four of Google's technical writing courses, and each one has an ID that a review can cite. Twenty-two of them are the dialogue plugin's guidelines, with the same IDs and first lines. Four cover documents only: `self_edit`, `not_by_sight`, `navigable` and `describing_people`.
+The rules adapt ASD-STE100 Issue 9 and four of Google's technical writing courses, and each one has an ID that a review can cite. Twenty-two of them are the dialogue plugin's guidelines, with the same IDs and first lines. Four cover documents only: `self_edit`, `no_visual_only`, `navigable` and `inclusive_language`.
 
 ### Choices
 

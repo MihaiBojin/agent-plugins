@@ -30,7 +30,7 @@ The skill has one genre file for each of these:
 
 The agent loads the skill when asked to write or review one of these, and
 reads only the genre file it needs. Every rule has an ID, such as `direct` or
-`not_by_sight`, so that a review can cite the rule a sentence breaks.
+`no_visual_only`, so that a review can cite the rule a sentence breaks.
 
 A repository's own writing rules outrank the skill: it reads `AGENTS.md`,
 `CLAUDE.md`, `CONTRIBUTING.md` and any style guide first.

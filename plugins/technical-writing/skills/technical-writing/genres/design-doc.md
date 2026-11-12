@@ -36,7 +36,7 @@ A design doc has nine sections:
   every heading.
 - Write an outline first, and share it before you draft.
 - Keep each diagram to what one paragraph could explain. Label every shape,
-  and never encode a category by color alone (`not_by_sight`).
+  and never encode a category by color alone (`no_visual_only`).
 - The alt text of a diagram states the takeaway, and the body walks through
   each part (`navigable`).
 - Write the first draft yourself. Google's unit on LLMs warns that a generated
