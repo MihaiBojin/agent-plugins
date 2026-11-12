@@ -74,7 +74,7 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 | `defaults set enabled on`    | Explicitly enable automatic activation for future sessions              |
 | `defaults set enabled off`   | Make future sessions opt-in again                                       |
 
-The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain/custom`. `response_style` is an alias of `communication_profile` that accepts `pyramid` or `plain`, and saved settings that use it load as `communication_profile`. Focus and compact have no effect while threads are disabled.
+The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain/custom`. Settings saved under the older `response_style` key load as `communication_profile`. Focus and compact have no effect while threads are disabled.
 
 ## Communication profiles
 
