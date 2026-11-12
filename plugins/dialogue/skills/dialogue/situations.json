@@ -18,7 +18,7 @@
     "description": "Transfer work and responsibility safely.",
     "uses": ["handoff", "ownership transfer", "on-call rotation"],
     "fields": [
-      ["Severity", "Current risk: stable, concerning, or critical"],
+      ["Severity", "Current risk: stable, CAUTION, or WARNING"],
       ["Summary", "Current state, impact, and essential history"],
       ["Actions", "Open tasks, owners, and deadlines"],
       [
@@ -30,7 +30,8 @@
         "Receiver restates priorities and accepts ownership"
       ]
     ],
-    "guidance": "Do not treat sending the handoff as acceptance. Confirm ownership on consequential transfers."
+    "guidance": "Do not treat sending the handoff as acceptance. Confirm ownership on consequential transfers.",
+    "risk_levels": true
   },
   "can": {
     "description": "Share a concise operational update.",
@@ -50,20 +51,22 @@
       ["Uncomfortable", "Explain why the current course is unsafe"],
       ["Safety issue", "Name the hazard and required stop or escalation"]
     ],
-    "guidance": "Use only when an actual safety or high-consequence risk warrants explicit escalation. Not a generic severity label."
+    "guidance": "Use only for a WARNING-level risk that needs an explicit stop or escalation. Not a generic severity label.",
+    "risk_levels": true
   },
   "methane": {
     "description": "Share the initial picture of a major incident.",
     "uses": ["major incident", "cross-team emergency", "first incident report"],
     "fields": [
-      ["Major incident", "Declared or suspected, and severity"],
+      ["Major incident", "Declared or suspected, with WARNING or CAUTION"],
       ["Exact location", "Affected system, region, or location"],
       ["Type", "Incident category"],
       ["Hazards", "Known or suspected risks"],
       ["Access", "Access constraints, dependencies, or safe intervention path"],
-      ["Number affected", "Scope, impact, and severity"],
+      ["Number affected", "Scope and impact"],
       ["Emergency response", "Teams involved and help required"]
     ],
-    "guidance": "This is an engineering adaptation of M/ETHANE; do not imply it is the official emergency-service form."
+    "guidance": "This is an engineering adaptation of M/ETHANE; do not imply it is the official emergency-service form.",
+    "risk_levels": true
   }
 }

@@ -68,7 +68,7 @@ def list_guidelines(profile, overrides=None, all_guidelines=False, group=None, s
             ident = entry["id"]
             status = "on" if ident in enabled else "off"
             source = "inactive" if not active else ("override" if ident in overrides else ("style" if style == "ste-inspired" and entry.get("source") else "profile"))
-            lines.append(f'- {ident} [{status}, {source}]: {entry["name"]} — {entry["description"]}')
+            lines.append(f'- {ident} [{status}, {source}]: {entry["name"]}. {entry["description"]}')
     if not enabled and not all_guidelines:
         lines.append("(none)")
     return "\n".join(lines)
@@ -83,7 +83,7 @@ def list_groups(profile, overrides=None, style="plain", active=True):
         on = sum(e["type"] == kind and e["id"] in enabled for e in guidelines)
         lines.append(f'- {kind}: {on}/{count} enabled')
     lines.append("Use guidelines group list TYPE to inspect a group.")
-    return "\\n".join(lines)
+    return "\n".join(lines)
 
 
 def render_profile(profile, overrides=None, style="plain"):
@@ -95,11 +95,13 @@ def render_profile(profile, overrides=None, style="plain"):
     lines = [f"## Communication profile: {profile}"]
     for entry in entries:
         lines.append(f'- {entry["name"]}: {entry["description"]}')
+    if any(entry["id"] == "warnings" for entry in entries):
+        lines.append(risk_levels())
     if any(entry["id"] == "formats" for entry in entries):
         lines.extend([
             "Use completion: Result → Verification → Remaining issues.",
             "Use review: Findings by severity → Evidence → Suggested fix.",
-            "Use blocker: Blocker → Cause → Required action.",
+            "Use blocker: Blocker → Cause, with the exact error and the violated constraint → Required action.",
             "Use decision: Recommendation → Reason → Trade-off.",
             "Use progress: Material change → Next action.",
             "Omit empty sections."
@@ -147,6 +149,8 @@ def render_situation(name):
     for title, meaning in item["fields"]:
         lines.append(f'- {title}: {meaning}')
     lines.append(item["guidance"])
+    if item.get("risk_levels"):
+        lines.append(risk_levels())
     lines.append("Use the framework only where relevant; do not invent missing details. Ask only for essential unknowns.")
     return "\n".join(lines)
 
@@ -182,6 +186,12 @@ def render_signals(mode):
     return "\n".join(lines)
 
 
+def risk_levels():
+    """WARNING and CAUTION as signals.json defines them, for every part of the policy that uses them."""
+    meanings = {item["id"]: item["meaning"] for item in signals()["intents"]}
+    return "\n".join(["Risk levels:"] + [f'- {level}: {meanings[level]}' for level in ("WARNING", "CAUTION")])
+
+
 def list_signals():
     catalog = signals()
     lines = ["Intent markers:"]
@@ -203,13 +213,13 @@ def wizard_questions(current=None):
     modes = workflows()
     lines = [
         "Dialogue setup: answer three questions. Nothing changes until all answers are applied.",
-        "1. Comms — how concise should responses be?"]
+        "1. Comms: which communication profile should replies follow?"]
     for key, item in profiles.items():
         lines.append(f'   - {key}: {item["description"]}')
-    lines.append("2. Style — how should technical English be written?")
+    lines.append("2. Style: how should technical English be written?")
     for key, item in languages.items():
         lines.append(f'   - {"ste" if key == "ste-inspired" else key}: {item["description"]}')
-    lines.append("3. Workflow — how should structured messages and acknowledgments work?")
+    lines.append("3. Workflow: how should structured messages and acknowledgments work?")
     for key, item in modes.items():
         lines.append(f'   - {key}: {item["description"]}')
     if current:
@@ -224,7 +234,7 @@ def wizard_questions(current=None):
 
 
 def full_help():
-    _, profiles = catalog()
+    guidelines, profiles = catalog()
     languages = language_standards()
     modes = workflows()
     lines = [
@@ -254,6 +264,6 @@ def full_help():
     lines.append("Override: guideline enable|disable|reset ID; guideline reset all; guideline group enable|disable|reset TYPE.")
     lines.append("For future sessions add --default: guideline --default on ID.")
     lines.append("Group types: structure, brevity, precision, evidence, risk, language, procedures.")
-    lines.append("Style ste adds 12 STE-derived guidelines before per-rule overrides.")
+    lines.append(f'Style ste adds {sum(1 for entry in guidelines if entry.get("source"))} STE-derived guidelines before per-rule overrides.')
     lines.append("Help/setup/preview do not enable Dialogue or write state.")
     return "\n".join(lines)

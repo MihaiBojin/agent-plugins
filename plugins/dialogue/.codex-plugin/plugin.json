@@ -1,6 +1,6 @@
 {
   "name": "dialogue",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Opt-in response style and persistent conversation threads, with settings isolated by client session.",
   "author": {
     "name": "Mihai Bojin"

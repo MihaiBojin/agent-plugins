@@ -17,12 +17,12 @@
       "meaning": "An option for consideration, not an approved decision."
     },
     {
-      "id": "RISK",
-      "meaning": "A consequential risk needs attention."
+      "id": "CAUTION",
+      "meaning": "Recoverable harm is possible, such as a failed step that can be retried or rolled back."
     },
     {
       "id": "WARNING",
-      "meaning": "Immediate or high-consequence hazard requires attention."
+      "meaning": "Irreversible harm is possible, such as data loss, security exposure or an outage; also use it when both levels apply."
     },
     {
       "id": "QUESTION",

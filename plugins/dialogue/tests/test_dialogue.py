@@ -181,14 +181,54 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('set', 'communication_profile', 'direct')
         self.assertEqual(self.state()['settings']['communication_profile'], 'direct')
         enabled = self.run_cli('guidelines').stdout
-        self.assertIn('(12/24 enabled)', enabled)
+        self.assertIn('(14/35 enabled)', enabled)
         self.assertIn('No routine narration', enabled)
         self.assertIn('## Communication profile: direct', self.run_cli('render').stdout)
         self.run_cli('set', 'communication_profile', 'efficient')
-        self.assertIn('(8/24 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(11/35 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('set', 'communication_profile', 'plain')
-        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(0/35 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('set', 'communication_profile', 'invalid', ok=False)
+
+    def test_pyramid_renders_the_rules_it_selects(self):
+        self.run_cli('enable')
+        rendered = self.run_cli('render').stdout
+        for text in ('- Verdict first: For implementation questions',
+                     'reasons that do not overlap and together cover it',
+                     '- One recommendation:', '- Tables for comparisons:', '- No preamble or recap:',
+                     '- Current state:', '- One question at a time:', '- Plain punctuation: No em-dashes',
+                     '- Defined terms:', '- Clear pronouns:', 'Name the actor, or say it is unknown.',
+                     'unknowns and proposals; name missing evidence'):
+            self.assertIn(text, rendered)
+        self.assertNotIn('Short routine replies', rendered)
+        profiles = json.loads((ROOT / 'skills' / 'dialogue' / 'profiles.json').read_text())
+        self.assertFalse(any('instruction' in profile for profile in profiles.values()))
+        self.run_cli('set', 'comms', 'efficient')
+        self.assertIn('- Short routine replies: Routine replies take one to three sentences.',
+                      self.run_cli('render').stdout)
+
+    def test_risk_levels_come_from_one_definition(self):
+        self.run_cli('enable')
+        self.assertNotIn('Risk levels:', self.run_cli('render').stdout)
+        signals = json.loads((ROOT / 'skills' / 'dialogue' / 'signals.json').read_text())
+        meanings = {item['id']: item['meaning'] for item in signals['intents']}
+        self.assertNotIn('RISK', meanings)
+        levels = '\n'.join(['Risk levels:', f"- WARNING: {meanings['WARNING']}", f"- CAUTION: {meanings['CAUTION']}"])
+        self.run_cli('set', 'situation', 'ipass')
+        rendered = self.run_cli('render').stdout
+        self.assertIn('stable, CAUTION, or WARNING', rendered)
+        self.assertIn(levels, rendered)
+        for name in ('methane', 'cus'):
+            self.assertIn(levels, self.run_cli('situation', 'preview', name).stdout)
+        self.assertNotIn('Risk levels:', self.run_cli('situation', 'preview', 'sbar').stdout)
+        self.run_cli('set', 'situation', 'none')
+        self.run_cli('set', 'style', 'ste')
+        self.assertIn(levels, self.run_cli('render').stdout)
+        self.run_cli('set', 'style', 'plain')
+        self.run_cli('set', 'signals', 'intent')
+        rendered = self.run_cli('render').stdout
+        self.assertIn(f"- CAUTION: {meanings['CAUTION']}", rendered)
+        self.assertNotIn('- RISK:', rendered)
 
     def test_consistent_guideline_commands(self):
         self.assertIn('Guideline groups (Dialogue disabled)', self.run_cli('guidelines', 'group', 'list').stdout)
@@ -198,7 +238,9 @@ class DialogueTest(unittest.TestCase):
         self.assertIn('bluf [on, profile]', all_rules)
         self.assertIn('one_action [off, profile]', all_rules)
         groups = self.run_cli('guidelines', 'group', 'list').stdout
-        self.assertIn('brevity: 2/4 enabled', groups)
+        self.assertIn('brevity: 3/6 enabled', groups)
+        self.assertNotIn('\\n', groups)
+        self.assertEqual(len(groups.splitlines()), 9)
         assert_group = self.run_cli('guidelines', 'group', 'list', 'procedures').stdout
         self.assertIn('one_action', assert_group)
         self.assertNotIn('bluf', assert_group)
@@ -230,19 +272,19 @@ class DialogueTest(unittest.TestCase):
     def test_guideline_individual_and_group_overrides(self):
         self.run_cli('enable')
         self.run_cli('set', 'comms', 'custom')
-        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(0/35 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('guideline', 'on', 'bluf')
         self.assertIn('BLUF', self.run_cli('render').stdout)
-        self.assertIn('(1/24 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(1/35 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('guideline', 'off', 'bluf')
-        self.assertIn('(0/24 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(0/35 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('guideline', 'reset', 'bluf')
         self.assertEqual(self.state()['settings']['guideline_overrides'], {})
         self.run_cli('guideline', 'group', 'procedures', 'on')
         enabled = self.run_cli('guidelines', '--group', 'procedures').stdout
         self.assertIn('one_action', enabled)
         self.assertNotIn('bluf', enabled)
-        self.assertEqual(len(self.state()['settings']['guideline_overrides']), 4)
+        self.assertEqual(len(self.state()['settings']['guideline_overrides']), 5)
         self.run_cli('guideline', 'group', 'procedures', 'reset')
         self.assertEqual(self.state()['settings']['guideline_overrides'], {})
         self.assertIn('one_action [off, profile]', self.run_cli('guidelines', '--all').stdout)
@@ -274,7 +316,7 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('enable')
         self.run_cli('set', 'comms', 'custom')
         self.run_cli('set', 'style', 'ste')
-        self.assertIn('(12/24 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(13/35 enabled)', self.run_cli('guidelines').stdout)
         self.assertIn('terminology [on, style]', self.run_cli('guidelines', '--all').stdout)
         self.run_cli('guideline', 'off', 'terminology')
         enabled = self.run_cli('guidelines', '--all').stdout
@@ -350,6 +392,9 @@ class DialogueTest(unittest.TestCase):
         overview = self.run_cli('setup').stdout
         for prompt in ('1. Comms', '2. Style', '3. Workflow'):
             self.assertIn(prompt, overview)
+        self.assertIn('Style ste adds 13 STE-derived guidelines', help_text)
+        for output in (help_text, overview, self.run_cli('guidelines', 'list').stdout):
+            self.assertNotIn('\u2014', output)
         self.assertFalse(self.state()['settings']['enabled'])
         self.assertEqual(list(Path(self.tmp.name).iterdir()), [])
 

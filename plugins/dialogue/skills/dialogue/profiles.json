@@ -1,7 +1,6 @@
 {
   "pyramid": {
     "description": "Answer, reasons, evidence.",
-    "instruction": "Lead with the answer, then material reasons and supporting evidence. Recommend one option unless alternatives are requested.",
     "guidelines": [
       "bluf",
       "sufficient",
@@ -11,12 +10,21 @@
       "epistemic",
       "formats",
       "quantify",
-      "risk_detail"
+      "risk_detail",
+      "verdict",
+      "reasons",
+      "one_recommendation",
+      "tables",
+      "no_frame",
+      "current_state",
+      "one_question",
+      "plain_punctuation",
+      "define_terms",
+      "pronouns"
     ]
   },
   "direct": {
     "description": "Concise, factual, action-oriented.",
-    "instruction": "Use the shortest response that still supports correct action and verification.",
     "guidelines": [
       "bluf",
       "sufficient",
@@ -29,17 +37,17 @@
       "exceptions",
       "no_narration",
       "quantify",
-      "risk_detail"
+      "risk_detail",
+      "define_terms",
+      "pronouns"
     ]
   },
   "plain": {
     "description": "No extra communication rules.",
-    "instruction": "",
     "guidelines": []
   },
   "efficient": {
     "description": "Token-efficient output for routine coding tasks.",
-    "instruction": "Default to 1-3 sentences; keep headings optional. Preserve evidence for completion claims.",
     "guidelines": [
       "bluf",
       "sufficient",
@@ -48,12 +56,14 @@
       "evidence",
       "epistemic",
       "no_narration",
-      "risk_detail"
+      "risk_detail",
+      "short_replies",
+      "define_terms",
+      "pronouns"
     ]
   },
   "custom": {
     "description": "No preset rules; choose guidelines individually.",
-    "instruction": "",
     "guidelines": []
   }
 }

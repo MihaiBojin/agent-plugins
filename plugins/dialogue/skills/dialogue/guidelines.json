@@ -15,13 +15,13 @@
     "id": "delta",
     "name": "Delta-only",
     "type": "brevity",
-    "description": "Report changes; do not repeat established context."
+    "description": "Report changes; restate context only when the reader may have lost it: a resume, a reopened thread, a handoff."
   },
   {
     "id": "direct",
     "name": "Direct language",
     "type": "precision",
-    "description": "Use active voice, precise nouns, and concrete verbs."
+    "description": "Use active voice, precise nouns, and concrete verbs. Name the actor, or say it is unknown."
   },
   {
     "id": "no_filler",
@@ -39,7 +39,7 @@
     "id": "epistemic",
     "name": "Facts before speculation",
     "type": "precision",
-    "description": "Separate verified facts, inferences, and unknowns."
+    "description": "Separate verified facts, inferences, unknowns and proposals; name missing evidence instead of filling the gap."
   },
   {
     "id": "formats",
@@ -72,52 +72,112 @@
     "description": "Scale detail to complexity and risk; preserve material evidence and uncertainty."
   },
   {
+    "id": "verdict",
+    "name": "Verdict first",
+    "type": "structure",
+    "description": "For implementation questions, say implemented, absent, or broken before explaining."
+  },
+  {
+    "id": "reasons",
+    "name": "Reasons that cover the answer",
+    "type": "evidence",
+    "description": "Support a substantive answer with reasons that do not overlap and together cover it, each with its evidence; let the evidence set the count."
+  },
+  {
+    "id": "one_recommendation",
+    "name": "One recommendation",
+    "type": "structure",
+    "description": "Recommend one option with its reason in a clause; list alternatives only when asked."
+  },
+  {
+    "id": "tables",
+    "name": "Tables for comparisons",
+    "type": "structure",
+    "description": "Use a table when two or more things are compared."
+  },
+  {
+    "id": "no_frame",
+    "name": "No preamble or recap",
+    "type": "brevity",
+    "description": "No preamble, restated question, or closing recap."
+  },
+  {
+    "id": "short_replies",
+    "name": "Short routine replies",
+    "type": "brevity",
+    "description": "Routine replies take one to three sentences."
+  },
+  {
+    "id": "current_state",
+    "name": "Current state",
+    "type": "precision",
+    "description": "Describe what the code does now, not its history."
+  },
+  {
+    "id": "define_terms",
+    "name": "Defined terms",
+    "type": "language",
+    "description": "Define or link a term the reader may not know; spell out an acronym on first use."
+  },
+  {
+    "id": "one_question",
+    "name": "One question at a time",
+    "type": "procedures",
+    "description": "In an interview, ask only the current question; never invent an answer to fill a field."
+  },
+  {
+    "id": "plain_punctuation",
+    "name": "Plain punctuation",
+    "type": "language",
+    "description": "No em-dashes; use a comma, colon, semicolon or full stop."
+  },
+  {
     "id": "terminology",
     "name": "Consistent terminology",
     "type": "precision",
-    "description": "Use one established name per concept; preserve technical identifiers.",
+    "description": "One name per concept and one sentence pattern per repeated step. Introduce a short form once and then use only it. Quote identifiers exactly.",
     "source": "ASD-STE100 1.3, 1.11, 9.4"
   },
   {
     "id": "plain_words",
     "name": "Familiar technical words",
     "type": "language",
-    "description": "Prefer familiar words; avoid idioms, inflated synonyms, and local jargon.",
-    "source": "ASD-STE100 1.9–1.10"
+    "description": "Prefer common words. Avoid idioms, slang, Latin abbreviations, and phrasal verbs that have a one-word equivalent, unless the phrasal verb is the established term (log in, roll back).",
+    "source": "ASD-STE100 1.9, 1.10, 9.3, GR-6"
   },
   {
     "id": "noun_clusters",
     "name": "Short noun phrases",
     "type": "language",
-    "description": "Split long noun chains; explain the relationships between terms.",
+    "description": "Keep noun stacks to three words. Unpack longer ones with of, for or that. Write a long official name in full once, then use a declared short form.",
     "source": "ASD-STE100 2.1–2.2"
   },
   {
     "id": "complete_grammar",
     "name": "No ambiguous shorthand",
     "type": "language",
-    "description": "Keep necessary articles, subjects, and conditions; do not shorten by deleting meaning.",
-    "source": "ASD-STE100 4.2, 4.5"
+    "description": "Keep articles, subjects, verbs and the conjunction \"that\", and write no contractions.",
+    "source": "ASD-STE100 4.2, 4.5, GR-1"
   },
   {
     "id": "short_sentences",
     "name": "Short sentences",
     "type": "language",
-    "description": "Prefer one clear topic per sentence; treat length limits as heuristics.",
-    "source": "ASD-STE100 4.1, 5.1, 6.3"
+    "description": "One idea per sentence. Aim for 20 words in an instruction and 25 in a description; an identifier, number or quoted string counts as one word.",
+    "source": "ASD-STE100 4.1, 5.1, 6.3, 8.6"
   },
   {
     "id": "one_action",
     "name": "One instruction per step",
     "type": "procedures",
-    "description": "Give one executable action per instruction unless actions must happen simultaneously.",
+    "description": "Give one executable action per instruction unless actions must happen simultaneously; put the expected result or limit in the same step.",
     "source": "ASD-STE100 5.2"
   },
   {
     "id": "imperatives",
     "name": "Action-oriented procedures",
     "type": "procedures",
-    "description": "Use direct imperative verbs for instructions; order steps explicitly.",
+    "description": "Use direct imperative verbs for instructions and order steps explicitly. Do not put \"you must\" before a command unless skipping it causes damage.",
     "source": "ASD-STE100 5.2–5.3"
   },
   {
@@ -131,28 +191,35 @@
     "id": "notes_not_steps",
     "name": "Notes are informational",
     "type": "procedures",
-    "description": "Put required actions in steps, not in optional notes.",
+    "description": "Notes carry background only: no steps, limits or risks. Check that the procedure still works with every note deleted.",
     "source": "ASD-STE100 5.5"
   },
   {
     "id": "one_topic",
     "name": "One topic per unit",
     "type": "structure",
-    "description": "Keep sentences and paragraphs focused; introduce information progressively.",
-    "source": "ASD-STE100 4.1, 6.1, 6.5"
+    "description": "Start each paragraph with its point, keep one topic, and split after six sentences.",
+    "source": "ASD-STE100 4.1, 6.1, 6.4–6.6"
   },
   {
     "id": "scannable",
     "name": "Scannable structure",
     "type": "structure",
-    "description": "Use lists for complex material, with a logical sequence.",
-    "source": "ASD-STE100 4.3, 6.2"
+    "description": "Introduce a list with a sentence ending in a colon. Number ordered steps, bullet the rest, and keep items parallel and one level deep.",
+    "source": "ASD-STE100 4.3; Google Technical Writing One, Lists and tables"
   },
   {
     "id": "warnings",
     "name": "Actionable risk warnings",
     "type": "risk",
-    "description": "Name risk level, state the protective action or condition, and explain consequences.",
+    "description": "Put WARNING or CAUTION before the step it guards, then the protective action or condition and the consequence.",
     "source": "ASD-STE100 7.1–7.3"
+  },
+  {
+    "id": "pronouns",
+    "name": "Clear pronouns",
+    "type": "language",
+    "description": "Replace a pronoun with its noun when the referent is not the nearest noun, and follow \"this\" with the noun it means.",
+    "source": "ASD-STE100 GR-3, GR-4"
   }
 ]
