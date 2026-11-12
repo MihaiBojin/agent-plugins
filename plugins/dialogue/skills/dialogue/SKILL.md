@@ -83,7 +83,7 @@ Retain the selected values in the current conversation only until question three
 
 `set enabled on/off` is equivalent to enabling/disabling. Other settings never implicitly enable the plugin.
 The simple setting names are `comms`, `style`, `situation`, `signals`, `enabled`, `threads`, `focus`, and `compact`. Per-guideline changes use the `guideline` command, not `set`. `communication_profile`, `language_standard` and `signaling` are the full names of `comms`, `style` and `signals`. Both `set <setting> <value>` and `defaults set <setting> <value>` accept these names.
-Booleans accept `on/off` or `true/false`. `comms` accepts `pyramid/direct/efficient/plain/custom`; `style` accepts `plain/ste` (`ste-inspired` is the stored value); `situation` accepts `none/auto/sbar/ipass/can/cus/methane`; `signals` accepts `off/intent/full`. `set response_style pyramid|plain` is an alias of `set comms`.
+Booleans accept `on/off` or `true/false`. `comms` accepts `pyramid/direct/efficient/plain/custom`; `style` accepts `plain/ste` (`ste-inspired` is the stored value); `situation` accepts `none/auto/sbar/ipass/can/cus/methane`; `signals` accepts `off/intent/full`.
 Defaults affect only sessions that have not yet saved a snapshot. Existing sessions keep their values.
 A session's explicit off remains off after restart, resume, and compaction, even when defaults enable new sessions.
 The hook restores saved policy; the model must never invent a reason to turn it on.
