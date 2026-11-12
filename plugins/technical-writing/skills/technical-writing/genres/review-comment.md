@@ -17,7 +17,7 @@ A comment has four parts, in one to four sentences:
 - Keep the tone neutral, and name the code, not the person (`no_filler`).
 - Ask a question as a question.
 - Label good and bad examples in words, the way Google's accessibility course
-  marks its examples "Recommended" and "Not recommended" (`not_by_sight`).
+  marks its examples "Recommended" and "Not recommended" (`no_visual_only`).
 
 Sources: Google Writing Helpful Error Messages, Set tone; Tech Writing for
 Accessibility. The severity labels are practice.

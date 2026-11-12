@@ -19,7 +19,7 @@ An update has four parts, in about five lines:
 - Measure progress: "8 of 12 endpoints migrated", never "good progress"
   (`quantify`).
 - A status color or symbol always carries its word: "At risk", not an amber
-  dot alone (`not_by_sight`).
+  dot alone (`no_visual_only`).
 
 Sources: the progress format and the CAN situation in the dialogue plugin;
 practice.
