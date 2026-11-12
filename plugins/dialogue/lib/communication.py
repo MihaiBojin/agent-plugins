@@ -244,7 +244,7 @@ def full_help():
         "Change: set comms VALUE | set style VALUE | set situation VALUE | set signals VALUE.",
         "Apply wizard: setup apply --comms VALUE --style VALUE --workflow VALUE.",
         "Defaults: defaults show | defaults set KEY VALUE (future sessions only).",
-        "Legacy: set communication_profile, language_standard, signaling, response_style; situation use/preview/clear.",
+        "Also accepted: set communication_profile, language_standard, signaling; situation use/preview/clear.",
         "",
         "Comms profiles:"]
     for key, item in profiles.items():

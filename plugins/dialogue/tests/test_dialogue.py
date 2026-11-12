@@ -169,7 +169,7 @@ class DialogueTest(unittest.TestCase):
         self.assertIn('## Communication profile: pyramid', out)
         self.run_cli('thread', 'open', 'No', ok=False)
         self.run_cli('set', 'threads', 'on')
-        out = self.run_cli('set', 'response_style', 'plain').stdout
+        out = self.run_cli('set', 'comms', 'plain').stdout
         self.assertIn('## 1/ Kept', out)
         self.assertNotIn('## Communication profile: pyramid', out)
 
@@ -361,7 +361,9 @@ class DialogueTest(unittest.TestCase):
         state_path.write_text(json.dumps(original))
         self.assertIn('communication_profile', self.run_cli('settings').stdout)
         self.assertEqual(self.state()['settings']['communication_profile'], 'pyramid')
-        self.run_cli('set', 'response_style', 'plain')
+        self.run_cli('set', 'response_style', 'plain', ok=False)
+        self.run_cli('set', 'comms', 'minimal', ok=False)
+        self.run_cli('set', 'comms', 'plain')
         self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
         self.run_cli('defaults', 'set', 'communication_profile', 'direct')
         self.assertEqual(self.state(session='new')['settings']['communication_profile'], 'direct')
@@ -374,7 +376,8 @@ class DialogueTest(unittest.TestCase):
             'compact': True, 'response_style': 'plain'
         }))
         self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
-        self.run_cli('defaults', 'set', 'response_style', 'pyramid')
+        self.run_cli('defaults', 'set', 'response_style', 'pyramid', ok=False)
+        self.run_cli('defaults', 'set', 'comms', 'pyramid')
         saved = json.loads(defaults.read_text())
         self.assertEqual(saved['communication_profile'], 'pyramid')
         self.assertNotIn('response_style', saved)
@@ -439,14 +442,6 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('defaults', 'set', 'style', 'ste')
         self.assertEqual(self.state(session='new')['settings']['communication_profile'], 'direct')
         self.assertEqual(self.state(session='new')['settings']['language_standard'], 'ste-inspired')
-
-    def test_minimal_profile_migrates_to_efficient(self):
-        self.run_cli('enable')
-        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
-        data = json.loads(path.read_text())
-        data['settings']['communication_profile'] = 'minimal'
-        path.write_text(json.dumps(data))
-        self.assertEqual(self.state()['settings']['communication_profile'], 'efficient')
 
     def test_situations_preview_and_selection(self):
         self.run_cli('enable')

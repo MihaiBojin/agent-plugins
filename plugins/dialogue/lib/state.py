@@ -26,7 +26,6 @@ SETTINGS = {
 
 
 ALIASES = {
-    'response_style': 'communication_profile',
     'comms': 'communication_profile',
     'style': 'language_standard',
     'signals': 'signaling',
@@ -38,12 +37,8 @@ def canonical_key(key):
 
 
 def setting_value(key, value):
-    if key == 'response_style' and value not in ('pyramid', 'plain'):
-        raise ValueError('response_style must be pyramid or plain')
     if key == 'style' and value == 'ste':
         value = 'ste-inspired'
-    if key in ('comms', 'communication_profile') and value == 'minimal':
-        value = 'efficient'
     key = canonical_key(key)
     if key not in SETTINGS:
         raise ValueError(f'unknown setting: {key}')
@@ -75,9 +70,6 @@ def migrate_settings(value):
     if isinstance(value, dict) and 'response_style' in value and 'communication_profile' not in value:
         value = dict(value)
         value['communication_profile'] = value.pop('response_style')
-    if isinstance(value, dict) and value.get('communication_profile') == 'minimal':
-        value = dict(value)
-        value['communication_profile'] = 'efficient'
     if isinstance(value, dict):
         value = {**{k: spec[0] for k, spec in SETTINGS.items() if k in ('situation', 'language_standard', 'signaling', 'guideline_overrides')}, **value}
     return value
