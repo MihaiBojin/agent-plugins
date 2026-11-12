@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 - 2026-11-12
+
+`set response_style` and `defaults set response_style` are gone: use `set comms` and `defaults set comms`, which take `pyramid`, `plain` and the other profiles. `set comms minimal` is gone too: use `set comms efficient`, the profile it selected. Settings saved under `response_style` still load as `communication_profile`.
+
+### Choices
+
+The migration that loads a saved `response_style` key stays. Files saved by 0.1.x carry the key until they are next written: a session's file when that session resumes, the defaults file when a default changes.
+
+`minimal` gets no migration. Every release that accepted it saved `efficient` instead, so no saved file holds it.
+
 ## 0.3.0 - 2026-11-11
 
 The `pyramid` profile renders the reply rules it was missing: a verdict first for implementation questions, reasons that do not overlap and together cover the answer, one recommendation, a table for any comparison, no preamble or closing recap, the current state rather than its history, one question at a time in an interview, and no em-dashes.
