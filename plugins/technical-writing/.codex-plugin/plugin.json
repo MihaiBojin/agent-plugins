@@ -1,0 +1,41 @@
+{
+  "name": "technical-writing",
+  "version": "0.1.0",
+  "description": "Write bug reports, postmortems, runbooks, design docs, error messages and other software prose in the shape their reader needs",
+  "author": {
+    "name": "Mihai Bojin",
+    "url": "https://github.com/MihaiBojin"
+  },
+  "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/technical-writing#readme",
+  "repository": "https://github.com/MihaiBojin/agent-plugins",
+  "license": "Apache-2.0",
+  "keywords": [
+    "technical-writing",
+    "documentation",
+    "style-guide",
+    "postmortem",
+    "runbook",
+    "error-messages",
+    "accessibility"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "technical-writing",
+    "shortDescription": "Software prose in the shape its reader needs",
+    "longDescription": "One skill with a genre file per kind of software writing: bug reports, postmortems, incident updates, design docs, decision records, runbooks, error messages, PR descriptions, commit messages, code comments, READMEs, status updates, review comments, deprecation notices, decision requests, handoffs and agent briefs. Each genre names its reader, the question that reader arrives with, and the shape that answers it. The agent reads only the genre it needs, then applies sentence rules adapted from ASD-STE100 and Google's technical writing courses, with an ID per rule so that a review can cite the one a sentence breaks.",
+    "developerName": "Mihai Bojin",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Choose the shape of a document from its reader and the moment they read it",
+      "Draft a postmortem, runbook, design doc or error message in that shape",
+      "Review prose and cite the rule each finding breaks",
+      "Keep color, images and links usable without sight"
+    ],
+    "websiteURL": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/technical-writing#readme",
+    "defaultPrompt": [
+      "Write the postmortem for this incident.",
+      "Turn these notes into a runbook.",
+      "Review this design doc against its reader."
+    ]
+  }
+}
