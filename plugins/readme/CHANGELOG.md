@@ -2,6 +2,10 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.1.1 - 2026-11-12
+
+The sentence rules in the readme skill open with the IDs and first lines that the dialogue and technical-writing plugins give the same rules, so the three plugins state each rule the same way. The new lines add limits the old text did not have: 20 words in an instruction and 25 in a description, identifiers quoted exactly, lists one level deep, and an actor that is named or stated as unknown.
+
 ## 0.1.0
 
 The first release: a README auditor and rewriter, and the checks a script can

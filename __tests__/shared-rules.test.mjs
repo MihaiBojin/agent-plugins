@@ -20,20 +20,25 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * The rules that dialogue and technical-writing both carry.
+ * The rules that dialogue, technical-writing and readme carry in common.
  *
  * A plugin cannot read another plugin's files, so each one ships its own copy.
  * A shared rule is a "### `id`" heading in the "Shared rules" section of
- * technical-writing's SKILL.md, and the first line under that heading has to
- * be dialogue's description of the guideline with that ID, word for word.
- * The WARNING and CAUTION definitions under `warnings` have to match the
- * meanings in dialogue's signals.json the same way.
+ * technical-writing's SKILL.md, or anywhere in readme's writing.md, and the
+ * first line under that heading has to be dialogue's description of the
+ * guideline with that ID, word for word. The WARNING and CAUTION definitions
+ * under `warnings` have to match the meanings in dialogue's signals.json the
+ * same way.
  */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIALOGUE = path.join(ROOT, "plugins/dialogue/skills/dialogue");
 const SKILL = path.join(
   ROOT,
   "plugins/technical-writing/skills/technical-writing/SKILL.md",
+);
+const WRITING = path.join(
+  ROOT,
+  "plugins/readme/skills/readme/references/writing.md",
 );
 
 /** The text under a "## name" heading, up to the next "## " heading. */
@@ -109,5 +114,20 @@ describe("the rules dialogue and technical-writing share", () => {
   it.each(["WARNING", "CAUTION"])("%s has dialogue's definition", (level) => {
     expect(levels.has(level)).toBe(true);
     expect(shared.split("\n")).toContain(`- ${level}: ${levels.get(level)}`);
+  });
+});
+
+describe("the rules readme restates", () => {
+  const restated = rules(fs.readFileSync(WRITING, "utf8"));
+
+  it("readme's writing.md names them, once each", () => {
+    const ids = restated.map((rule) => rule.id);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it.each(restated)("$id has dialogue's line", ({ id, line }) => {
+    expect(guidelines.has(id)).toBe(true);
+    expect(line).toBe(guidelines.get(id));
   });
 });
