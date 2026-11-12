@@ -123,6 +123,21 @@ cannot get from the diff, is the reason not to act - an alternative weighed and
 dropped, a cost taken on purpose, a bug left alone because something else
 already stops it.
 
+## Rules the plugins share
+
+A plugin cannot read another plugin's files, so dialogue and technical-writing
+each carry the rules they share. A shared rule has the same ID and the same
+one-line text in `plugins/dialogue/skills/dialogue/guidelines.json` and in the
+`## Shared rules` section of
+`plugins/technical-writing/skills/technical-writing/SKILL.md`, where its
+detail and examples sit under the line. The WARNING and CAUTION lines under
+`warnings` repeat the meanings in dialogue's `signals.json` the same way.
+
+`__tests__/shared-rules.test.mjs` fails when a rule in that section is missing
+from dialogue or its text differs. Change both copies in one pull request, and
+bump and write an entry for both plugins. A rule that comes to apply to both
+chat and documents joins the section in the same pull request.
+
 ## Before committing
 
 ```shell

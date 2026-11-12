@@ -16,6 +16,7 @@ projects:
       - plugins/decisions
       - plugins/docket
       - plugins/readme
+      - plugins/technical-writing
     manifest:
       - .claude-plugin/plugin.json
       - .codex-plugin/plugin.json

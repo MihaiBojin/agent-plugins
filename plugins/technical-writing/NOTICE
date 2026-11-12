@@ -1,0 +1,23 @@
+technical-writing
+Copyright 2026 Mihai Bojin
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+The skill adapts material from four Google for Developers courses:
+
+- Technical Writing One: https://developers.google.com/tech-writing/one
+- Technical Writing Two: https://developers.google.com/tech-writing/two
+- Writing Helpful Error Messages: https://developers.google.com/tech-writing/error-messages
+- Tech Writing for Accessibility: https://developers.google.com/tech-writing/accessibility
+
+Copyright Google LLC. The course text is licensed under the Creative Commons
+Attribution 4.0 License, https://creativecommons.org/licenses/by/4.0/, and
+its code samples under the Apache License, Version 2.0. The rules here are
+condensed and reworded from the courses, and the genre specs combine them
+with practice that the courses do not cover.
+
+ASD-STE100, Simplified Technical English, Issue 9, is the property of ASD,
+the AeroSpace, Security and Defence Industries Association of Europe, and may
+not be reproduced without its written authority. This plugin reproduces none
+of its text. Rules cite the specification's rule numbers, and their wording
+here is a paraphrase.
