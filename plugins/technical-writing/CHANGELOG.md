@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 - 2026-11-13
+
+With the `release` plugin installed, the release-note genre sends the agent
+to its `write` skill. The genre named the `release-notes` plugin, which
+`release` replaced, so the agent wrote release notes from the genre file
+instead.
+
 ## 0.1.0 - 2026-11-12
 
 The first release: one skill that picks the shape of a piece of software writing from its reader, and sentence rules for all of it. A genre file covers each of bug reports, postmortems, incident updates, design docs and RFCs, decision records, runbooks, error messages, PR descriptions, commit messages, code comments, READMEs and tutorials, status updates, review comments, deprecation notices, decision requests, escalations and handoffs, agent briefs, release notes, and short forms such as alt text and CLI help. The agent loads the skill when asked to write or review one of them, and reads only the genre file it needs.

@@ -13,7 +13,7 @@ Google's technical writing courses apply to all of it.
 
 The skill has one genre file for each of these:
 
-- Release notes, which the release-notes plugin owns when it is installed
+- Release notes, which the release plugin owns when it is installed
 - Bug reports and problem statements
 - Postmortems and incident updates
 - Design docs, RFCs and decision records
@@ -40,7 +40,7 @@ A repository's own writing rules outrank the skill: it reads `AGENTS.md`,
 - The dialogue plugin applies 22 of the same rules to chat replies. Each
   shared rule has the same ID and the same first line in both plugins, and a
   test in this repository fails when the two differ.
-- The release-notes plugin, from the
+- The release plugin, from the
   [release-tools marketplace](https://github.com/releasetools/agent-plugins),
   owns release notes and changelog entries.
 - The docket plugin handles the lifecycle of design docs and decision records,

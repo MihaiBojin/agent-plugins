@@ -1,8 +1,8 @@
 # Release note
 
 The
-[release-notes plugin](https://github.com/releasetools/agent-plugins/tree/main/plugins/release-notes#readme)
-owns this genre. When it is installed, use it. This file states its rules in
+[release plugin](https://github.com/releasetools/agent-plugins/tree/main/plugins/release#readme)
+owns this genre. When it is installed, use its `write` skill. This file states its rules in
 brief, for when it is not.
 
 Reader: somebody on the previous version, deciding whether this release
@@ -25,4 +25,4 @@ For a large release, Google's unit on LLMs suggests a layout: an introductory
 paragraph, a table of one-line summaries, then a subsection per item with the
 problem and any workaround.
 
-Sources: the release-notes plugin; TW2 Using LLMs.
+Sources: the release plugin; TW2 Using LLMs.
