@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 - 2026-11-13
+
+`=/` goes through the open threads one at a time. It shows the first open thread with its details and live choices, then, once you answer or defer it, the next one in ID order, until none is left or you type `=//`. `=//` shows every open thread with its details, as before. `=/` no longer prints a list of headings; `thread list` still does. The compact footer reads "Type `=/` to go through them one at a time or `=//` to see them all."
+
+### Choices
+
+The walk keeps no state of its own. It moves the focused thread with `thread focus`, which the session file already saves, so after a compaction the agent still shows the right thread. What a compaction can lose is the instruction to keep walking. A saved walk flag would survive it, at the cost of a new key in every session file and a migration for the files already saved.
+
+The walk makes one pass. A thread deferred during it stays open and is not shown again in that pass; the footer counts it, and `=/` starts a new pass from the first open thread. Coming back to deferred threads until every one is closed would leave `=//` as the only way out of a walk the user had stopped answering.
+
+`=/` keeps the audit that `=//` runs. Without it, a walk would skip every decision raised in the conversation but never recorded.
+
 ## 0.4.0 - 2026-11-12
 
 `set response_style` and `defaults set response_style` are gone: use `set comms` and `defaults set comms`, which take `pyramid`, `plain` and the other profiles. `set comms minimal` is gone too: use `set comms efficient`, the profile it selected. Settings saved under `response_style` still load as `communication_profile`.

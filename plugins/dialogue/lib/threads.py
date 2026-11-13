@@ -134,7 +134,7 @@ def footer(data, shown):
     if not count:
         return ''
     noun = 'thread' if count == 1 else 'threads'
-    return f'{count} other open {noun}. Type `=/` for headings or `=//` for details.'
+    return f'{count} other open {noun}. Type `=/` to go through them one at a time or `=//` to see them all.'
 
 
 def mutate(data, args):

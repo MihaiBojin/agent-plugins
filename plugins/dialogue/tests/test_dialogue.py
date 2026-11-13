@@ -121,7 +121,9 @@ class DialogueTest(unittest.TestCase):
         rendered = self.run_cli('render').stdout
         self.assertIn('First', rendered)
         self.assertNotIn('## 2/ Second', rendered)
-        self.assertIn('1 other open thread', rendered)
+        self.assertIn('1 other open thread. Type `=/` to go through them one at a time or `=//` to see them all.', rendered)
+        self.assertIn('`=/` goes through the open threads one at a time', rendered)
+        self.assertNotIn('headings only', rendered)
         self.assertIn('Second', self.run_cli('thread', 'list').stdout)
         self.run_cli('set', 'compact', 'off')
         self.assertIn('Second', self.run_cli('render').stdout)
