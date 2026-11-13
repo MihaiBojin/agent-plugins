@@ -19,5 +19,5 @@ A notice has six parts, in under a page:
 - A breaking change always says what to do instead.
 - Give the fix with an example, as an error message does.
 
-Sources: the release-notes plugin; Google Writing Helpful Error Messages;
+Sources: the release plugin; Google Writing Helpful Error Messages;
 practice.

@@ -97,7 +97,7 @@
       "name": "technical-writing",
       "source": "./plugins/technical-writing",
       "description": "Write bug reports, postmortems, runbooks, design docs, error messages and other software prose in the shape their reader needs",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"
