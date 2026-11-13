@@ -2,8 +2,10 @@
 
 The
 [release plugin](https://github.com/releasetools/agent-plugins/tree/main/plugins/release#readme)
-owns this genre. When it is installed, use its `write` skill. This file states its rules in
-brief, for when it is not.
+owns this genre. When it is installed, use `release:write` for one change's
+note and `release:prepare` for a release's changelog entry. Both skills read
+the shared release-note rules internally. This file states those rules in
+brief for use when the plugin is absent.
 
 Reader: somebody on the previous version, deciding whether this release
 affects them.
@@ -25,4 +27,6 @@ For a large release, Google's unit on LLMs suggests a layout: an introductory
 paragraph, a table of one-line summaries, then a subsection per item with the
 problem and any workaround.
 
-Sources: the release plugin; TW2 Using LLMs.
+Sources: the release plugin's
+[release-note rules](https://github.com/releasetools/agent-plugins/blob/main/plugins/release/references/release-notes.md);
+TW2 Using LLMs.

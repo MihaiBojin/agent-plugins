@@ -42,7 +42,8 @@ A repository's own writing rules outrank the skill: it reads `AGENTS.md`,
   test in this repository fails when the two differ.
 - The release plugin, from the
   [release-tools marketplace](https://github.com/releasetools/agent-plugins),
-  owns release notes and changelog entries.
+  owns release notes and changelog entries. Its `release:write` skill writes
+  one change's note; `release:prepare` drafts a release's changelog entry.
 - The docket plugin handles the lifecycle of design docs and decision records,
   and this skill supplies their body.
 - The readme plugin checks a README against the code it describes.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 - 2026-11-13
+
+### Fixed
+
+Release-note requests use `release:write` for one change and `release:prepare` for a release when the release plugin is installed. Both skills read the shared rules internally.
+
 ## 0.1.1 - 2026-11-13
 
 With the `release` plugin installed, the release-note genre sends the agent
