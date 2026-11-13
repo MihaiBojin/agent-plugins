@@ -154,9 +154,9 @@ Each decision gets a permanent ID. Child decisions use dotted IDs; alternatives 
 
 Focus mode keeps work on the active issue and saves unrelated findings for later. A blocker of the active issue is shown immediately. Compact display limits repeated backlog text and ends with a computed count, for example:
 
-> 4 other open threads. Type `=/` for headings or `=//` for details.
+> 4 other open threads. Type `=/` to go through them one at a time or `=//` to see them all.
 
-Those audit commands show all open threads. A user can pick another thread directly; focus controls work order, not permission to steer the conversation. With compact disabled, all open threads are displayed even when work stays focused on one.
+Both commands first check the conversation for decisions nobody recorded. `=//` then shows every open thread with its details and live choices. `=/` shows the first open thread with its details; once the user answers or defers it, the agent shows the next open thread in ID order, and so on until none follows or the user types `=//`. A child thread opened by an answer comes up next. A user can pick another thread directly; focus controls work order, not permission to steer the conversation. With compact disabled, all open threads are displayed even when work stays focused on one.
 
 The agent interprets the conversation and calls the tool to record changes. The tool enforces IDs and state transitions; it does not infer decisions from transcripts or guarantee every response follows the style. See [the thread policy](skills/dialogue/threads.md).
 
