@@ -106,11 +106,13 @@ command or changing what one does is breaking, marked with a `!`.
 `bump-from-type` turns those into a number, and nothing derives a major: a
 release increments one because somebody was asked and said so.
 
-Write the entry with `/release-notes:write`, from the `release-notes` plugin
-in the `release-tools` marketplace. It reads the same `.releasetools.yaml`, so
-the note lands in the changelog of the plugin the change is in, and it puts
-the same note in the pull request as a `release-note` block, which the
-squash merge carries into the commit that lands on `main`.
+Write the entry with `/release:write`, from the `release` plugin in the
+`release-tools` marketplace. It reads the same `.releasetools.yaml`, so the
+note lands in the changelog of the plugin the change is in, and it puts the
+same note in the pull request as a `release-note` block, which the squash
+merge carries into the commit that lands on `main`. Put the same block in the
+branch commit message too, so the note is in the history whichever way the
+pull request merges.
 
 ## Recording a choice
 
