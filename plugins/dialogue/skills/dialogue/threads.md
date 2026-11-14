@@ -47,6 +47,8 @@ Reopening never restores spent choices.
 When an audit records new threads, name them in one line before the threads the marker shows.
 Print the tool's Closed line once, at the top of the reply that closes them. Do not repeat closed threads later.
 Order a reply by state: settled items first, decisions last, and no recap after them.
+Open the decisions with a `---` line, a blank line and the heading `### DECISIONS`, then the threads as the tool prints them.
+Drop the first thread's own `---`, since the one above `### DECISIONS` already separates it. A reply with no thread shown has no such heading.
 When a task holds decisions only the user can make, reply with those decisions alone and do the work after the user chooses.
 Finish an answered thread only when its decision is settled; do not close a problem just because it was deferred.
 User prose can settle a decision without a marker. Record the result with the same tool operations.

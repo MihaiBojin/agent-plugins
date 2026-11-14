@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 - 2026-11-14
+
+### Fixed
+
+A reply that shows decision threads puts them last, under a `---` line and a `### DECISIONS` heading, so the decisions to make stand apart from the answer above them.
+
 ## 0.6.0 - 2026-11-14
 
 ### Changed
