@@ -89,9 +89,9 @@
         "source": "git-subdir",
         "url": "https://github.com/MihaiBojin/worktrees.git",
         "path": "plugin",
-        "ref": "v0.10.0"
+        "ref": "v0.11.0"
       },
-      "description": "Start branches, read CI, rebase onto the head branch, describe, ship and merge pull requests, and prune finished worktrees through the worktrees CLI"
+      "description": "Read CI, rebase onto the head branch, describe, ship and merge pull requests, and prune finished worktrees through the worktrees CLI"
     },
     {
       "name": "technical-writing",
