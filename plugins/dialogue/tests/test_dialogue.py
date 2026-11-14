@@ -97,7 +97,6 @@ class DialogueTest(unittest.TestCase):
     def test_thread_ids_and_options_are_never_reused(self):
         self.run_cli('enable')
         self.run_cli('thread', 'open', 'One')
-        self.run_cli('thread', 'open', 'Child', '--parent', '1')
         self.run_cli('thread', 'option', '1', 'Python')
         self.run_cli('thread', 'option', '1', 'Bash')
         self.run_cli('thread', 'reject', '1', 'a')
@@ -106,13 +105,34 @@ class DialogueTest(unittest.TestCase):
         self.assertNotIn('1a/', result)
         self.assertIn('1c/', result)
         self.run_cli('thread', 'choose', '1', 'b')
-        records = self.state()['threads']
-        self.assertEqual(records['1']['status'], 'closed')
-        self.assertEqual(records['1.1']['status'], 'closed')
-        self.run_cli('thread', 'reopen', '1.1')
-        self.assertEqual(self.state()['threads']['1']['status'], 'open')
+        self.assertEqual(self.state()['threads']['1']['status'], 'closed')
+        self.run_cli('thread', 'reopen', '1')
+        self.assertNotIn('1b/', self.run_cli('thread', 'show', '1').stdout)
         self.run_cli('thread', 'open', 'Two')
         self.assertIn('2', self.state()['threads'])
+        self.run_cli('thread', 'open', 'Child', '--parent', '1', ok=False)
+
+    def test_recommended_option_comes_first_and_is_marked(self):
+        self.run_cli('enable')
+        self.run_cli('thread', 'open', 'Refuse nested names', '--body', 'Both commands fail the same way.')
+        self.run_cli('thread', 'option', '1', 'Refuse in all three commands', '--recommended')
+        result = self.run_cli('thread', 'option', '1', "Leave git's error").stdout
+        self.assertIn('1a/ (recommended) Refuse in all three commands\n1b/ Leave git\'s error\n\nBoth commands', result)
+        self.run_cli('thread', 'option', '1', 'Late pick', '--recommended', ok=False)
+        self.assertNotIn('Late pick', self.run_cli('thread', 'show', '1').stdout)
+
+    def test_related_thread_lists_after_the_thread_it_relates_to(self):
+        self.run_cli('enable')
+        self.run_cli('thread', 'open', 'abc')
+        self.run_cli('thread', 'open', 'def')
+        shown = self.run_cli('thread', 'open', 'xyz', '--related', '1').stdout
+        self.assertIn('### 3/ xyz\n\nRelated: 1/', shown)
+        listed = self.run_cli('thread', 'list').stdout
+        self.assertLess(listed.index('### 1/'), listed.index('### 3/'))
+        self.assertLess(listed.index('### 3/'), listed.index('### 2/'))
+        self.run_cli('thread', 'close', '1')
+        self.assertEqual(self.state()['threads']['3']['status'], 'open')
+        self.run_cli('thread', 'open', 'nothing', '--related', '9', ok=False)
 
     def test_focus_compact_and_audit_preserve_hidden_threads(self):
         self.run_cli('enable')
@@ -120,7 +140,7 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('thread', 'open', 'Second')
         rendered = self.run_cli('render').stdout
         self.assertIn('First', rendered)
-        self.assertNotIn('## 2/ Second', rendered)
+        self.assertNotIn('### 2/ Second', rendered)
         self.assertIn('1 other open thread. Type `=/` to go through them one at a time or `=//` to see them all.', rendered)
         self.assertIn('`=/` goes through the open threads one at a time', rendered)
         self.assertNotIn('headings only', rendered)
@@ -167,12 +187,12 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('enable')
         self.run_cli('thread', 'open', 'Kept')
         out = self.run_cli('set', 'threads', 'off').stdout
-        self.assertNotIn('## 1/ Kept', out)
+        self.assertNotIn('### 1/ Kept', out)
         self.assertIn('## Communication profile: pyramid', out)
         self.run_cli('thread', 'open', 'No', ok=False)
         self.run_cli('set', 'threads', 'on')
         out = self.run_cli('set', 'comms', 'plain').stdout
-        self.assertIn('## 1/ Kept', out)
+        self.assertIn('### 1/ Kept', out)
         self.assertNotIn('## Communication profile: pyramid', out)
 
     def test_communication_profiles_and_guidelines(self):

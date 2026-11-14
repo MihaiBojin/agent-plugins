@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.0 - 2026-11-14
+
+### Changed
+
+`thread open --parent` is gone, and the agent no longer opens child threads such as 5.1/. A decision with parts becomes one thread per part, numbered in the order to answer them, with the deciding thread last when one is still needed. Sessions saved with dotted IDs still load.
+
+`5+ subject` opens a thread related to 5/. It takes the next unused number, shows `Related: 5/` under its heading, and lists right after 5/, so 7/ related to 5/ lists as 5/, 7/, 6/. Closing 5/ leaves 7/ open, and `=/` walks threads in the order `thread list` prints them.
+
+`thread option ID TEXT --recommended` marks the option the agent recommends. It must be the thread's first live option, and it prints as `3a/ (recommended) TEXT`. Live options print before the thread's body, and thread headings print as `### 3/`.
+
+Replies put informative points in `-` bullets above the first thread heading and never use a numbered list.
+
+### Choices
+
+Saved records with dotted IDs keep loading, and closing 1/ still closes 1.1/ in them. Refusing them would stop every resumed 0.5.0 session that opened a child thread with "invalid thread ID".
+
+The tool refuses `--recommended` on an option added after another live one, rather than reordering the list. The letters then stay in the order they were spent, and `a` is the recommended option whenever one is marked.
+
 ## 0.5.0 - 2026-11-13
 
 `=/` goes through the open threads one at a time. It shows the first open thread with its details and live choices, then, once you answer or defer it, the next one in ID order, until none is left or you type `=//`. `=//` shows every open thread with its details, as before. `=/` no longer prints a list of headings; `thread list` still does. The compact footer reads "Type `=/` to go through them one at a time or `=//` to see them all."

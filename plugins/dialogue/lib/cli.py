@@ -108,9 +108,9 @@ def parser():
     commands = sub.add_parser('thread').add_subparsers(dest='operation', required=True)
     add = commands.add_parser('open')
     add.add_argument('title')
-    add.add_argument('--parent')
     add.add_argument('--body', default='')
     add.add_argument('--context', default='')
+    add.add_argument('--related', default='')
     for name in ('close', 'reopen', 'focus', 'show', 'update', 'option', 'choose', 'reject'):
         op = commands.add_parser(name)
         op.add_argument('id')
@@ -119,6 +119,7 @@ def parser():
                 op.add_argument('--' + field)
         if name == 'option':
             op.add_argument('text')
+            op.add_argument('--recommended', action='store_true')
         if name in ('choose', 'reject'):
             op.add_argument('letter')
     listing = commands.add_parser('list')

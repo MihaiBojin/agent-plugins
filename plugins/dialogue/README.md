@@ -150,13 +150,13 @@ Every mutation takes an operating-system lock and writes a temporary file in the
 
 ## Threads
 
-Each decision gets a permanent ID. Child decisions use dotted IDs; alternatives use letters. Closing a parent closes its descendants. Reopening a child reopens its ancestors. Closed numbers and spent letters are never reused.
+Each decision gets a permanent number; alternatives use letters. A decision that splits into parts becomes one thread per part, numbered in the order to answer them, then the deciding thread last when one is still needed. `5+ subject` opens a thread related to 5/: it takes the next unused number, prints `Related: 5/`, and lists right after 5/, so 7/ related to 5/ lists as 5/, 7/, 6/. Closing 5/ leaves 7/ open. The recommended alternative is added first with `--recommended` and prints as `3a/ (recommended) TEXT`; the thread's body, which carries the reason, follows the alternatives. Closed numbers and spent letters are never reused.
 
 Focus mode keeps work on the active issue and saves unrelated findings for later. A blocker of the active issue is shown immediately. Compact display limits repeated backlog text and ends with a computed count, for example:
 
 > 4 other open threads. Type `=/` to go through them one at a time or `=//` to see them all.
 
-Both commands first check the conversation for decisions nobody recorded. `=//` then shows every open thread with its details and live choices. `=/` shows the first open thread with its details; once the user answers or defers it, the agent shows the next open thread in ID order, and so on until none follows or the user types `=//`. A child thread opened by an answer comes up next. A user can pick another thread directly; focus controls work order, not permission to steer the conversation. With compact disabled, all open threads are displayed even when work stays focused on one.
+Both commands first check the conversation for decisions nobody recorded. `=//` then shows every open thread with its details and live choices. `=/` shows the first open thread with its details; once the user answers or defers it, the agent shows the next open thread in `thread list` order, and so on until none follows or the user types `=//`. A thread opened by an answer comes up next. A user can pick another thread directly; focus controls work order, not permission to steer the conversation. With compact disabled, all open threads are displayed even when work stays focused on one.
 
 The agent interprets the conversation and calls the tool to record changes. The tool enforces IDs and state transitions; it does not infer decisions from transcripts or guarantee every response follows the style. See [the thread policy](skills/dialogue/threads.md).
 
@@ -168,7 +168,7 @@ From the installed plugin directory:
 bin/dialogue --client codex --session YOUR_SESSION_ID settings
 bin/dialogue --client codex --session YOUR_SESSION_ID enable
 bin/dialogue --client codex --session YOUR_SESSION_ID thread open 'Which storage engine?' --body 'Decide between SQLite and JSON.'
-bin/dialogue --client codex --session YOUR_SESSION_ID thread option 1 'Use JSON'
+bin/dialogue --client codex --session YOUR_SESSION_ID thread option 1 'Use JSON' --recommended
 bin/dialogue --client codex --session YOUR_SESSION_ID thread choose 1 a
 bin/dialogue --client codex --session YOUR_SESSION_ID disable
 ```
@@ -179,17 +179,7 @@ Use `thread --help` for the supported operations. `state` prints all saved sessi
 
 ## Using agent-rules alongside dialogue
 
-Use the limited profile from the accompanying agent-rules change before enabling dialogue:
-
-```sh
-make install-limited
-make project-limited DIR=/path/to/project
-make status DIR=/path/to/project
-```
-
-Apply the project target only where project rules were installed. The limited profile keeps engineering and repository-prose guidance, with conversation behavior supplied by this plugin. Check for mixed global and project profiles, then start a fresh session. Existing conversations still contain instructions loaded before the switch.
-
-Rollback preserves the full ruleset: disable dialogue, run `make install`, restore any project installation with `make project DIR=...`, and start a fresh session. The plugin never switches profiles or rewrites home instructions when enabled.
+agent-rules carries no reply or thread rules, so `make install` in agent-rules wires its rules beside dialogue without a conflict. Start a fresh session after installing; a running conversation keeps the instructions it loaded at its start.
 
 ## Validation
 
