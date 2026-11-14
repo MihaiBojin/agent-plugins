@@ -20,6 +20,9 @@ def validate_threads(data):
         for field in ('title', 'body', 'context'):
             if not isinstance(item.get(field), str):
                 raise ValueError(f'invalid thread {field}')
+        related = item.get('related', '')
+        if not isinstance(related, str) or (related and (related not in records or order(related) >= order(identifier))):
+            raise ValueError('invalid related thread')
         if not isinstance(item.get('options'), dict):
             raise ValueError('invalid thread options')
         if list(item['options']) != [label(index) for index in range(1, len(item['options']) + 1)]:
@@ -29,6 +32,8 @@ def validate_threads(data):
                 raise ValueError('invalid option')
             if option.get('status') not in ('live', 'chosen', 'rejected', 'closed') or not isinstance(option.get('text'), str):
                 raise ValueError('invalid option state')
+            if not isinstance(option.get('recommended', False), bool):
+                raise ValueError('invalid option recommendation')
         parent = identifier.rpartition('.')[0]
         siblings.setdefault(parent, []).append(int(identifier.rsplit('.', 1)[-1]))
         if parent and (parent not in records or (item['status'] == 'open' and records[parent]['status'] != 'open')):
@@ -48,8 +53,13 @@ def record(data, identifier):
         raise ValueError(f'unknown thread: {identifier}') from error
 
 
+def position(data, identifier):
+    related = data['threads'][identifier].get('related', '')
+    return (position(data, related) if related else ()) + order(identifier)
+
+
 def open_ids(data):
-    return sorted((k for k, v in data['threads'].items() if v['status'] == 'open'), key=order)
+    return sorted((k for k, v in data['threads'].items() if v['status'] == 'open'), key=lambda k: position(data, k))
 
 
 def select_active(data):
@@ -65,19 +75,18 @@ def label(index):
     return result
 
 
-def add(data, title, body='', context='', parent=None):
+def add(data, title, body='', context='', related=''):
     if not title.strip() or '\n' in title:
         raise ValueError('thread title must be a nonempty single line')
     if '\n' in context:
         raise ValueError('context must be a single line')
-    if parent and record(data, parent)['status'] != 'open':
-        raise ValueError('parent must be open')
-    prefix = parent + '.' if parent else ''
+    if related:
+        record(data, related)
     number = 1
-    while prefix + str(number) in data['threads']:
+    while str(number) in data['threads']:
         number += 1
-    identifier = prefix + str(number)
-    data['threads'][identifier] = {'title': title, 'body': body, 'context': context, 'status': 'open', 'options': {}}
+    identifier = str(number)
+    data['threads'][identifier] = {'title': title, 'body': body, 'context': context, 'status': 'open', 'options': {}, 'related': related}
     select_active(data)
     return show(data, identifier)
 
@@ -109,15 +118,18 @@ def reopen(data, identifier):
 
 def show(data, identifier, details=True):
     item = record(data, identifier)
-    lines = ['---', '', f'## {identifier}/ {item["title"]}']
+    lines = ['---', '', f'### {identifier}/ {item["title"]}']
+    if item.get('related'):
+        lines.extend(['', f'Related: {item["related"]}/'])
     if details:
         if item['context']:
             lines.extend(['', 'Context: ' + item['context']])
-        if item['body']:
-            lines.extend(['', item['body']])
-        options = [f'{identifier}{key}/ {value["text"]}' for key, value in item['options'].items() if value['status'] == 'live']
+        options = [f'{identifier}{key}/ ' + ('(recommended) ' if value.get('recommended') else '') + value['text']
+                   for key, value in item['options'].items() if value['status'] == 'live']
         if options:
             lines.extend(['', *options])
+        if item['body']:
+            lines.extend(['', item['body']])
     return '\n'.join(lines)
 
 
@@ -142,7 +154,7 @@ def mutate(data, args):
         raise ValueError('thread tracking is disabled; enable dialogue and threads explicitly')
     op = args.operation
     if op == 'open':
-        return add(data, args.title, args.body, args.context, args.parent)
+        return add(data, args.title, args.body, args.context, args.related)
     item = record(data, args.id)
     if op == 'close':
         return close(data, args.id)
@@ -167,7 +179,7 @@ def mutate(data, args):
             item['context'] = args.context
         output = show(data, args.id)
         if item['title'] != previous:
-            heading = f'## {args.id}/ {item["title"]}'
+            heading = f'### {args.id}/ {item["title"]}'
             output = output.replace(heading, heading + f'\nReplaces: {args.id}/ {previous}', 1)
         return output
     if item['status'] != 'open':
@@ -175,8 +187,10 @@ def mutate(data, args):
     if op == 'option':
         if not args.text.strip() or '\n' in args.text:
             raise ValueError('option text must be a nonempty single line')
+        if args.recommended and any(value['status'] == 'live' for value in item['options'].values()):
+            raise ValueError('the recommended option must come first; add it before the other live options')
         letter = label(len(item['options']) + 1)
-        item['options'][letter] = {'text': args.text, 'status': 'live'}
+        item['options'][letter] = {'text': args.text, 'status': 'live', 'recommended': args.recommended}
         return show(data, args.id)
     option = item['options'].get(args.letter)
     if not option or option['status'] != 'live':
