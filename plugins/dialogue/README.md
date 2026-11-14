@@ -152,6 +152,23 @@ Every mutation takes an operating-system lock and writes a temporary file in the
 
 Each decision gets a permanent number; alternatives use letters. A decision that splits into parts becomes one thread per part, numbered in the order to answer them, then the deciding thread last when one is still needed. `5+ subject` opens a thread related to 5/: it takes the next unused number, prints `Related: 5/`, and lists right after 5/, so 7/ related to 5/ lists as 5/, 7/, 6/. Closing 5/ leaves 7/ open. The recommended alternative is added first with `--recommended` and prints as `3a/ (recommended) TEXT`; the thread's body, which carries the reason, follows the alternatives. Closed numbers and spent letters are never reused.
 
+A reply puts its answer first and its decisions last, under a `---` line and a `### DECISIONS` heading, with a `---` line between threads:
+
+```text
+---
+
+### DECISIONS
+
+### 6/ whether to tag the release
+
+6a/ (recommended) Tag it now
+6b/ Wait for the next release
+
+---
+
+### 7/ whether to delete the leftover file
+```
+
 Focus mode keeps work on the active issue and saves unrelated findings for later. A blocker of the active issue is shown immediately. Compact display limits repeated backlog text and ends with a computed count, for example:
 
 > 4 other open threads. Type `=/` to go through them one at a time or `=//` to see them all.
