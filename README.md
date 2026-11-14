@@ -33,7 +33,7 @@ codex plugin add <name>@mihaibojin
 | [docket](./plugins/docket#readme)                                            | Numbered document collections, argued through review, frozen into an immutable archive |
 | [decisions](./plugins/decisions#readme)                                      | A decision log written while the work happens, in the repositories that ask for one    |
 | [readme](./plugins/readme#readme)                                            | A README checked against the code it describes, then rewritten                         |
-| [worktrees](https://github.com/MihaiBojin/worktrees/tree/main/plugin#readme) | Start branches, read CI, ship and merge pull requests, and prune finished worktrees    |
+| [worktrees](https://github.com/MihaiBojin/worktrees/tree/main/plugin#readme) | Read CI, ship and merge pull requests, and prune finished worktrees                    |
 
 Each plugin lives in `plugins/<name>/` in this repository: the source, not a
 copy of one. Editing a plugin is an ordinary pull request, and the merge is the
