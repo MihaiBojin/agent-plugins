@@ -2,6 +2,14 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.3.0 - 2026-11-15
+
+An agent that goes against a request because the docs or research show it cannot work, or that it is deprecated, wrong or non-idiomatic, picks the best approach without asking. The decisions skill records each such case, with the request as an `alt:` and the source in `why:`. The decision-interview skill stops queueing questions that only confirm such a request, and asks only when the goal itself is unknown.
+
+### Choices
+
+Recording the case takes the place of asking for confirmation: the user can read why a request was not followed without being asked first. It matches the judgment rule in agent-rules.
+
 ## 0.2.0 - 2026-10-10
 
 Use the decision-interview skill for guided planning one question at a time. It tracks outstanding questions, updates the requested design records as answers arrive, and prepares a review handoff with unresolved and discarded choices. An explicit review gate keeps implementation paused until the user proceeds.

@@ -23,6 +23,8 @@ This skill adds an interview, not a second automatic logging policy. Read [the d
 
 Before adding a question, check whether its answer is already recorded, follows from a chosen constraint, or can be handled as ordinary implementation judgment. Ask about consequential product behavior, trust boundaries, scope, external dependencies and real tradeoffs. Do not ask the user to design every internal mechanism, test case or tuning value.
 
+Do not queue a question to confirm a request the research has already ruled out. When the docs or research show the requested approach cannot work, or that it is deprecated, wrong or non-idiomatic, choose the best approach that meets the goal, record it with its source, and tell the user what you chose instead. Ask only when the goal itself is unknown.
+
 Present one question with two or three concrete options when useful. Explain the practical difference in plain language, recommend an option only when justified, and allow a free-form answer. Avoid bundled unrelated choices. Never include a hidden second question in the introduction or closing sentence.
 
 Show the stable question number and remaining count, without zero padding. Calculate both from the maintained queue (saved when disk output is authorized) immediately before presenting the question; do not count from memory. For a numbered interview, use `7/14 — 8 questions remain`, where 14 is the allocated total and unresolved deferred entries are included in the remaining count. Explain any skip caused by a conditional closure, deferral or simplification. Renumber only on an explicit request, with an old-to-new mapping.
