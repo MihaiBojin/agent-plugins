@@ -34,6 +34,11 @@ quick and easy does not qualify however long it was discussed, and neither
 does one whose effect ends with the session. Plus any the user asks for,
 however small it looks.
 
+A request overruled earns one too. When the docs or research showed that what
+the user asked for cannot work, or is deprecated, wrong or non-idiomatic, and
+you built something else without asking, the file records it: the request is
+an `alt:` with what killed it, and `why:` names the source.
+
 One file per topic, `<unix-timestamp>-<slug>.md`, however many decisions the
 topic takes. The timestamp is when the topic opened, so a file keeps its name
 for as long as it is argued.
