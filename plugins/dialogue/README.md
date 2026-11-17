@@ -13,18 +13,26 @@ Python 3.9 or newer and Bash are required. The Python implementation uses only t
 
 Add `MihaiBojin/agent-plugins` as a marketplace first if it is not already registered. Start a new session after installation and trust the plugin's hooks when the client asks.
 
-Claude Code shows subcommand syntax in the autocomplete hint for `/dialogue:dialogue`. Codex lists subcommands in the skill picker description. Use `/dialogue:dialogue help` or `$dialogue:dialogue help` to see commands, setting names, and accepted values without enabling the plugin.
+Installation does not enable response behavior. The common subcommands have their own commands:
 
-Installation does not enable response behavior. **Start with `help`** to see every option or `setup` for a guided three-question configuration. A bare invocation enables the current session. Append `settings` to inspect current values without enabling anything. Append `disable` to stop applying the policy while retaining records.
+| Command                       | Result                                                                 |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| `/dialogue:help`              | Show commands, setting names and accepted values, changing nothing     |
+| `/dialogue:setup`             | Ask three questions and save the answers                               |
+| `/dialogue:settings`          | Show every setting, session value, new-session default and explanation |
+| `/dialogue:set <key> <value>` | Change one setting for this session                                    |
+| `/dialogue:disable`           | Stop applying the policy, keeping the saved records                    |
+
+`/dialogue:dialogue` with no arguments enables the current session. With arguments it runs any subcommand, including the five above, so `/dialogue:dialogue settings` and `$dialogue:dialogue settings` in Codex still work.
 
 ## Start here: help and setup
 
 ```text
-/dialogue:dialogue help
-/dialogue:dialogue setup
+/dialogue:help
+/dialogue:setup
 ```
 
-Codex uses `$dialogue:dialogue`. Help lists commands, profiles, language styles, situational frameworks, signaling modes, and thread controls. It does not require an active session or change state.
+Help lists commands, profiles, language styles, situational frameworks, signaling modes, and thread controls. It does not require an active session or change state.
 
 Setup asks **three questions, one at a time**:
 
@@ -37,10 +45,10 @@ All choices are saved **once after the third answer**. Cancelling does not chang
 ### Short commands
 
 ```text
-/dialogue:dialogue set comms efficient
-/dialogue:dialogue set style ste
-/dialogue:dialogue set situation sbar
-/dialogue:dialogue set signals intent
+/dialogue:set comms efficient
+/dialogue:set style ste
+/dialogue:set situation sbar
+/dialogue:set signals intent
 ```
 
 `comms`, `style` and `signals` are short names for `communication_profile`, `language_standard` and `signaling`, and either name works. `situation use sbar` does the same as `set situation sbar`.

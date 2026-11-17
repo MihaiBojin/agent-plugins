@@ -1,6 +1,6 @@
 ---
 name: dialogue
-argument-hint: "[help | setup | settings | set <key> <value> | disable]"
+argument-hint: "[enable | guidelines | situation | defaults | thread ...]"
 description: Use only when the user explicitly invokes dialogue to enable, disable, inspect, or configure conversation behavior. Never activate from ordinary discussion of threads, focus, or writing style.
 disable-model-invocation: true
 allowed-tools: Bash(${CLAUDE_PLUGIN_ROOT}/bin/dialogue *)
@@ -12,6 +12,8 @@ This command controls persistent conversation settings and communication profile
 Do not apply response or thread instructions merely because this file was read. Apply only the policy returned by the tool for the current session.
 
 ## Run the requested command
+
+`/dialogue:help`, `/dialogue:setup`, `/dialogue:settings`, `/dialogue:set` and `/dialogue:disable` run those subcommands as their own commands. This skill still accepts them as arguments.
 
 For `help`, `--help`, or `-h`, run the CLI `help` command and display its complete output. Explain that no arguments enables this session; settings apply only to this session and defaults to future sessions. Help is read-only and does not require a session ID.
 
@@ -71,13 +73,7 @@ Only the enabled effective rules apply. Changes do not enable Dialogue. Never si
 
 ## Guided setup
 
-When the user invokes `setup`, run the CLI `setup` overview. Present **one question at a time**. Ask exactly these three questions, using options and descriptions from the tool's output:
-
-1. **Comms**: `pyramid`, `direct`, `efficient`, `plain`, or `custom` (start with no enabled rules; configure guidelines individually). Presets only set baseline guidelines. The `ste` style adds the ASD-STE100-derived guidelines. Individual overrides take final precedence.
-2. **Style**: `plain` or `ste` (STE-inspired, not ASD-STE100 compliant).
-3. **Workflow**: `quiet`, `automatic`, `verified`, `status`, `escalation`, `handoff`, `safety`, or `incident`. A workflow selects both situational formatting and signal semantics; explain that individual settings remain editable.
-
-Retain the selected values in the current conversation only until question three is answered. Never invoke a state-changing command during questions 1 or 2. After question three, call `setup apply --comms VALUE --style VALUE --workflow VALUE` once with the three validated values. The CLI validates them and writes all four underlying settings atomically. Show the short resulting configuration; it does not implicitly enable Dialogue. If a user cancels, do not write anything. If a value is unclear, clarify only that question. The setup overview and `help` must work even when Dialogue is disabled.
+When the user invokes `setup`, follow [the setup command](../../commands/setup.md): three questions, one at a time, saved once with `setup apply` after the third answer. The setup overview and `help` must work even when Dialogue is disabled.
 
 ## Manual configuration
 
