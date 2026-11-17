@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue signals"
+  short_description: "Intent and status markers"
+policy:
+  allow_implicit_invocation: false

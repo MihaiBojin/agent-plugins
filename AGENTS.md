@@ -129,7 +129,7 @@ already stops it.
 
 A plugin cannot read another plugin's files, so dialogue, technical-writing
 and readme each carry the rules they share. A shared rule has the same ID and
-the same one-line text in `plugins/dialogue/skills/dialogue/guidelines.json`,
+the same one-line text in `plugins/dialogue/policy/guidelines.json`,
 in the `## Shared rules` section of
 `plugins/technical-writing/skills/technical-writing/SKILL.md`, and under a
 "### `id`" heading in `plugins/readme/skills/readme/references/writing.md`.

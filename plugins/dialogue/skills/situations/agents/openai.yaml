@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue situations"
+  short_description: "Situational frameworks"
+policy:
+  allow_implicit_invocation: false

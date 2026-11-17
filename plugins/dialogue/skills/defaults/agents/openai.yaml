@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue defaults"
+  short_description: "Defaults for future sessions"
+policy:
+  allow_implicit_invocation: false

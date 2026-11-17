@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue help"
+  short_description: "Commands, settings and accepted values"
+policy:
+  allow_implicit_invocation: false

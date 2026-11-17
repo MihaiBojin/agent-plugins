@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue guideline"
+  short_description: "Override one guideline or group"
+policy:
+  allow_implicit_invocation: false

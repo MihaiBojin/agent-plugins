@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue guidelines"
+  short_description: "The guidelines and their status"
+policy:
+  allow_implicit_invocation: false
