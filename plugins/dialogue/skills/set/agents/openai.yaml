@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue set"
+  short_description: "Change one setting for this session"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue enable"
+  short_description: "Turn dialogue on for this session"
+policy:
+  allow_implicit_invocation: false

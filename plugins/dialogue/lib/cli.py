@@ -30,7 +30,7 @@ def render(store, data):
     if not data['settings']['enabled']:
         return (f'Dialogue is disabled for {store.client} session {store.session}. '
                 'Stop applying any earlier or inherited dialogue policy. Do not use a parent session ID. '
-                'Saved records are retained. Explicitly invoke dialogue to enable it for this session.')
+                'Saved records are retained. The user runs dialogue:enable to enable it for this session.')
     settings = data['settings']
     lines = [f'Dialogue is enabled for {store.client} session {store.session}.',
              'Use this client and session only while they match the current conversation. '
@@ -48,7 +48,7 @@ def render(store, data):
     if settings['signaling'] != 'off':
         lines.append(communication.render_signals(settings['signaling']))
     if settings['threads']:
-        lines.append((ROOT / 'skills' / 'dialogue' / 'threads.md').read_text(encoding='utf-8'))
+        lines.append((ROOT / 'policy' / 'threads.md').read_text(encoding='utf-8'))
         if settings['focus']:
             lines.append('Focus is on: finish the active issue before presenting unrelated ones. Save deferred issues now. '
                          'A blocker of the active issue belongs in the current reply. Honor an explicit request to switch.')

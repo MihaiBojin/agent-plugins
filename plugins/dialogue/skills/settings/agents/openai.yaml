@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue settings"
+  short_description: "Every setting, its value and its default"
+policy:
+  allow_implicit_invocation: false

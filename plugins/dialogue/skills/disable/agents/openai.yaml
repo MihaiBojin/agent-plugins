@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue disable"
+  short_description: "Turn dialogue off, keeping its records"
+policy:
+  allow_implicit_invocation: false

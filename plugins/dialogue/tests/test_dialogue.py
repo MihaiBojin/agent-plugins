@@ -224,7 +224,7 @@ class DialogueTest(unittest.TestCase):
                      'unknowns and proposals; name missing evidence'):
             self.assertIn(text, rendered)
         self.assertNotIn('Short routine replies', rendered)
-        profiles = json.loads((ROOT / 'skills' / 'dialogue' / 'profiles.json').read_text())
+        profiles = json.loads((ROOT / 'policy' / 'profiles.json').read_text())
         self.assertFalse(any('instruction' in profile for profile in profiles.values()))
         self.run_cli('set', 'comms', 'efficient')
         self.assertIn('- Short routine replies: Routine replies take one to three sentences.',
@@ -233,7 +233,7 @@ class DialogueTest(unittest.TestCase):
     def test_risk_levels_come_from_one_definition(self):
         self.run_cli('enable')
         self.assertNotIn('Risk levels:', self.run_cli('render').stdout)
-        signals = json.loads((ROOT / 'skills' / 'dialogue' / 'signals.json').read_text())
+        signals = json.loads((ROOT / 'policy' / 'signals.json').read_text())
         meanings = {item['id']: item['meaning'] for item in signals['intents']}
         self.assertNotIn('RISK', meanings)
         levels = '\n'.join(['Risk levels:', f"- WARNING: {meanings['WARNING']}", f"- CAUTION: {meanings['CAUTION']}"])

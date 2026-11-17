@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue languages"
+  short_description: "Language styles"
+policy:
+  allow_implicit_invocation: false

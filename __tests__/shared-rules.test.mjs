@@ -31,7 +31,7 @@ import { fileURLToPath } from "node:url";
  * same way.
  */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DIALOGUE = path.join(ROOT, "plugins/dialogue/skills/dialogue");
+const DIALOGUE = path.join(ROOT, "plugins/dialogue/policy");
 const SKILL = path.join(
   ROOT,
   "plugins/technical-writing/skills/technical-writing/SKILL.md",

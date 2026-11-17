@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue profiles"
+  short_description: "Communication profiles"
+policy:
+  allow_implicit_invocation: false

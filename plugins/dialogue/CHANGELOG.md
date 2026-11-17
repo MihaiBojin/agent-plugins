@@ -2,13 +2,17 @@
 
 ## 0.7.0 - 2026-11-17
 
-### Added
+### Changed
 
-`/dialogue:help`, `/dialogue:setup`, `/dialogue:settings`, `/dialogue:set <key> <value>` and `/dialogue:disable` run those subcommands as their own commands, so each shows in the command menu with its own description. `/dialogue:dialogue` still enables the session and still takes every subcommand as an argument.
+**Breaking:** `/dialogue:dialogue` is gone. Each subcommand is its own command: `/dialogue:enable`, `disable`, `help`, `setup`, `settings`, `state`, `set`, `defaults`, `profiles`, `languages`, `signals`, `situations`, `situation`, `guidelines` and `guideline`, with `$dialogue:NAME` in Codex. Replace `/dialogue:dialogue` with `/dialogue:enable`, and `/dialogue:dialogue set comms direct` with `/dialogue:set comms direct`.
+
+The guideline, profile, signal, situation and thread catalogs moved from `skills/dialogue/` to `policy/`.
 
 ### Choices
 
-The skill keeps accepting `help`, `setup`, `settings`, `set` and `disable` as arguments. Dropping them would break `$dialogue:dialogue settings` in Codex sessions and every saved prompt that uses the old form, for no gain beyond a shorter table. The guided setup steps live only in `commands/setup.md`, and the skill points there.
+Every command is a skill, not a file under `commands/`. Codex reads `skills` from a plugin manifest and has no `commands` field, so a command file would exist only in Claude Code.
+
+`thread`, `render` and `hook` get no command. The agent runs them as the policy says; a user who types them by hand has the CLI.
 
 ## 0.6.1 - 2026-11-14
 

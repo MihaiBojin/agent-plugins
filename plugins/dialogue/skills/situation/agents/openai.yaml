@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue situation"
+  short_description: "Preview, apply or clear a framework"
+policy:
+  allow_implicit_invocation: false

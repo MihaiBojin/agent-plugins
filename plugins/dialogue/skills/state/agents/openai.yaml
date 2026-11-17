@@ -1,0 +1,5 @@
+interface:
+  display_name: "dialogue state"
+  short_description: "The saved session record as JSON"
+policy:
+  allow_implicit_invocation: false
