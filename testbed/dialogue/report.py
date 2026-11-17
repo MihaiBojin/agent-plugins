@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import re
 
-from clients import narration
+from clients import CLAUDE_INLINE_LIMIT, narration, reads_policy_file
 from metrics import turn_metrics
 
 SETTING_COLUMNS = ('comms', 'style', 'situation', 'signals', 'threads')
@@ -34,6 +34,22 @@ def settings_line(config):
     return line
 
 
+def policy_delivery(variant, short=False):
+    """How the policy reached the model: inline, or a preview the agent did or did not follow to the file."""
+    read = variant.get('policy_read')
+    if not variant.get('policy_chars'):
+        return 'none' if short else 'none: dialogue is disabled when the session starts'
+    if read is None:
+        if short:
+            return 'over limit' if variant['policy_notes'] else 'inline'
+        return '; '.join(variant['policy_notes']) or 'delivered inline'
+    turn = variant.get('policy_read_turn')
+    if short:
+        return f'preview, read t{turn}' if read else 'preview, unread'
+    return '; '.join(variant['policy_notes']) + (
+        f'; the agent read the full file in turn {turn}' if read else '; the agent never read the full file')
+
+
 def fence(text):
     """A code fence longer than any backtick run inside text."""
     longest = max((len(run) for run in re.findall('`+', text)), default=0)
@@ -58,7 +74,7 @@ def transcript(variant, turns):
              f'| Suites | {", ".join(variant["suites"])} |',
              f'| Plugin | dialogue {variant["plugin"]["version"]} at `{(variant["plugin"]["git_commit"] or "")[:12]}`'
              f'{" with uncommitted changes" if variant["plugin"]["git_dirty"] else ""} |',
-             f'| Policy | {variant["policy_chars"]} characters; {"; ".join(variant["policy_notes"]) or "delivered inline"} |',
+             f'| Policy | {variant["policy_chars"]:,} characters; {policy_delivery(variant)} |',
              f'| Status | {variant["status"]}{": " + variant["error"] if variant.get("error") else ""} |',
              f'| Cost | {format_usd(variant.get("cost_usd"))} over {len(turns)} turns |', '']
     for number, turn in enumerate(turns, 1):
@@ -102,6 +118,12 @@ def write_case(case_dir, terms):
     case_dir = Path(case_dir)
     variant = read_json(case_dir / 'variant.json')
     turns = read_json(case_dir / 'turns.json')
+    if variant['agent']['client'] == 'claude':
+        # Over the inline limit the model sees a preview and a path; did it open the file?
+        read = [number for number, turn in enumerate(turns, 1) if any(map(reads_policy_file, turn['items']))]
+        variant['policy_read_turn'] = read[0] if read else None
+        variant['policy_read'] = bool(read) if variant['policy_chars'] > CLAUDE_INLINE_LIMIT else None
+        write_json(case_dir / 'variant.json', variant)
     metrics = [turn_metrics(turn, terms) for turn in turns]
     write_json(case_dir / 'metrics.json', metrics)
     (case_dir / 'transcript.md').write_text(transcript(variant, turns) + '\n', encoding='utf-8')
@@ -130,7 +152,7 @@ def write_index(run_dir):
                 'guidelines': ' '.join(('+' if on else '-') + key
                                        for key, on in sorted(variant['config']['guidelines'].items())),
                 'repeat': variant['repeat'], 'turn': number, 'status': variant['status'],
-                'policy_chars': variant['policy_chars'],
+                'policy_chars': variant['policy_chars'], 'policy_delivery': policy_delivery(variant, short=True),
                 'cost_usd': turns[number - 1].get('cost_usd'),
                 'duration_s': turns[number - 1].get('duration_s'),
                 **{key: values[key] for key in METRIC_COLUMNS},
@@ -159,15 +181,15 @@ def summary(run_dir, variants):
         by_scenario.setdefault(variant['scenario']['id'], []).append((case_dir, variant, metrics))
     for scenario, entries in sorted(by_scenario.items()):
         lines += [f'## {scenario}', '', f'{entries[0][1]["scenario"]["probes"]}.', '',
-                  '| Agent | Settings | Status | Words | Numbered | Tables | Decisions | Open/closed threads '
+                  '| Agent | Settings | Status | Policy | Words | Numbered | Tables | Decisions | Open/closed threads '
                   '| Markers | Framework | Dialogue calls | Cost | Transcript |',
-                  '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |']
+                  '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |']
         for case_dir, variant, metrics in sorted(entries, key=lambda entry: (entry[1]['agent']['label'], entry[1]['slug'])):
             last = metrics[-1] if metrics else {}
             link = (case_dir / 'transcript.md').relative_to(run_dir)
             lines.append(' | '.join([
                 f'| {variant["agent"]["label"]}', f'`{variant["slug"]}` r{variant["repeat"]}', variant['status'],
-                per_turn(metrics, 'words'), per_turn(metrics, 'numbered_items'), per_turn(metrics, 'tables'),
+                policy_delivery(variant, short=True), per_turn(metrics, 'words'), per_turn(metrics, 'numbered_items'), per_turn(metrics, 'tables'),
                 per_turn(metrics, 'thread_headings'),
                 f'{last.get("threads_open", 0)}/{last.get("threads_closed", 0)}',
                 ' '.join(sorted({part for values in metrics for part in values['markers'].split()})) or '-',

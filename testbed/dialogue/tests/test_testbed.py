@@ -15,6 +15,7 @@ import cost  # noqa: E402
 import matrix  # noqa: E402
 import metrics  # noqa: E402
 import plugin  # noqa: E402
+import report  # noqa: E402
 import runner  # noqa: E402
 
 PLUGIN = HERE.parents[1] / 'plugins' / 'dialogue'
@@ -148,6 +149,15 @@ class ParsingTest(unittest.TestCase):
         self.assertNotIn('CLAUDE_EFFORT', env)
         self.assertNotIn('CLAUDECODE', env)
         self.assertEqual((env['CLAUDE_CODE_OAUTH_TOKEN'], env['DIALOGUE_STATE_DIR']), ('kept', '/state'))
+
+    def test_reading_the_saved_policy_is_detected(self):
+        path = '/u/.claude/projects/x/s/tool-results/hook-1-SessionStart-2-1-additionalContext.txt'
+        self.assertTrue(clients.reads_policy_file({'type': 'tool', 'name': 'Read', 'input': {'file_path': path}}))
+        self.assertFalse(clients.reads_policy_file({'type': 'tool', 'name': 'Read', 'input': {'file_path': '/a.py'}}))
+        variant = {'policy_chars': 12000, 'policy_notes': ['over'], 'policy_read': True, 'policy_read_turn': 2}
+        self.assertEqual(report.policy_delivery(variant, short=True), 'preview, read t2')
+        self.assertEqual(report.policy_delivery({'policy_chars': 9000, 'policy_notes': []}, short=True), 'inline')
+        self.assertEqual(report.policy_delivery({'policy_chars': 0, 'policy_notes': []}, short=True), 'none')
 
     def test_dialogue_op_skips_flags(self):
         self.assertEqual(clients.dialogue_op('/p/bin/dialogue --client claude --session s guideline --default '

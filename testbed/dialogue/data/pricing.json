@@ -1,5 +1,5 @@
 {
-  "about": "USD per million tokens. The plan multiplies these by turn_tokens, the mean tokens per turn of each client, measured on 2026-11-17 in an 18-turn smoke run with claude haiku and codex gpt-6-luna at low effort. Claude reports its own cost per turn, so a Claude run records the measured figure; a Codex run records tokens priced with these rates.",
+  "about": "USD per million tokens. The plan multiplies these by turn_tokens, the mean tokens per turn of each client, measured on 2026-11-17 over 18 turns per client, with claude haiku at its default effort and codex gpt-6-luna at low effort. Claude reports its own cost per turn, so a Claude run records the measured figure; a Codex run records tokens priced with these rates.",
   "claude": {
     "source": "Anthropic first-party API prices, as cached by the claude-api skill on 2026-11-03. cache_write is 1.25 x input for every model, and cache_read is 0.1 x input for Haiku; both are the standard ratios, not quoted prices.",
     "aliases": {
@@ -36,10 +36,10 @@
     },
     "turn_tokens": {
       "input": 10,
-      "cache_write": 12000,
-      "cache_read": 115000,
-      "output": 2700,
-      "duration_s": 16
+      "cache_write": 11300,
+      "cache_read": 102000,
+      "output": 2300,
+      "duration_s": 14
     }
   },
   "codex": {
@@ -60,11 +60,11 @@
       }
     },
     "turn_tokens": {
-      "input": 21000,
+      "input": 22000,
       "cache_write": 0,
-      "cache_read": 160000,
-      "output": 1200,
-      "duration_s": 20
+      "cache_read": 149000,
+      "output": 1000,
+      "duration_s": 26
     }
   }
 }

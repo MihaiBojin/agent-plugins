@@ -11,10 +11,11 @@ import re
 import statistics
 import tempfile
 
+from clients import CLAUDE_INLINE_LIMIT
 from matrix import DIMENSIONS, catalog, make_config, product, slug
 import plugin
 import report
-from runner import CLAUDE_INLINE_LIMIT, codex_limit
+from runner import codex_limit
 
 SECTION_STARTS = (
     ('profile', ('## Communication profile', 'Communication profile is plain')),

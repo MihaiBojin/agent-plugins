@@ -12,15 +12,13 @@ import threading
 import uuid
 
 import clients
+from clients import CLAUDE_INLINE_LIMIT
 import cost
 from matrix import HERE, slug
 import plugin
 import report
 
 FIXTURE = HERE / 'fixture'
-# Claude Code inlines SessionStart context up to 10,000 characters (measured with
-# 2.1.326). Above that the model gets a short preview and a file path instead.
-CLAUDE_INLINE_LIMIT = 10_000
 
 
 def now():

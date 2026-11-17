@@ -173,6 +173,11 @@ out/
       codex-rollout.jsonl      Codex only: the session as Codex recorded it, including injected context
 ```
 
+Claude Code gives the model a policy over 10,000 characters as a short preview and a file path, and the agent reads
+the rest only if it opens that file. For each such Claude variant, `variant.json` records `policy_read` and
+`policy_read_turn`, and the transcript header and `summary.md` show `preview, read tN` or `preview, unread`. Read a
+reply from an unread variant as a reply to the preview, not to the configuration.
+
 A configuration's name lists every setting in order: `comms.style.situation.signals.threads`, for example
 `efficient.ste.auto.intent.focus-compact`. A guideline override adds `.+id` or `.-id`. A disabled plugin is `disabled`.
 

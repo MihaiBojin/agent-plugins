@@ -17,6 +17,9 @@ import time
 import uuid
 
 OUTPUT_LIMIT = 4000
+# Claude Code inlines SessionStart context up to 10,000 characters (measured with
+# 2.1.326). Above that the model gets a short preview and a file path instead.
+CLAUDE_INLINE_LIMIT = 10_000
 
 # Variables an agent session sets for its own child processes. A testbed started
 # from inside Claude Code or Codex would otherwise pass on that session's effort,
@@ -120,6 +123,12 @@ def narration(items):
     """Text the agent wrote before its last tool call: what it said while working."""
     last_tool = max((index for index, item in enumerate(items) if item['type'] == 'tool'), default=-1)
     return [item['text'] for item in items[:last_tool] if item['type'] == 'text']
+
+
+def reads_policy_file(item):
+    """A tool call that opens the file Claude Code saves an over-limit SessionStart context to."""
+    text = json.dumps(item.get('input'))
+    return item['type'] == 'tool' and 'tool-results' in text and 'additionalContext' in text
 
 
 def command_of(item):
