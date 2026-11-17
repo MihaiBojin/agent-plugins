@@ -16,6 +16,33 @@ make run ARGS='--suite threads --repeat 3'
 make clean                                    # delete out/ and any scratch space a run left behind
 ```
 
+## Make targets
+
+| Target           | Runs                                                                       |
+| ---------------- | -------------------------------------------------------------------------- |
+| `make render`    | `testbed.py render`: every configuration's policy and the report, no model |
+| `make plan`      | `testbed.py plan`: the default suites, with the estimate for each agent    |
+| `make run`       | `testbed.py run`: the default suites; asks before it starts                |
+| `make plan-full` | `plan --full`: the default suites plus every combination                   |
+| `make run-full`  | `run --full`                                                               |
+| `make report`    | `testbed.py report` on `RUN`, `out/latest-run` by default                  |
+| `make test`      | the unit tests                                                             |
+| `make clean`     | deletes `out/` and the scratch space in `WORK`                             |
+
+| Variable        | Default                    | Effect                                         |
+| --------------- | -------------------------- | ---------------------------------------------- |
+| `CLAUDE_MODEL`  | `haiku`                    | The Claude model; empty skips Claude           |
+| `CLAUDE_EFFORT` | the model's default        | `--effort` for Claude                          |
+| `CODEX_MODEL`   | `gpt-6-luna`               | The Codex model; empty skips Codex             |
+| `CODEX_EFFORT`  | `low`                      | `model_reasoning_effort` for Codex             |
+| `JOBS`          | `4`                        | Sessions at a time                             |
+| `ARGS`          | empty                      | Any other `testbed.py` options                 |
+| `RUN`           | `out/latest-run`           | The run `make report` rebuilds                 |
+| `WORK`          | `$TMPDIR/dialogue-testbed` | Scratch space; `DIALOGUE_TESTBED_WORK` sets it |
+
+Set variables on the command line, as in `make run CODEX_MODEL=`. A variable of the same name in the shell
+environment does not change them.
+
 ## Two tiers
 
 `render` needs no model. It seeds a fresh state directory with each of the 1,050 combinations of `comms`, `style`,
