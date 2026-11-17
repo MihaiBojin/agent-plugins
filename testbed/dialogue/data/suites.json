@@ -1,0 +1,100 @@
+{
+  "default": [
+    "baseline",
+    "comms",
+    "style",
+    "situation",
+    "signals",
+    "threads",
+    "conflicts",
+    "workflows",
+    "commands"
+  ],
+  "suites": {
+    "baseline": {
+      "about": "Plugin installed and disabled, against the base configuration, on every task scenario",
+      "configs": ["disabled", {}],
+      "scenarios": ["*"]
+    },
+    "comms": {
+      "about": "Each communication profile",
+      "vary": "comms",
+      "scenarios": [
+        "routine-question",
+        "implemented",
+        "compare",
+        "code-change",
+        "decisions"
+      ]
+    },
+    "style": {
+      "about": "Each language style",
+      "vary": "style",
+      "scenarios": ["routine-question", "procedure", "code-change", "compare"]
+    },
+    "situation": {
+      "about": "Each situational framework, including one ordinary question",
+      "vary": "situation",
+      "scenarios": [
+        "routine-question",
+        "escalation",
+        "handoff",
+        "status",
+        "safety",
+        "incident"
+      ]
+    },
+    "signals": {
+      "about": "Each signaling mode",
+      "vary": "signals",
+      "scenarios": [
+        "routine-question",
+        "ownership",
+        "safety",
+        "escalation",
+        "decisions"
+      ]
+    },
+    "threads": {
+      "about": "Each thread mode: focus and compact on and off, and threads off",
+      "vary": "threads",
+      "scenarios": ["decisions", "markers", "walk", "focus-drift", "compare"]
+    },
+    "conflicts": {
+      "about": "Rules that conflict or repeat when two settings meet",
+      "configs": [
+        { "style": "ste", "threads": "off" },
+        { "style": "ste", "situation": "ipass", "signals": "intent" }
+      ],
+      "scenarios": ["procedure", "handoff", "safety"]
+    },
+    "workflows": {
+      "about": "The setup workflows, each a situation and signals pair",
+      "workflows": true,
+      "scenarios": ["routine-question", "ownership", "escalation", "handoff"]
+    },
+    "commands": {
+      "about": "The dialogue commands, typed by the user in the conversation",
+      "cases": [
+        { "scenario": "cmd-setup", "config": {} },
+        { "scenario": "cmd-enable", "config": "disabled" },
+        { "scenario": "cmd-disable", "config": {} },
+        { "scenario": "cmd-stop-words", "config": {} },
+        { "scenario": "cmd-set-midway", "config": {} },
+        { "scenario": "cmd-situation-once", "config": {} },
+        { "scenario": "cmd-guideline", "config": {} },
+        { "scenario": "cmd-inspect", "config": {} }
+      ]
+    },
+    "guidelines": {
+      "about": "Opt-in. The custom profile with exactly one guideline turned on, for each guideline",
+      "ablate": "custom",
+      "scenarios": ["routine-question", "compare", "procedure"]
+    },
+    "full": {
+      "about": "Opt-in with --full. Every combination of the five settings, on every task scenario",
+      "product": true,
+      "scenarios": ["*"]
+    }
+  }
+}

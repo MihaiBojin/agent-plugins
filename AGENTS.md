@@ -24,6 +24,7 @@ scripts/sync-catalogs.mjs         Writes both catalogs from plugins/
 .releasetools.yaml                What this repository holds, for every releasetools tool
 scripts/catalogs.mjs              What all of those agree on
 __tests__/                        Jest, run by `npm test`
+testbed/dialogue/                 Runs dialogue under each setting with claude -p and codex; not published
 ```
 
 ## The two catalogs
