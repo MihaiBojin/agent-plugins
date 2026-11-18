@@ -123,6 +123,32 @@ def command_run(args):
         print(f'{len(run.failures)} sessions failed to start; see failures in {out / "run.json"}.')
 
 
+def command_judge(args):
+    import judge
+    run = report.read_json(args.run_dir / 'run.json')
+    base = matrix.slug(plugin.fresh_defaults(run['plugin']['source']))
+    agent = matrix.parse_agent(args.judge)
+    selected = [pair for pair in judge.pairs(args.run_dir, base)
+                if (not args.scenario or pair['scenario'] in args.scenario)
+                and (not args.config or any(part in pair['config'] for part in args.config))
+                and not judge.output_path(args.run_dir, pair).exists()]
+    selected = selected[:args.limit] if args.limit else selected
+    plan = judge.estimate(selected, matrix.load_json('rubric.json'), agent)
+    usd = 'no rate in data/pricing.json' if plan['usd'] is None else f'${plan["usd"]:.2f}'
+    print(f'{len(selected)} pairs against `{base}` or `disabled`, judged by {agent["label"]}: {plan["calls"]} calls, '
+          f'about {plan["tokens"]["input"]:,} input and {plan["tokens"]["output"]:,} output tokens, {usd}.')
+    if not selected:
+        judge.summary(args.run_dir)
+        return
+    if not args.yes:
+        if not sys.stdin.isatty():
+            sys.exit('Pass --yes to start without a prompt.')
+        if input('Start judging? [y/N] ').strip().lower() not in ('y', 'yes'):
+            sys.exit('Nothing started.')
+    spent = judge.run(args.run_dir, base, agent, args.jobs, selected)
+    print(f'Spent ${spent:.4f} where measured. Verdicts: {args.run_dir / "judge.md"}')
+
+
 def command_report(args):
     variants, rows = report.write_index(args.run_dir)
     print(f'{variants} variants, {rows} turn rows. Summary: {Path(args.run_dir) / "summary.md"}')
@@ -161,15 +187,26 @@ def parser():
             command.add_argument('--max-usd', type=float, help='stop starting sessions after spending this much')
             command.add_argument('--turn-timeout', type=int, default=600, help='seconds for one turn')
 
-    rebuild = sub.add_parser('report', help='rebuild transcripts, metrics, index.csv and summary.md')
+    rebuild = sub.add_parser('report', help='rebuild transcripts, metrics, index, summary and compliance')
     rebuild.add_argument('run_dir', type=Path)
+
+    grade = sub.add_parser('judge', help='compare each variant with the base, blind, using a judge model')
+    grade.add_argument('run_dir', type=Path)
+    grade.add_argument('--judge', default='claude:sonnet', metavar='CLIENT:MODEL[:EFFORT]',
+                       help='the judge model (default: claude:sonnet)')
+    grade.add_argument('--scenario', action='append', help='only this scenario ID, repeatable')
+    grade.add_argument('--config', action='append', metavar='TEXT', help='only variants whose name contains TEXT')
+    grade.add_argument('--limit', type=int, help='only the first N pairs')
+    grade.add_argument('--jobs', type=int, default=4)
+    grade.add_argument('--yes', action='store_true', help='start without asking')
     return result
 
 
 def main():
     args = parser().parse_args()
     args.plugin = args.plugin.resolve()
-    {'render': command_render, 'plan': command_plan, 'run': command_run, 'report': command_report}[args.command](args)
+    {'render': command_render, 'plan': command_plan, 'run': command_run, 'report': command_report,
+     'judge': command_judge}[args.command](args)
 
 
 if __name__ == '__main__':

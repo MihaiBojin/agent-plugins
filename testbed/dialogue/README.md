@@ -25,7 +25,9 @@ make clean                                    # delete out/ and any scratch spac
 | `make run`       | `testbed.py run`: the default suites; asks before it starts                |
 | `make plan-full` | `plan --full`: the default suites plus every combination                   |
 | `make run-full`  | `run --full`                                                               |
+| `make noise`     | `run --suite noise --repeat 3`: the spread between repeats                 |
 | `make report`    | `testbed.py report` on `RUN`, `out/latest-run` by default                  |
+| `make judge`     | `testbed.py judge` on `RUN` with the `JUDGE` model; asks before it starts  |
 | `make test`      | the unit tests                                                             |
 | `make clean`     | deletes `out/` and the scratch space in `WORK`                             |
 
@@ -37,11 +39,34 @@ make clean                                    # delete out/ and any scratch spac
 | `CODEX_EFFORT`  | `low`                      | `model_reasoning_effort` for Codex             |
 | `JOBS`          | `4`                        | Sessions at a time                             |
 | `ARGS`          | empty                      | Any other `testbed.py` options                 |
-| `RUN`           | `out/latest-run`           | The run `make report` rebuilds                 |
+| `RUN`           | `out/latest-run`           | The run `make report` and `make judge` read    |
+| `JUDGE`         | `claude:sonnet`            | The judge model, `CLIENT:MODEL[:EFFORT]`       |
 | `WORK`          | `$TMPDIR/dialogue-testbed` | Scratch space; `DIALOGUE_TESTBED_WORK` sets it |
 
 Set variables on the command line, as in `make run CODEX_MODEL=`. A variable of the same name in the shell
 environment does not change them.
+
+## Judging the results
+
+The counts show where configurations differ. Three steps say whether a difference means anything and which reply
+is better:
+
+- **Noise.** `make noise` runs the base configuration and the disabled plugin three times on six scenarios.
+  `compliance.md` then shows how far the counts move between repeats of one configuration. A difference between
+  configurations smaller than that spread is noise.
+- **Compliance.** `make report`, and every run, writes `compliance.md` and `compliance.csv`. For each rule a
+  variant's `policy.md` turns on, a pattern checks whether the reply followed it: no numbered list under the thread
+  protocol, no em-dash under `plain_punctuation`, the framework's fields under a fixed situation, a response status
+  under `signals full`, and so on. The rates leave out Claude variants that saw only the preview of their policy.
+- **Judge.** `make judge` compares each variant with the base configuration, and the base with the disabled
+  plugin, for the same agent, scenario and repeat. The judge sees the user turns, both sets of replies and the
+  fixture's facts for the scenario from `data/rubric.json`, never the settings. It scores each side on the rubric's
+  criteria and picks a winner, once in each order; a verdict counts only when both orders agree. Each pair is in
+  `judgments/`, and `judge.md` tallies wins, losses, ties and score deltas. Edit `data/rubric.json` to change what
+  better means. The estimate before it starts counts prompt sizes; Claude adds its own overhead, about half again
+  in a smoke test.
+
+Read about ten judged pairs and their reasons yourself before trusting the tallies.
 
 ## Two tiers
 

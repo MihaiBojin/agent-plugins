@@ -104,7 +104,9 @@ def terms(plugin):
     policy = Path(plugin) / 'policy'
     signals = json.loads((policy / 'signals.json').read_text(encoding='utf-8'))
     situations = json.loads((policy / 'situations.json').read_text(encoding='utf-8'))
+    guidelines = json.loads((policy / 'guidelines.json').read_text(encoding='utf-8'))
     return {
+        'guidelines': {entry['id']: entry['name'] for entry in guidelines},
         'intents': [item['id'] for item in signals['intents']],
         'responses': [item['id'] for item in signals['responses']],
         'frameworks': {name: [field for field, _ in item['fields']] for name, item in situations.items()},

@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 from clients import CLAUDE_INLINE_LIMIT, narration, reads_policy_file
+import compliance
 from metrics import turn_metrics
 
 SETTING_COLUMNS = ('comms', 'style', 'situation', 'signals', 'threads')
@@ -137,7 +138,8 @@ def case_dirs(run_dir):
 def write_index(run_dir):
     """index.csv: one row per turn of every variant. summary.md: one row per variant, with links."""
     run_dir = Path(run_dir)
-    terms = read_json(run_dir / 'run.json')['terms']
+    run = read_json(run_dir / 'run.json')
+    terms = run['terms']
     rows, variants = [], []
     for case_dir in case_dirs(run_dir):
         variant, turns, metrics = write_case(case_dir, terms)
@@ -164,6 +166,7 @@ def write_index(run_dir):
             writer.writeheader()
             writer.writerows(rows)
     (run_dir / 'summary.md').write_text(summary(run_dir, variants) + '\n', encoding='utf-8')
+    compliance.write(run_dir, variants, run)
     return len(variants), len(rows)
 
 

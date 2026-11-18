@@ -11,7 +11,9 @@ sys.path.insert(0, str(HERE))
 sys.dont_write_bytecode = True
 
 import clients  # noqa: E402
+import compliance  # noqa: E402
 import cost  # noqa: E402
+import judge  # noqa: E402
 import matrix  # noqa: E402
 import metrics  # noqa: E402
 import plugin  # noqa: E402
@@ -184,6 +186,44 @@ class MetricsTest(unittest.TestCase):
         self.assertEqual((values['thread_headings'], values['option_lines'], values['recommended']), (1, 2, 1))
         self.assertEqual(values['markers'], 'WARNINGx1')
         self.assertEqual(values['framework'], 'sbar 2/4')
+
+
+class ComplianceTest(unittest.TestCase):
+    NAMES = {'plain_punctuation': 'No em-dashes', 'verdict': 'Verdict first'}
+
+    def values(self, **changes):
+        base = {'numbered_items': 0, 'thread_headings': 0, 'decisions_heading': False, 'em_dashes': 0,
+                'contractions': 0, 'long_sentences': 0, 'sentences': 2, 'tables': 0, 'framework': '', 'markers': ''}
+        return {**base, **changes}
+
+    def test_rules_apply_only_when_the_policy_has_them(self):
+        policy = '## Thread protocol\n- No em-dashes: use a comma.\n## Situational framework: sbar\n'
+        found = dict(compliance.checks(policy, self.NAMES, 'escalation', 1, '', 'x',
+                                       self.values(numbered_items=2, framework='sbar 4/4')))
+        self.assertEqual(found, {'threads: no numbered list': False, 'plain_punctuation: no em-dash': True,
+                                 'situation sbar: its fields used': True})
+        self.assertEqual(compliance.checks('', self.NAMES, 'escalation', 1, '', 'x', self.values()), [])
+
+    def test_verdict_first(self):
+        policy = '- Verdict first: say it.'
+        [(_, passed)] = compliance.checks(policy, self.NAMES, 'implemented', 1, '', '**Verdict:** No. It raises.',
+                                          self.values())
+        self.assertTrue(passed)
+
+
+class JudgeTest(unittest.TestCase):
+    def test_parse_takes_the_json_object_and_rejects_others(self):
+        self.assertEqual(judge.parse('Here: {"winner": "A", "scores": {}} done')['winner'], 'A')
+        self.assertIsNone(judge.parse('{"winner": "C"}'))
+        self.assertIsNone(judge.parse('no json'))
+
+    def test_prompt_is_blind_to_settings(self):
+        rubric = matrix.load_json('rubric.json')
+        turns = [{'sent': 'Is retry on HTTP 503 implemented?', 'reply': 'No.'}]
+        text = judge.prompt('implemented', rubric, turns, turns)
+        self.assertIn('fetch() raises every HTTPError at once', text)
+        self.assertNotIn('pyramid', text)
+        self.assertIn('"correct": 1-5', judge.system_prompt(rubric))
 
 
 class CostTest(unittest.TestCase):

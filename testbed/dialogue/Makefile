@@ -9,14 +9,16 @@ CODEX_EFFORT = low
 JOBS = 4
 # Anything else for testbed.py, such as ARGS='--suite threads --repeat 3'.
 ARGS =
-# A run directory for `make report`. Defaults to the latest run.
+# A run directory for `make report` and `make judge`. Defaults to the latest run.
 RUN = out/latest-run
+# The model that judges pairs of replies.
+JUDGE = claude:sonnet
 WORK ?= $(shell $(PYTHON) -c 'import os, tempfile; print(os.environ.get("DIALOGUE_TESTBED_WORK") or os.path.join(tempfile.gettempdir(), "dialogue-testbed"))')
 
 AGENTS = $(if $(CLAUDE_MODEL),--agent claude:$(CLAUDE_MODEL)$(if $(CLAUDE_EFFORT),:$(CLAUDE_EFFORT))) \
 	$(if $(CODEX_MODEL),--agent codex:$(CODEX_MODEL)$(if $(CODEX_EFFORT),:$(CODEX_EFFORT)))
 
-.PHONY: render plan run plan-full run-full report test clean
+.PHONY: render plan run plan-full run-full noise report judge test clean
 
 render:
 	$(PYTHON) testbed.py render $(ARGS)
@@ -33,8 +35,14 @@ plan-full:
 run-full:
 	$(PYTHON) testbed.py run --full $(AGENTS) --jobs $(JOBS) --work "$(WORK)" $(ARGS)
 
+noise:
+	$(PYTHON) testbed.py run --suite noise --repeat 3 $(AGENTS) --jobs $(JOBS) --work "$(WORK)" $(ARGS)
+
 report:
 	$(PYTHON) testbed.py report "$(RUN)"
+
+judge:
+	$(PYTHON) testbed.py judge "$(RUN)" --judge $(JUDGE) --jobs $(JOBS) $(ARGS)
 
 test:
 	$(PYTHON) -B -m unittest discover -s tests -v

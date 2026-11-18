@@ -86,6 +86,18 @@
         { "scenario": "cmd-inspect", "config": {} }
       ]
     },
+    "noise": {
+      "about": "Opt-in. Run with --repeat 3: the spread between repeats of one configuration, against which a difference between configurations is measured",
+      "configs": ["disabled", {}],
+      "scenarios": [
+        "routine-question",
+        "implemented",
+        "compare",
+        "procedure",
+        "handoff",
+        "decisions"
+      ]
+    },
     "guidelines": {
       "about": "Opt-in. The custom profile with exactly one guideline turned on, for each guideline",
       "ablate": "custom",
