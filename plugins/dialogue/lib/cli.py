@@ -27,6 +27,14 @@ def table(store, data):
 
 
 def render(store, data):
+    """The whole policy: what the two SessionStart hook parts print, together."""
+    threads_part = render_threads(data)
+    return render_core(store, data) + ('\n\n' + threads_part if threads_part else '')
+
+
+def render_core(store, data):
+    """Everything but the thread protocol. Claude Code puts a hook's context into the conversation only up to
+    10,000 characters, so the policy is printed in two parts that each stay under it."""
     if not data['settings']['enabled']:
         return (f'Dialogue is disabled for {store.client} session {store.session}. '
                 'Stop applying any earlier or inherited dialogue policy. Do not use a parent session ID. '
@@ -38,15 +46,28 @@ def render(store, data):
              'To inspect settings, run the tool with settings. To change this session, use set KEY VALUE. '
              'For stop dialogue or normal mode, run disable and stop applying this policy. '
              'Persist changes before acknowledging them; do not edit state files by hand.',
-             f'Tool: {ROOT / "bin" / "dialogue"}',
-             'Effective settings: ' + json.dumps(settings, sort_keys=True)]
-    lines.append(communication.render_profile(settings['communication_profile'], settings['guideline_overrides'], settings['language_standard']))
+             f'Tool: {ROOT / "bin" / "dialogue"}']
+    # WARNING and CAUTION are defined once: the signals list carries them when it is on.
+    signals_on = settings['signaling'] != 'off'
+    profile = communication.render_profile(settings['communication_profile'], settings['guideline_overrides'],
+                                           settings["language_standard"], with_risk_levels=not signals_on)
+    lines.append(profile)
     if settings['situation'] != 'none':
-        lines.append(communication.render_situation(settings['situation']))
+        lines.append(communication.render_situation(
+            settings['situation'], with_risk_levels=not (signals_on or 'Risk levels:' in profile)))
     if settings['language_standard'] != 'plain':
         lines.append(communication.render_language(settings['language_standard']))
-    if settings['signaling'] != 'off':
+    if signals_on:
         lines.append(communication.render_signals(settings['signaling']))
+    return '\n\n'.join(lines)
+
+
+def render_threads(data):
+    """The thread protocol and the saved threads, or nothing while dialogue is disabled."""
+    settings = data['settings']
+    if not settings['enabled']:
+        return ''
+    lines = []
     if settings['threads']:
         lines.append((ROOT / 'policy' / 'threads.md').read_text(encoding='utf-8'))
         if settings['focus']:
@@ -76,8 +97,10 @@ def parser():
     result.add_argument('--client', choices=('codex', 'claude'), required=True)
     result.add_argument('--session', help='Client session ID; defaults to CODEX_THREAD_ID for Codex or CLAUDE_SESSION_ID for Claude')
     sub = result.add_subparsers(dest='command', required=True)
-    for name in ('help', 'enable', 'disable', 'settings', 'state', 'render', 'hook', 'profiles', 'situations', 'languages', 'signals'):
+    for name in ('help', 'enable', 'disable', 'settings', 'state', 'render', 'profiles', 'situations', 'languages', 'signals'):
         sub.add_parser(name)
+    hook = sub.add_parser('hook', help='Print one part of the policy as SessionStart hook output.')
+    hook.add_argument('--part', choices=('core', 'threads'), default='core')
     listing_guidelines = sub.add_parser('guidelines')
     listing_guidelines.add_argument('operation', nargs='?', choices=('list', 'group'))
     listing_guidelines.add_argument('suboperation', nargs='?')
@@ -148,11 +171,16 @@ def main(args):
         session = args.session or os.environ.get('CODEX_THREAD_ID' if args.client == 'codex' else 'CLAUDE_SESSION_ID')
     store = Store(args.client, session)
     if args.command == 'hook':
-        is_new = not store.path.exists()
-        data, _ = store.change(lambda data: None)
-        inherited_history = payload.get('source') == 'fork' or (is_new and payload.get('source') == 'resume')
-        if data['settings']['enabled'] or inherited_history:
-            print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': render(store, data)}}))
+        if args.part == 'threads':
+            # Read only: the core part takes the session's snapshot, and the two parts may run at once.
+            context = render_threads(store.read())
+        else:
+            is_new = not store.path.exists()
+            data, _ = store.change(lambda data: None)
+            inherited_history = payload.get('source') == 'fork' or (is_new and payload.get('source') == 'resume')
+            context = render_core(store, data) if data['settings']['enabled'] or inherited_history else ''
+        if context:
+            print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': context}}))
         return
     if args.command == 'setup' and args.operation == 'apply':
         if not (args.comms and args.style and args.workflow):

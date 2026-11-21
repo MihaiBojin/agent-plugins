@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.1 - 2026-11-21
+
+### Fixed
+
+Claude Code now receives the whole dialogue policy. The SessionStart hook prints it in two parts, each under the 10,000 characters Claude Code puts into the conversation; before, more than half of the setting combinations, including every one with `style ste` and threads on, reached the model as a short preview and a file path. The WARNING and CAUTION definitions print once.
+
+### Choices
+
+The policy is split, not cut. Cutting alone leaves 168 combinations over the limit, because the STE profile and the thread protocol together exceed it, and removing a setting waits for evidence that it changes nothing in Claude Code, which never received those settings in full. The limit applies to each hook's output, measured with Claude Code 2.1.326: two 8,000-character outputs both arrive inline.
+
+The threads part only reads the session record. The two parts can run at once, and the core part's check for a resume without a snapshot needs to be the one that creates the record.
+
 ## 0.7.0 - 2026-11-17
 
 ### Changed

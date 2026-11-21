@@ -10,6 +10,13 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/dialogue\" --client codex hook",
             "timeout": 15,
             "additionalContextLimit": 16000
+          },
+          {
+            "type": "command",
+            "statusMessage": "loading dialogue threads",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/dialogue\" --client codex hook --part threads",
+            "timeout": 15,
+            "additionalContextLimit": 16000
           }
         ]
       }
