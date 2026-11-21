@@ -132,16 +132,8 @@ def list_situations():
     return "\n".join(lines)
 
 
-def render_situation(name, with_risk_levels=True):
-    if name == "none":
-        return "No situational framework selected."
+def render_situation(name):
     items = situations()
-    if name == "auto":
-        lines = ["Situational mode: auto. Apply ONE framework when the user explicitly requests that type of communication or the task clearly demands it. Do not force a framework onto ordinary replies or coding tasks."]
-        for key, item in items.items():
-            lines.append(f'- {key}: {item["description"]} Use for {", ".join(item["uses"])}.')
-        lines.append("Preserve safety-critical qualifications. Never omit necessary fields merely to reduce tokens.")
-        return "\n".join(lines)
     if name not in items:
         raise ValueError("unknown situation: " + name)
     item = items[name]
@@ -149,7 +141,7 @@ def render_situation(name, with_risk_levels=True):
     for title, meaning in item["fields"]:
         lines.append(f'- {title}: {meaning}')
     lines.append(item["guidance"])
-    if with_risk_levels and item.get("risk_levels"):
+    if item.get("risk_levels"):
         lines.append(risk_levels())
     lines.append("Use the framework only where relevant; do not invent missing details. Ask only for essential unknowns.")
     return "\n".join(lines)
@@ -201,8 +193,8 @@ def list_signals():
     return "\n".join(lines)
 
 
-def workflows():
-    return json.loads((ROOT / "workflows.json").read_text(encoding="utf-8"))
+SIGNAL_MODES = {"off": "no markers", "intent": "sender-intent labels",
+                "full": "intent and response-status labels"}
 
 
 def wizard_questions(current=None):
@@ -210,7 +202,6 @@ def wizard_questions(current=None):
     current = current or {}
     _, profiles = catalog()
     languages = language_standards()
-    modes = workflows()
     lines = [
         "Dialogue setup: answer three questions. Nothing changes until all answers are applied.",
         "1. Comms: which communication profile should replies follow?"]
@@ -219,32 +210,30 @@ def wizard_questions(current=None):
     lines.append("2. Style: how should technical English be written?")
     for key, item in languages.items():
         lines.append(f'   - {"ste" if key == "ste-inspired" else key}: {item["description"]}')
-    lines.append("3. Workflow: how should structured messages and acknowledgments work?")
-    for key, item in modes.items():
-        lines.append(f'   - {key}: {item["description"]}')
+    lines.append("3. Signals: which communication markers should replies use?")
+    for key, meaning in SIGNAL_MODES.items():
+        lines.append(f'   - {key}: {meaning}')
     if current:
         lines.extend([
             "Current: comms={communication_profile}, style={language_standard}, "
-            "situation={situation}, signals={signaling}".format(**current),
+            "signals={signaling}".format(**current),
             "Select all three. Session stays enabled/disabled as it was."
         ])
-    lines.append("Apply: setup apply --comms VALUE --style VALUE --workflow VALUE")
-    lines.append("For finer control use set situation NAME and set signals off|intent|full.")
+    lines.append("Apply: setup apply --comms VALUE --style VALUE --signals VALUE")
     return "\n".join(lines)
 
 
 def full_help():
     guidelines, profiles = catalog()
     languages = language_standards()
-    modes = workflows()
     lines = [
         "# Dialogue help",
         "Start: help (this overview), setup (guided three-question configuration), enable/disable.",
         "Inspect: settings, profiles, guidelines, situations, languages, signals, state, render.",
-        "Change: set comms VALUE | set style VALUE | set situation VALUE | set signals VALUE.",
-        "Apply wizard: setup apply --comms VALUE --style VALUE --workflow VALUE.",
+        "Change: set comms VALUE | set style VALUE | set signals VALUE.",
+        "Apply wizard: setup apply --comms VALUE --style VALUE --signals VALUE.",
         "Defaults: defaults show | defaults set KEY VALUE (future sessions only).",
-        "Also accepted: set communication_profile, language_standard, signaling; situation use/preview/clear.",
+        "Also accepted: set communication_profile, language_standard, signaling.",
         "",
         "Comms profiles:"]
     for key, item in profiles.items():
@@ -252,13 +241,10 @@ def full_help():
     lines.append("Language styles:")
     for key, item in languages.items():
         lines.append(f'- {"ste" if key == "ste-inspired" else key}: {item["description"]}')
-    lines.append("Situational frameworks: none, auto, " + ", ".join(situations()))
+    lines.append("Situational frameworks, for a reply that asks for one; situation preview NAME shows the fields:")
     for key, item in situations().items():
         lines.append(f'- {key}: {item["description"]}')
-    lines.append("Signals: off (none), intent (sender-intent labels), full (intent and response-status labels).")
-    lines.append("Workflow presets for setup:")
-    for key, item in modes.items():
-        lines.append(f'- {key}: {item["description"]}')
+    lines.append("Signals: " + ", ".join(f"{key} ({meaning})" for key, meaning in SIGNAL_MODES.items()) + ".")
     lines.append("Other settings: threads on/off, focus on/off, compact on/off, enabled on/off.")
     lines.append("Guidelines: guidelines list (all rules and status); guidelines group list (categories); guidelines group list TYPE (category details).")
     lines.append("Override: guideline enable|disable|reset ID; guideline reset all; guideline group enable|disable|reset TYPE.")

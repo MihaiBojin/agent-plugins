@@ -1,11 +1,6 @@
 {
   "sbar": {
     "description": "Escalate a problem with a recommendation.",
-    "uses": [
-      "problem escalation",
-      "technical escalation",
-      "request for intervention"
-    ],
     "fields": [
       ["Situation", "Current problem and impact"],
       ["Background", "Relevant history and context"],
@@ -16,7 +11,6 @@
   },
   "ipass": {
     "description": "Transfer work and responsibility safely.",
-    "uses": ["handoff", "ownership transfer", "on-call rotation"],
     "fields": [
       ["Severity", "Current risk: stable, CAUTION, or WARNING"],
       ["Summary", "Current state, impact, and essential history"],
@@ -35,7 +29,6 @@
   },
   "can": {
     "description": "Share a concise operational update.",
-    "uses": ["status update", "incident update", "operational check-in"],
     "fields": [
       ["Conditions", "Current state and impact"],
       ["Actions", "What is being done, by whom"],
@@ -45,7 +38,6 @@
   },
   "cus": {
     "description": "Escalate a safety-critical concern.",
-    "uses": ["safety concern", "urgent risk escalation"],
     "fields": [
       ["Concerned", "State the concern"],
       ["Uncomfortable", "Explain why the current course is unsafe"],
@@ -56,7 +48,6 @@
   },
   "methane": {
     "description": "Share the initial picture of a major incident.",
-    "uses": ["major incident", "cross-team emergency", "first incident report"],
     "fields": [
       ["Major incident", "Declared or suspected, with WARNING or CAUTION"],
       ["Exact location", "Affected system, region, or location"],

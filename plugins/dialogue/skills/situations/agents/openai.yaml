@@ -1,5 +1,5 @@
 interface:
   display_name: "dialogue situations"
-  short_description: "Situational frameworks"
+  short_description: "List or preview situational frameworks"
 policy:
   allow_implicit_invocation: false

@@ -52,9 +52,6 @@ def render_core(store, data):
     profile = communication.render_profile(settings['communication_profile'], settings['guideline_overrides'],
                                            settings["language_standard"], with_risk_levels=not signals_on)
     lines.append(profile)
-    if settings['situation'] != 'none':
-        lines.append(communication.render_situation(
-            settings['situation'], with_risk_levels=not (signals_on or 'Risk levels:' in profile)))
     if settings['language_standard'] != 'plain':
         lines.append(communication.render_language(settings['language_standard']))
     if signals_on:
@@ -116,10 +113,10 @@ def parser():
     wizard.add_argument('operation', nargs='?', choices=('show', 'apply'), default='show')
     wizard.add_argument('--comms')
     wizard.add_argument('--style')
-    wizard.add_argument('--workflow')
-    situation_cmd = sub.add_parser('situation', help='Preview or select a situational framework.')
-    situation_cmd.add_argument('operation', choices=('preview', 'use', 'clear'))
-    situation_cmd.add_argument('name', nargs='?')
+    wizard.add_argument('--signals')
+    situation_cmd = sub.add_parser('situation', help='Print the fields of a situational framework.')
+    situation_cmd.add_argument('operation', choices=('preview',))
+    situation_cmd.add_argument('name')
     setting = sub.add_parser('set')
     setting.add_argument('key', choices=(*USER_SETTINGS, 'comms', 'style', 'signals'))
     setting.add_argument('value')
@@ -183,23 +180,16 @@ def main(args):
             print(json.dumps({'hookSpecificOutput': {'hookEventName': 'SessionStart', 'additionalContext': context}}))
         return
     if args.command == 'setup' and args.operation == 'apply':
-        if not (args.comms and args.style and args.workflow):
-            raise ValueError('setup apply requires --comms, --style, and --workflow')
+        if not (args.comms and args.style and args.signals):
+            raise ValueError('setup apply requires --comms, --style, and --signals')
         profile = setting_value('comms', args.comms)
         style = setting_value('style', args.style)
-        choices = communication.workflows()
-        if args.workflow not in choices:
-            raise ValueError('unknown workflow: ' + args.workflow)
-        workflow = choices[args.workflow]
-        situation = setting_value('situation', workflow['situation'])
-        signaling = setting_value('signals', workflow['signaling'])
+        signaling = setting_value('signals', args.signals)
         def apply(data):
-            data['settings'].update(communication_profile=profile,
-                                    language_standard=style,
-                                    situation=situation, signaling=signaling)
+            data['settings'].update(communication_profile=profile, language_standard=style, signaling=signaling)
         data, _ = store.change(apply)
         print('Configuration saved: comms=' + profile + ', style=' + style +
-              ', workflow=' + args.workflow + '. Dialogue ' +
+              ', signals=' + signaling + '. Dialogue ' +
               ('enabled.' if data['settings']['enabled'] else 'disabled; enable to apply policy.'))
         print(render(store, data))
         return
@@ -251,22 +241,7 @@ def main(args):
         print(table(store, store.read()))
         return
     if args.command == 'situation':
-        if args.operation == 'clear':
-            if args.name is not None:
-                raise ValueError('clear takes no framework name')
-            data, _ = store.change(lambda data: data['settings'].__setitem__('situation', 'none'))
-            print(render(store, data))
-            return
-        if not args.name:
-            raise ValueError('a situational framework is required')
-        name = setting_value('situation', args.name)
-        if name == 'none' and args.operation == 'preview':
-            raise ValueError('preview requires a framework')
-        if args.operation == 'use':
-            data, _ = store.change(lambda data: data['settings'].__setitem__('situation', name))
-            print(render(store, data))
-        else:
-            print(communication.render_situation(name))
+        print(communication.render_situation(args.name))
         return
     if args.command in ('enable', 'disable', 'set'):
         key = args.key if args.command == 'set' else 'enabled'
