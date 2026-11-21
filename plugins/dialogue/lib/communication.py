@@ -89,7 +89,7 @@ def list_groups(profile, overrides=None, style="plain", active=True):
 def render_profile(profile, overrides=None, style="plain", with_risk_levels=True):
     guidelines, profiles = catalog()
     entries = effective_guidelines(profile, overrides, style)
-    if profile in ("plain", "custom") and not entries:
+    if profile == "plain" and not entries:
         return ("Communication profile is plain: stop applying earlier dialogue "
                 "communication-profile instructions. Use client and user instructions.")
     lines = [f"## Communication profile: {profile}"]

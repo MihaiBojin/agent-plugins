@@ -322,7 +322,7 @@ class DialogueTest(unittest.TestCase):
 
     def test_guideline_individual_and_group_overrides(self):
         self.run_cli('enable')
-        self.run_cli('set', 'comms', 'custom')
+        self.run_cli('set', 'comms', 'plain')
         self.assertIn('(0/35 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('guideline', 'on', 'bluf')
         self.assertIn('BLUF', self.run_cli('render').stdout)
@@ -365,7 +365,7 @@ class DialogueTest(unittest.TestCase):
 
     def test_ste_style_rules_can_be_overridden(self):
         self.run_cli('enable')
-        self.run_cli('set', 'comms', 'custom')
+        self.run_cli('set', 'comms', 'plain')
         self.run_cli('set', 'style', 'ste')
         self.assertIn('(13/35 enabled)', self.run_cli('guidelines').stdout)
         self.assertIn('terminology [on, style]', self.run_cli('guidelines', '--all').stdout)
@@ -403,6 +403,16 @@ class DialogueTest(unittest.TestCase):
             self.run_cli('guidelines', '--all', ok=False)
             self.assertEqual(path.read_bytes(), saved)
         path.write_text(json.dumps(original))
+
+    def test_saved_custom_profile_loads_as_plain(self):
+        self.run_cli('enable')
+        state_path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        saved = json.loads(state_path.read_text())
+        saved['settings']['communication_profile'] = 'custom'
+        state_path.write_text(json.dumps(saved))
+        self.assertEqual(self.state()['settings']['communication_profile'], 'plain')
+        self.assertIn('Communication profile is plain', self.run_cli('render').stdout)
+        self.run_cli('set', 'comms', 'custom', ok=False)
 
     def test_legacy_response_style_migration(self):
         self.run_cli('enable')

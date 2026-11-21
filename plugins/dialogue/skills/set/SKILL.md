@@ -16,7 +16,7 @@ dialogue set "KEY" "VALUE"
 
 | Key         | Values                                                   |
 | ----------- | -------------------------------------------------------- |
-| `comms`     | `pyramid`, `direct`, `efficient`, `plain`, `custom`      |
+| `comms`     | `pyramid`, `direct`, `efficient`, `plain`                |
 | `style`     | `plain`, `ste`                                           |
 | `situation` | `none`, `auto`, `sbar`, `ipass`, `can`, `cus`, `methane` |
 | `signals`   | `off`, `intent`, `full`                                  |

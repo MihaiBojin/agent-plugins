@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 - 2026-11-21
+
+### Changed
+
+Breaking: the `custom` communication profile is gone, because it gave the same policy as `plain`. Use `set comms plain`, then turn guidelines on with `guideline enable ID`. A session or defaults file saved with `custom` loads as `plain`.
+
 ## 0.7.1 - 2026-11-21
 
 ### Fixed

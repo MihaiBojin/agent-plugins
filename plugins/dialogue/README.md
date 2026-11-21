@@ -44,7 +44,7 @@ Help lists commands, profiles, language styles, situational frameworks, signalin
 
 Setup asks **three questions, one at a time**:
 
-1. **Comms**: `pyramid` (answer, reasons and evidence), `direct` (concise and action-oriented), `efficient` (low-token), `plain` (no response rules), or `custom` (start empty and enable guidelines individually). Presets select guideline baselines; individual overrides take precedence.
+1. **Comms**: `pyramid` (answer, reasons and evidence), `direct` (concise and action-oriented), `efficient` (low-token), or `plain` (no response rules, and the start for turning guidelines on one at a time). Presets select guideline baselines; individual overrides take precedence.
 2. **Style**: `plain` (normal technical English), `ste` (STE-inspired controlled English; not official compliance).
 3. **Workflow**: `quiet` (no framework/signals), `automatic` (auto framework + intent), `verified` (auto + full acknowledgments), `status` (CAN), `escalation` (SBAR), `handoff` (I-PASS), `safety` (CUS), `incident` (M/ETHANE).
 
@@ -87,7 +87,7 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 | `/dialogue:defaults set enabled on`  | Explicitly enable automatic activation for future sessions |
 | `/dialogue:defaults set enabled off` | Make future sessions opt-in again                          |
 
-The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain/custom`. Settings saved under the older `response_style` key load as `communication_profile`. Focus and compact have no effect while threads are disabled.
+The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain`; a session saved with `custom` loads as `plain`. Settings saved under the older `response_style` key load as `communication_profile`. Focus and compact have no effect while threads are disabled.
 
 ## Communication profiles
 
@@ -99,7 +99,6 @@ Communication rules are defined once in [guidelines.json](policy/guidelines.json
 | `direct`    | Concise, factual, and action-oriented; reports changes only and puts exceptions first                                                                          |
 | `efficient` | Fewer guidelines for routine coding tasks; routine replies take one to three sentences                                                                         |
 | `plain`     | No communication guidelines                                                                                                                                    |
-| `custom`    | No preset guidelines; enable them individually                                                                                                                 |
 
 Use `profiles` to compare optional presets and `guidelines` to see effective rules grouped by type. Change the current session with `set comms direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
 
@@ -125,7 +124,7 @@ Each guideline belongs to one group: **structure**, **brevity**, **precision**, 
 
 `guidelines list` reports each rule's effective state and whether the profile, the style or an override set it. `guidelines group list` shows the count per group; append a group to inspect its rules. Overrides persist per session and take priority over profile and style bundles, and resetting one restores the inherited value. `guideline --default enable|disable|reset ID` and `guideline --default group enable|disable|reset TYPE` change the defaults for future sessions only. `guideline on|off ID`, `guideline group TYPE on|off|reset` and `guidelines --all|--group` are aliases of these commands. Disabling Dialogue turns off every response policy and keeps the saved choices.
 
-The `custom` preset starts with no guidelines enabled, for choosing rules one at a time.
+The `plain` profile starts with no guidelines enabled, for choosing rules one at a time.
 
 ## Situational frameworks
 

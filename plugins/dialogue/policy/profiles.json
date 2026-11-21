@@ -61,9 +61,5 @@
       "define_terms",
       "pronouns"
     ]
-  },
-  "custom": {
-    "description": "No preset rules; choose guidelines individually.",
-    "guidelines": []
   }
 }

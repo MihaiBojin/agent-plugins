@@ -15,7 +15,7 @@ dialogue setup
 
 Ask **one question at a time**, with the options and descriptions from that output:
 
-1. **Comms**: `pyramid`, `direct`, `efficient`, `plain`, or `custom` (start with no rules enabled and turn guidelines on one at a time). Presets only set baseline guidelines, and individual overrides take final precedence.
+1. **Comms**: `pyramid`, `direct`, `efficient` or `plain` (no rules; the start for turning guidelines on one at a time). Presets only set baseline guidelines, and individual overrides take final precedence.
 2. **Style**: `plain` or `ste` (STE-inspired, not ASD-STE100 compliant). `ste` adds the ASD-STE100-derived guidelines.
 3. **Workflow**: `quiet`, `automatic`, `verified`, `status`, `escalation`, `handoff`, `safety`, or `incident`. A workflow selects both situational formatting and signals, and each stays editable with `set`.
 
