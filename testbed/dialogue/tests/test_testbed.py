@@ -234,6 +234,31 @@ class JudgeTest(unittest.TestCase):
         self.assertIn('"correct": 1-5', judge.system_prompt(rubric))
 
 
+class AblationTest(unittest.TestCase):
+    def test_leave_one_out_removes_each_unit_once_and_runs_the_reference_on_every_scenario(self):
+        values = matrix.catalog(PLUGIN)
+        base = plugin.fresh_defaults(PLUGIN)
+        spec = matrix.load_json('suites.json')['suites']['ablation']['leave_one_out']
+        pairs = matrix.leave_one_out(spec, base, values, PLUGIN)
+        names = {matrix.slug(config) for _, config in pairs}
+        lines = matrix.rule_lines(PLUGIN, 'policy/threads.md')
+        self.assertEqual(len(names), 1 + len(values['guidelines']) + len(lines))
+        reference = [scenario for scenario, config in pairs if matrix.slug(config) == 'ref']
+        self.assertEqual(len(reference), len(set(reference)), reference)
+        self.assertIn('decisions', reference)
+        unit = next(config for _, config in pairs if matrix.slug(config) == 'ref.-bluf')
+        self.assertFalse(unit['guidelines']['bluf'])
+        self.assertTrue(unit['guidelines']['tables'])
+
+    def test_drop_lines_removes_only_the_named_lines(self):
+        with tempfile.TemporaryDirectory() as root:
+            target = Path(root) / 'policy' / 'threads.md'
+            target.parent.mkdir()
+            target.write_text('one\ntwo\nthree\n', encoding='utf-8')
+            runner.drop_lines(root, ['policy/threads.md:2'])
+            self.assertEqual(target.read_text(encoding='utf-8'), 'one\nthree\n')
+
+
 class CostTest(unittest.TestCase):
     def test_price_and_estimate(self):
         prices = cost.pricing()

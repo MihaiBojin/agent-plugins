@@ -26,6 +26,7 @@ make clean                                    # delete out/ and any scratch spac
 | `make plan-full` | `plan --full`: the default suites plus every combination                   |
 | `make run-full`  | `run --full`                                                               |
 | `make noise`     | `run --suite noise --repeat 3`: the spread between repeats                 |
+| `make ablation`  | `run --suite ablation --repeat 3`: one rule removed at a time              |
 | `make report`    | `testbed.py report` on `RUN`, `out/latest-run` by default                  |
 | `make judge`     | `testbed.py judge` on `RUN` with the `JUDGE` model; asks before it starts  |
 | `make test`      | the unit tests                                                             |
@@ -67,6 +68,23 @@ is better:
   in a smoke test.
 
 Read about ten judged pairs and their reasons yourself before trusting the tallies.
+
+## One rule removed at a time
+
+`make ablation` runs the `ablation` suite: a reference configuration with every guideline on, threads on,
+`situation auto`, `signals intent` and `style ste`, and then one configuration per unit with that unit removed.
+A unit is one guideline, turned off with an override, or one rule line of `policy/threads.md`, deleted from a copy
+of the plugin made for that configuration only. Guideline units run on six scenarios and thread-protocol lines on
+four, as `data/suites.json` sets.
+
+`ablation.md` and `ablation.csv` then list, for every unit, the characters it costs, the counts that changed, the
+compliance rates that moved and, after `testbed.py judge RUN --against ref`, the judge's verdicts against the
+reference. A unit with none of these has no measurable effect on these scenarios: a candidate to delete. A count
+changes only when the unit's values and the reference's do not overlap across repeats, so run it with
+`--repeat 3`, and read the transcripts behind a unit that changed a single count.
+
+The suite is large: about 1,300 sessions per agent. `make plan ARGS='--suite ablation --repeat 3'` prints the
+estimate.
 
 ## Two tiers
 

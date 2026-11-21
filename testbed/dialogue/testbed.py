@@ -126,9 +126,9 @@ def command_run(args):
 def command_judge(args):
     import judge
     run = report.read_json(args.run_dir / 'run.json')
-    base = matrix.slug(plugin.fresh_defaults(run['plugin']['source']))
+    base = args.against or matrix.slug(plugin.fresh_defaults(run['plugin']['source']))
     agent = matrix.parse_agent(args.judge)
-    selected = [pair for pair in judge.pairs(args.run_dir, base)
+    selected = [pair for pair in judge.pairs(args.run_dir, base, with_disabled=not args.against)
                 if (not args.scenario or pair['scenario'] in args.scenario)
                 and (not args.config or any(part in pair['config'] for part in args.config))
                 and not judge.output_path(args.run_dir, pair).exists()]
@@ -196,6 +196,9 @@ def parser():
                        help='the judge model (default: claude:sonnet)')
     grade.add_argument('--scenario', action='append', help='only this scenario ID, repeatable')
     grade.add_argument('--config', action='append', metavar='TEXT', help='only variants whose name contains TEXT')
+    grade.add_argument('--against', metavar='CONFIG',
+                       help='compare every variant with this configuration, such as ref for the ablation suite '
+                            '(default: the base configuration, and the base with the disabled plugin)')
     grade.add_argument('--limit', type=int, help='only the first N pairs')
     grade.add_argument('--jobs', type=int, default=4)
     grade.add_argument('--yes', action='store_true', help='start without asking')

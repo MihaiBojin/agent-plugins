@@ -60,7 +60,7 @@ def parse(text):
     return value if value.get('winner') in ('A', 'B', 'tie') else None
 
 
-def pairs(run_dir, base_slug):
+def pairs(run_dir, base_slug, with_disabled=True):
     """(variant, base) for every complete variant and the base it is compared with."""
     run_dir = Path(run_dir)
     found = {}
@@ -77,7 +77,7 @@ def pairs(run_dir, base_slug):
             if slug != base_slug:
                 result.append({'agent': agent, 'scenario': scenario, 'repeat': repeat, 'config': slug,
                                'variant': case_dir, 'base': by_slug[base_slug], 'base_slug': base_slug})
-        if 'disabled' in by_slug:
+        if with_disabled and 'disabled' in by_slug:
             result.append({'agent': agent, 'scenario': scenario, 'repeat': repeat, 'config': base_slug,
                            'variant': by_slug[base_slug], 'base': by_slug['disabled'], 'base_slug': 'disabled'})
     return result

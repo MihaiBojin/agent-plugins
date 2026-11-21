@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 from clients import CLAUDE_INLINE_LIMIT, narration, reads_policy_file
+import ablation
 import compliance
 from metrics import turn_metrics
 
@@ -168,6 +169,7 @@ def write_index(run_dir):
             writer.writerows(rows)
     (run_dir / 'summary.md').write_text(summary(run_dir, variants) + '\n', encoding='utf-8')
     compliance.write(run_dir, variants, run)
+    ablation.write(run_dir, variants, run)
     return len(variants), len(rows)
 
 

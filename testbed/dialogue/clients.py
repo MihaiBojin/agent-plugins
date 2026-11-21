@@ -80,7 +80,8 @@ def parse_claude_turn(events):
         'reply': result.get('result') or '',
         'usage': result.get('usage') or {},
         'cost_usd': result.get('total_cost_usd'),
-        'error': result.get('subtype') if result.get('is_error') else None,
+        # An API error ends the turn with is_error set and the message as the result text.
+        'error': (result.get('result') or result.get('subtype')) if result.get('is_error') else None,
     }
 
 

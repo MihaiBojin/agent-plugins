@@ -18,7 +18,7 @@ WORK ?= $(shell $(PYTHON) -c 'import os, tempfile; print(os.environ.get("DIALOGU
 AGENTS = $(if $(CLAUDE_MODEL),--agent claude:$(CLAUDE_MODEL)$(if $(CLAUDE_EFFORT),:$(CLAUDE_EFFORT))) \
 	$(if $(CODEX_MODEL),--agent codex:$(CODEX_MODEL)$(if $(CODEX_EFFORT),:$(CODEX_EFFORT)))
 
-.PHONY: render plan run plan-full run-full noise report judge test clean
+.PHONY: render plan run plan-full run-full noise ablation report judge test clean
 
 render:
 	$(PYTHON) testbed.py render $(ARGS)
@@ -37,6 +37,9 @@ run-full:
 
 noise:
 	$(PYTHON) testbed.py run --suite noise --repeat 3 $(AGENTS) --jobs $(JOBS) --work "$(WORK)" $(ARGS)
+
+ablation:
+	$(PYTHON) testbed.py run --suite ablation --repeat 3 $(AGENTS) --jobs $(JOBS) --work "$(WORK)" $(ARGS)
 
 report:
 	$(PYTHON) testbed.py report "$(RUN)"

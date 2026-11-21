@@ -48,6 +48,29 @@ def policy_notes(part_chars, client, codex_chars_limit):
     return notes
 
 
+def write_marketplace(marketplace):
+    """The local marketplace Codex installs the plugin copy from."""
+    (marketplace / '.agents' / 'plugins').mkdir(parents=True)
+    (marketplace / '.agents' / 'plugins' / 'marketplace.json').write_text(json.dumps({
+        'name': 'testbed', 'interface': {'displayName': 'testbed'},
+        'plugins': [{'name': 'dialogue', 'source': {'source': 'local', 'path': './plugins/dialogue'},
+                     'policy': {'installation': 'AVAILABLE', 'authentication': 'ON_INSTALL'},
+                     'category': 'Developer Tools'}]}, indent=2), encoding='utf-8')
+
+
+def drop_lines(plugin_dir, drops):
+    """Remove each `FILE:LINE` from the plugin copy; line numbers refer to the file before any removal."""
+    by_file = {}
+    for drop in drops:
+        path, _, number = drop.rpartition(':')
+        by_file.setdefault(path, set()).add(int(number))
+    for path, numbers in by_file.items():
+        target = Path(plugin_dir) / path
+        lines = target.read_text(encoding='utf-8').splitlines(keepends=True)
+        target.write_text(''.join(line for index, line in enumerate(lines, 1) if index not in numbers),
+                          encoding='utf-8')
+
+
 def placeholder_thread(state):
     """The thread {active} names and the option {recommended} names, from the saved state."""
     threads = (state or {}).get('threads') or {}
@@ -116,18 +139,34 @@ class Run:
         marketplace = self.work / 'marketplace'
         self.plugin_info = plugin.snapshot(plugin_source, marketplace / 'plugins' / 'dialogue')
         self.plugin_path = Path(self.plugin_info['path'])
-        (marketplace / '.agents' / 'plugins').mkdir(parents=True)
-        (marketplace / '.agents' / 'plugins' / 'marketplace.json').write_text(json.dumps({
-            'name': 'testbed', 'interface': {'displayName': 'testbed'},
-            'plugins': [{'name': 'dialogue', 'source': {'source': 'local', 'path': './plugins/dialogue'},
-                         'policy': {'installation': 'AVAILABLE', 'authentication': 'ON_INSTALL'},
-                         'category': 'Developer Tools'}]}, indent=2), encoding='utf-8')
+        write_marketplace(marketplace)
         used = sorted({agent['client'] for agent in agents})
         clients.check_installed(used)
         self.versions = {client: clients.version(client) for client in used}
         self.codex = clients.CodexHome(self.work, marketplace) if 'codex' in used else None
+        self.patched = {}
         self.codex_limit = codex_limit(self.plugin_path)
         self.terms = plugin.terms(self.plugin_path)
+
+    def installed(self, config, client):
+        """The plugin a case runs: the snapshot, or a copy with the configuration's policy lines removed.
+
+        Returns the plugin directory for Claude and the Codex home for Codex. A copy is made once per set of
+        removed lines and shared by every case that removes the same ones."""
+        drops = tuple(config.get('drops') or ())
+        if not drops:
+            return self.plugin_path if client == 'claude' else self.codex
+        key = (drops, client)
+        with self.lock:
+            if key not in self.patched:
+                root = self.work / 'patched' / uuid.uuid4().hex[:12]
+                marketplace = root / 'marketplace'
+                shutil.copytree(self.plugin_path, marketplace / 'plugins' / 'dialogue')
+                drop_lines(marketplace / 'plugins' / 'dialogue', drops)
+                write_marketplace(marketplace)
+                self.patched[key] = (marketplace / 'plugins' / 'dialogue' if client == 'claude'
+                                     else clients.CodexHome(root, marketplace))
+            return self.patched[key]
 
     def write_manifest(self, extra):
         path = self.out / 'run.json'
@@ -185,8 +224,8 @@ class Run:
         workspace, state = work / 'workspace', work / 'state'
         make_workspace(workspace)
         plugin.seed(self.plugin_path, state, config)
-        installed = self.codex.plugin if client == 'codex' else self.plugin_path
-        parts = plugin.render_parts(installed, state, client)
+        target = self.installed(config, client)
+        parts = plugin.render_parts(target.plugin if client == 'codex' else target, state, client)
         policy = '\n\n'.join(parts)
         (case_dir / 'policy.md').write_text(policy, encoding='utf-8')
         variant = {'agent': agent, 'scenario': case['scenario'], 'config': config, 'slug': slug(config),
@@ -198,9 +237,9 @@ class Run:
         logs = {'events_log': case_dir / 'events.jsonl', 'stderr_log': case_dir / 'stderr.log',
                 'timeout': self.settings['turn_timeout']}
         if client == 'claude':
-            session = clients.ClaudeSession(agent, self.plugin_path, workspace, state, **logs)
+            session = clients.ClaudeSession(agent, target, workspace, state, **logs)
         else:
-            session = clients.CodexSession(agent, self.codex, workspace, state, **logs)
+            session = clients.CodexSession(agent, target, workspace, state, **logs)
         turns, error = [], None
         try:
             for number, template in enumerate(case['scenario']['turns'], 1):
