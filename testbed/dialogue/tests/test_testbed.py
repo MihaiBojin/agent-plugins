@@ -262,6 +262,25 @@ class AblationTest(unittest.TestCase):
         self.assertFalse(unit['guidelines']['bluf'])
         self.assertTrue(unit['guidelines']['tables'])
 
+    def test_chosen_units_and_all_of_them_removed_together(self):
+        values = matrix.catalog(PLUGIN)
+        base = plugin.fresh_defaults(PLUGIN)
+        spec = matrix.load_json('suites.json')['suites']['ablation']['leave_one_out']
+        line = 'ref.~threads' + str(matrix.rule_lines(PLUGIN, 'policy/threads.md')[0][0])
+        pairs = matrix.leave_one_out(spec, base, values, PLUGIN, units=['ref.-bluf', line], together=True)
+        by_name = {}
+        for scenario, config in pairs:
+            by_name.setdefault(matrix.slug(config), (config, []))[1].append(scenario)
+        self.assertEqual(set(by_name), {'ref', 'ref.-bluf', line, 'ref.*together'})
+        together, scenarios = by_name['ref.*together']
+        self.assertEqual(sorted(scenarios), sorted(by_name['ref'][1]))
+        self.assertFalse(together['guidelines']['bluf'])
+        self.assertTrue(together['guidelines']['tables'])
+        self.assertEqual(together['drops'], by_name[line][0]['drops'])
+        self.assertEqual(together['together'], ['ref.-bluf', line])
+        with self.assertRaises(ValueError):
+            matrix.leave_one_out(spec, base, values, PLUGIN, units=['ref.-nothing'])
+
     def test_drop_lines_removes_only_the_named_lines(self):
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / 'policy' / 'threads.md'

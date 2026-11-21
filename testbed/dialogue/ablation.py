@@ -1,7 +1,7 @@
 """What removing one rule changes: each unit of a leave-one-out suite against its reference.
 
-A unit is a configuration named `REF.-GUIDELINE` or `REF.~FILELINE`; its reference is the configuration named
-REF. For every agent and scenario, the reference's repeats give a range, a mean and a spread for each count. A
+A unit is a configuration named `REF.-GUIDELINE` or `REF.~FILELINE`, or `REF.*together` for several units removed
+at once; its reference is the configuration named REF. For every agent and scenario, the reference's repeats give a range, a mean and a spread for each count. A
 unit's count changed when its values and the reference's do not overlap, and its mean moved by at least one and
 by more than twice that spread. A unit with no changed
 count, no changed compliance rate and no judge losses has no measurable effect: the text it removes costs
@@ -20,7 +20,8 @@ COUNTS = ('words', 'sentences', 'long_sentences', 'bullets', 'numbered_items', '
           'contractions', 'thread_headings', 'option_lines', 'recommended', 'narration_blocks', 'tool_calls',
           'dialogue_calls')
 FLAGS = ('decisions_heading', 'footer')
-UNIT = re.compile(r'^(?P<ref>[^.]+)\.(?P<kind>[-~])(?P<what>.+)$')
+UNIT = re.compile(r'^(?P<ref>[^.]+)\.(?P<kind>[-~*])(?P<what>.+)$')
+KINDS = {'-': 'guideline', '~': 'line', '*': 'together'}
 
 
 def totals(metrics, state_threads):
@@ -87,12 +88,14 @@ def write(run_dir, variants, run):
         tally = verdicts.get((agent, unit, match['ref']))
         sample = next(iter(cases[(agent, unit)].values()))[0]
         reference_chars = next(iter(reference.values()))[0]['chars']
-        removed = (sample['variant']['config'].get('drops_text') or [''])[0]
-        # A line unit saves its own text; a guideline unit saves what its policy no longer prints.
+        config = sample['variant']['config']
+        removed = {'-': match['what'], '~': (config.get('drops_text') or [''])[0],
+                   '*': ', '.join(config.get('together', []))}[match['kind']]
+        # A line unit saves its own text; the others save what their policy no longer prints.
         saved = len(removed) + 1 if match['kind'] == '~' else reference_chars - sample['chars']
         rows.append({
-            'agent': agent, 'unit': unit, 'kind': 'guideline' if match['kind'] == '-' else 'line',
-            'removed': match['what'] if match['kind'] == '-' else removed,
+            'agent': agent, 'unit': unit, 'kind': KINDS[match['kind']],
+            'removed': removed,
             'chars_saved': saved,
             'counts_changed': '; '.join(changed), 'compliance_changed': '; '.join(rules),
             'judge': f'{tally["variant"]} won, {tally["base"]} lost, {tally["tie"]} tied' if tally else '',
@@ -111,14 +114,17 @@ def write(run_dir, variants, run):
              '`testbed.py judge RUN --against ref`; a loss means the reference was better.', '']
     for agent in sorted({row['agent'] for row in rows}):
         subset = [row for row in rows if row['agent'] == agent]
-        quiet = [row for row in subset if row['effect'] == 'none measured']
+        single = [row for row in subset if row['kind'] != 'together']
+        quiet = [row for row in single if row['effect'] == 'none measured']
         lines += [f'## {agent}', '',
-                  f'{len(quiet)} of {len(subset)} units show no measurable effect; together they are '
-                  f'{sum(row["chars_saved"] for row in quiet):,} characters of policy.', '',
+                  f'{len(quiet)} of {len(single)} units show no measurable effect; together they are '
+                  f'{sum(row["chars_saved"] for row in quiet):,} characters of policy. A `together` row removes '
+                  'every unit run in that row at once: an effect there means some of them matter only in pairs.', '',
                   '| Unit | Removes | Characters | Counts changed | Compliance changed | Judge | Effect |',
                   '| --- | --- | --- | --- | --- | --- | --- |']
         for row in sorted(subset, key=lambda item: (item['effect'] != 'none measured', -item['chars_saved'])):
-            removed = row['removed'].replace('|', '\\|')[:90]
+            removed = row['removed'].replace('|', '\\|')
+            removed = removed if row['kind'] == 'together' else removed[:90]
             lines.append(f'| `{row["unit"]}` | {removed} | {row["chars_saved"]} | {row["counts_changed"] or "-"} | '
                          f'{row["compliance_changed"] or "-"} | {row["judge"] or "-"} | {row["effect"]} |')
         lines.append('')

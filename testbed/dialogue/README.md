@@ -86,6 +86,18 @@ changes only when the unit's values and the reference's do not overlap across re
 The suite is large: about 1,300 sessions per agent. `make plan ARGS='--suite ablation --repeat 3'` prints the
 estimate.
 
+A model that already writes the way a rule asks shows no effect when the rule is removed, and neither do two rules
+that ask for the same thing. So check the candidates on a model that follows the policy closely, and then remove
+them all at once:
+
+```sh
+python3 testbed.py run --suite ablation --repeat 3 --agent claude:haiku \
+  --units ref.-bluf,ref.~threads12 --together
+```
+
+`--units` runs only the named units and the reference. `--together` adds `ref.*together`, which removes every named
+unit at once. A unit is safe to delete when it shows no effect on its own and the `together` row shows none either.
+
 ## Two tiers
 
 `render` needs no model. It seeds a fresh state directory with each of the 1,050 combinations of `comms`, `style`,
