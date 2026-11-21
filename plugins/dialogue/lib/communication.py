@@ -86,7 +86,7 @@ def list_groups(profile, overrides=None, style="plain", active=True):
     return "\n".join(lines)
 
 
-def render_profile(profile, overrides=None, style="plain"):
+def render_profile(profile, overrides=None, style="plain", with_risk_levels=True):
     guidelines, profiles = catalog()
     entries = effective_guidelines(profile, overrides, style)
     if profile in ("plain", "custom") and not entries:
@@ -95,7 +95,7 @@ def render_profile(profile, overrides=None, style="plain"):
     lines = [f"## Communication profile: {profile}"]
     for entry in entries:
         lines.append(f'- {entry["name"]}: {entry["description"]}')
-    if any(entry["id"] == "warnings" for entry in entries):
+    if with_risk_levels and any(entry["id"] == "warnings" for entry in entries):
         lines.append(risk_levels())
     if any(entry["id"] == "formats" for entry in entries):
         lines.extend([
@@ -132,7 +132,7 @@ def list_situations():
     return "\n".join(lines)
 
 
-def render_situation(name):
+def render_situation(name, with_risk_levels=True):
     if name == "none":
         return "No situational framework selected."
     items = situations()
@@ -149,7 +149,7 @@ def render_situation(name):
     for title, meaning in item["fields"]:
         lines.append(f'- {title}: {meaning}')
     lines.append(item["guidance"])
-    if item.get("risk_levels"):
+    if with_risk_levels and item.get("risk_levels"):
         lines.append(risk_levels())
     lines.append("Use the framework only where relevant; do not invent missing details. Ask only for essential unknowns.")
     return "\n".join(lines)
