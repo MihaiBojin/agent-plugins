@@ -1,3 +1,6 @@
 .DS_Store
 node_modules/
 __pycache__/
+
+# `claude plugin eval` writes each run's report and JSON here.
+plugins/*/evals/results/
