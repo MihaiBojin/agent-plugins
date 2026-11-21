@@ -70,6 +70,9 @@ def migrate_settings(value):
     if isinstance(value, dict) and 'response_style' in value and 'communication_profile' not in value:
         value = dict(value)
         value['communication_profile'] = value.pop('response_style')
+    if isinstance(value, dict) and value.get('communication_profile') == 'custom':
+        # custom gave the same policy as plain: both start with no guidelines.
+        value = {**value, 'communication_profile': 'plain'}
     if isinstance(value, dict):
         value = {**{k: spec[0] for k, spec in SETTINGS.items() if k in ('situation', 'language_standard', 'signaling', 'guideline_overrides')}, **value}
     return value
