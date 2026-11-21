@@ -72,7 +72,7 @@ Read about ten judged pairs and their reasons yourself before trusting the talli
 ## One rule removed at a time
 
 `make ablation` runs the `ablation` suite: a reference configuration with every guideline on, threads on,
-`situation auto`, `signals intent` and `style ste`, and then one configuration per unit with that unit removed.
+`situation none`, `signals intent` and `style ste`, and then one configuration per unit with that unit removed.
 A unit is one guideline, turned off with an override, or one rule line of `policy/threads.md`, deleted from a copy
 of the plugin made for that configuration only. Guideline units run on six scenarios and thread-protocol lines on
 four, as `data/suites.json` sets.
