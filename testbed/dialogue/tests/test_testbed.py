@@ -69,6 +69,18 @@ class MatrixTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             matrix.parse_agent('gemini:pro')
 
+    def test_a_plugin_without_the_situation_setting_skips_only_situation_configurations(self):
+        values = {**self.values, 'situation': ['none']}
+        build = lambda spec: matrix.make_config(self.base, spec, values)
+        configs = matrix.available([{'situation': 'sbar'}, {'comms': 'direct'}], build)
+        self.assertEqual([config['comms'] for config in configs], ['direct'])
+        with self.assertRaises(ValueError):
+            matrix.available([{'comms': 'loud'}], build)
+        with self.assertRaises(matrix.Unavailable):
+            build({'situation': 'sbar'})
+        with self.assertRaises(ValueError):
+            matrix.make_config(self.base, {'situation': 'sbra'}, self.values)
+
     def test_agent_labels(self):
         self.assertEqual(CODEX, {'client': 'codex', 'model': 'gpt-6-luna', 'effort': 'low',
                                  'label': 'codex-gpt-6-luna-low'})

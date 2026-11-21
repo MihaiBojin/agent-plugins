@@ -38,7 +38,9 @@ def write(run_dir, variants, run):
     cases = {}
     for case_dir, variant, metrics in variants:
         last = metrics[-1] if metrics else {}
-        values = totals(metrics, last.get('threads_open', 0) + last.get('threads_closed', 0)) if metrics else None
+        # A case that failed part way would count as a change, so only complete cases are compared.
+        complete = metrics and variant['status'] == 'complete'
+        values = totals(metrics, last.get('threads_open', 0) + last.get('threads_closed', 0)) if complete else None
         cases.setdefault((variant['agent']['label'], variant['slug']), {}).setdefault(
             variant['scenario']['id'], []).append({'values': values, 'chars': variant['policy_chars'],
                                                   'variant': variant})

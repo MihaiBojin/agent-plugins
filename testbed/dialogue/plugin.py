@@ -40,8 +40,8 @@ def tool(plugin, state_dir, *args, client='claude', stdin=None):
     return result.stdout
 
 
-def fresh_defaults(plugin):
-    """The settings a session gets right after enable, before anything else is changed."""
+def settings_table(plugin):
+    """Each setting the plugin has, with its default for new sessions."""
     with tempfile.TemporaryDirectory() as state:
         table = tool(plugin, state, 'settings')
     defaults = {}
@@ -49,13 +49,21 @@ def fresh_defaults(plugin):
         cells = [cell.strip() for cell in line.strip().strip('|').split('|')]
         if len(cells) >= 3:
             defaults[cells[0]] = cells[2]
+    return defaults
+
+
+def fresh_defaults(plugin):
+    """The settings a session gets right after enable, before anything else is changed.
+
+    A plugin without the situation setting runs as situation none."""
+    defaults = settings_table(plugin)
     flag = lambda key: defaults[key] == 'true'
     style = defaults['language_standard']
     return {
         'enabled': True,
         'comms': defaults['communication_profile'],
         'style': 'ste' if style == 'ste-inspired' else style,
-        'situation': defaults['situation'],
+        'situation': defaults.get('situation', 'none'),
         'signals': defaults['signaling'],
         'threads': thread_mode(flag('threads'), flag('focus'), flag('compact')),
         'guidelines': {},
@@ -65,8 +73,10 @@ def fresh_defaults(plugin):
 def seed(plugin, state_dir, config):
     """Write the configuration as the defaults, so the session the client starts snapshots it."""
     values = {'enabled': 'on' if config['enabled'] else 'off', 'comms': config['comms'],
-              'style': config['style'], 'situation': config['situation'], 'signals': config['signals'],
-              **THREAD_MODES[config['threads']]}
+              'style': config['style'], 'signals': config['signals'], **THREAD_MODES[config['threads']]}
+    if config['situation'] != 'none':
+        # none is the default, and the only value of a plugin without the setting.
+        values['situation'] = config['situation']
     for key, value in values.items():
         tool(plugin, state_dir, 'defaults', 'set', key, value)
     for identifier, enabled in sorted(config['guidelines'].items()):

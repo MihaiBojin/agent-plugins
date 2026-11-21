@@ -72,7 +72,7 @@ Read about ten judged pairs and their reasons yourself before trusting the talli
 ## One rule removed at a time
 
 `make ablation` runs the `ablation` suite: a reference configuration with every guideline on, threads on,
-`situation auto`, `signals intent` and `style ste`, and then one configuration per unit with that unit removed.
+`situation none`, `signals intent` and `style ste`, and then one configuration per unit with that unit removed.
 A unit is one guideline, turned off with an override, or one rule line of `policy/threads.md`, deleted from a copy
 of the plugin made for that configuration only. Guideline units run on six scenarios and thread-protocol lines on
 four, as `data/suites.json` sets.
@@ -150,6 +150,9 @@ python3 testbed.py run --agent claude:opus:high --scenario decisions --config fo
 | `--calibrate RUN_DIR`            | Estimate from the tokens per turn measured in an earlier run        |
 | `--out DIR`                      | Write to DIR; complete variants already there are kept              |
 | `--plugin PATH` (before command) | Test another copy of the plugin, such as one on another branch      |
+
+A plugin with no `situation` setting, dialogue 0.9.0 and later, runs every configuration as situation `none`: the
+suites leave out the configurations that set one, and the render has no setup workflows.
 
 The Makefile passes `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CODEX_MODEL`, `CODEX_EFFORT` and `JOBS` as these options, and
 `ARGS` as anything else.
