@@ -105,7 +105,7 @@
         "reference": {
           "comms": "pyramid",
           "style": "ste",
-          "situation": "auto",
+          "situation": "none",
           "signals": "intent",
           "threads": "focus-compact",
           "all_guidelines": true

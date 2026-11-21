@@ -27,20 +27,24 @@ def load_json(name):
 
 
 def catalog(plugin):
-    """The values each setting accepts, read from the plugin's own policy files."""
+    """The values each setting accepts, read from the plugin's own policy files and settings.
+
+    A plugin without the situation setting takes only situation none, and has no setup workflows."""
+    import plugin as tested  # plugin imports this module, so the import waits for the call.
     policy = Path(plugin) / 'policy'
 
     def load(name):
         return json.loads((policy / name).read_text(encoding='utf-8'))
 
+    situations = 'situation' in tested.settings_table(plugin)
     return {
         'comms': list(load('profiles.json')),
         'style': ['ste' if key == 'ste-inspired' else key for key in load('language.json')],
-        'situation': ['none', 'auto', *load('situations.json')],
+        'situation': ['none', 'auto', *load('situations.json')] if situations else ['none'],
         'signals': list(SIGNALS),
         'threads': list(THREAD_MODES),
         'guidelines': [entry['id'] for entry in load('guidelines.json')],
-        'workflows': load('workflows.json'),
+        'workflows': load('workflows.json') if (policy / 'workflows.json').exists() else {},
     }
 
 
@@ -51,6 +55,21 @@ def thread_mode(threads, focus, compact):
         if values == {'threads': 'on', 'focus': 'on' if focus else 'off', 'compact': 'on' if compact else 'off'}:
             return name
     raise ValueError('no thread mode matches')
+
+
+class Unavailable(ValueError):
+    """A configuration sets a situation, and the plugin under test has no situation setting."""
+
+
+def available(specs, build):
+    """build(spec) for each spec, leaving out the ones the plugin under test cannot run."""
+    result = []
+    for spec in specs:
+        try:
+            result.append(build(spec))
+        except Unavailable:
+            pass
+    return result
 
 
 def make_config(base, spec, values):
@@ -72,6 +91,8 @@ def make_config(base, spec, values):
                 raise ValueError(f'unknown guideline: {", ".join(sorted(unknown))}')
             config['guidelines'] = dict(value)
         elif key in DIMENSIONS:
+            if key == 'situation' and value != 'none' and values['situation'] == ['none']:
+                raise Unavailable(f'the plugin has no situation setting for {value!r}')
             if value not in values[key]:
                 raise ValueError(f'{key} has no value {value!r}; it takes {", ".join(values[key])}')
             config[key] = value
@@ -100,7 +121,7 @@ def product(base, values):
 
 def suite_configs(spec, base, values):
     if 'configs' in spec:
-        return [make_config(base, item, values) for item in spec['configs']]
+        return available(spec['configs'], lambda item: make_config(base, item, values))
     if 'vary' in spec:
         return [make_config(base, {spec['vary']: value}, values) for value in values[spec['vary']]]
     if spec.get('workflows'):
@@ -122,44 +143,62 @@ def rule_lines(plugin, path):
     return [(number, line) for number, line in enumerate(lines, 1) if line.strip() and not line.startswith('#')]
 
 
-def leave_one_out(spec, base, values, plugin):
+def leave_one_out(spec, base, values, plugin, units=None, together=False):
     """The reference configuration, then one configuration per unit with that unit removed.
 
-    Each unit carries the scenarios where removing it can show; the reference runs on all of them."""
+    Each unit carries the scenarios where removing it can show; the reference runs on all of them. `units` keeps
+    only the units with those configuration names. `together` adds one configuration, `REF.*together`, that
+    removes every kept unit at once, on all their scenarios, for rules that only matter when another is gone."""
     reference = dict(spec['reference'])
     every = reference.pop('all_guidelines', False)
     if every:
         reference['guidelines'] = {identifier: True for identifier in values['guidelines']}
     name = spec.get('name', 'ref')
-    result, union = [], []
+    kept = []  # (scenarios, guideline removed or None, (drop, text) or None, configuration)
     for unit in spec['units']:
-        union += [scenario for scenario in unit['scenarios'] if scenario not in union]
         if unit['kind'] == 'guidelines':
             for identifier in values['guidelines']:
                 if every or identifier in reference.get('guidelines', {}):
                     guidelines = {**reference.get('guidelines', {}), identifier: False}
                     config = make_config(base, {**reference, 'guidelines': guidelines, 'name': f'{name}.-{identifier}'},
                                          values)
-                    result += [(scenario, config) for scenario in unit['scenarios']]
+                    kept.append((unit['scenarios'], identifier, None, config))
         elif unit['kind'] == 'lines':
             stem = Path(unit['file']).stem
             for number, text in rule_lines(plugin, unit['file']):
-                config = make_config(base, {**reference, 'name': f'{name}.~{stem}{number}',
-                                            'drops': [f'{unit["file"]}:{number}']}, values)
+                drop = f'{unit["file"]}:{number}'
+                config = make_config(base, {**reference, 'name': f'{name}.~{stem}{number}', 'drops': [drop]}, values)
                 config['drops_text'] = [text]
-                result += [(scenario, config) for scenario in unit['scenarios']]
+                kept.append((unit['scenarios'], None, (drop, text), config))
         else:
             raise ValueError(f'unknown unit kind: {unit["kind"]}')
+    if units is not None:
+        unknown = set(units) - {slug(config) for *_, config in kept}
+        if unknown:
+            raise ValueError(f'unknown ablation unit: {", ".join(sorted(unknown))}')
+        kept = [item for item in kept if slug(item[3]) in units]
+    union, result = [], []
+    for scenarios, _, _, config in kept:
+        union += [scenario for scenario in scenarios if scenario not in union]
+        result += [(scenario, config) for scenario in scenarios]
+    if together and kept:
+        guidelines = {**reference.get('guidelines', {}), **{item[1]: False for item in kept if item[1]}}
+        lines = [item[2] for item in kept if item[2]]
+        config = make_config(base, {**reference, 'guidelines': guidelines, 'name': f'{name}.*together',
+                                    'drops': [drop for drop, _ in lines]}, values)
+        config['drops_text'] = [text for _, text in lines]
+        config['together'] = [slug(item[3]) for item in kept]
+        result += [(scenario, config) for scenario in union]
     config = make_config(base, {**reference, 'name': name}, values)
     return [(scenario, config) for scenario in union] + result
 
 
-def suite_pairs(spec, base, values, scenarios, plugin=None):
+def suite_pairs(spec, base, values, scenarios, plugin=None, units=None, together=False):
     """The (scenario id, configuration) pairs one suite asks for."""
     if 'leave_one_out' in spec:
-        return leave_one_out(spec['leave_one_out'], base, values, plugin)
+        return leave_one_out(spec['leave_one_out'], base, values, plugin, units, together)
     if 'cases' in spec:
-        return [(item['scenario'], make_config(base, item.get('config', {}), values)) for item in spec['cases']]
+        return available(spec['cases'], lambda item: (item['scenario'], make_config(base, item.get('config', {}), values)))
     wanted = spec['scenarios']
     ids = [item['id'] for item in scenarios if item['kind'] == 'task'] if wanted == ['*'] else wanted
     return [(scenario, config) for config in suite_configs(spec, base, values) for scenario in ids]
@@ -175,7 +214,8 @@ def parse_agent(text):
     return {'client': parts[0], 'model': parts[1], 'effort': effort, 'label': label}
 
 
-def cases(plugin, base, agents, suites, repeat=1, scenario_ids=(), config_match=(), limit=None):
+def cases(plugin, base, agents, suites, repeat=1, scenario_ids=(), config_match=(), limit=None, units=None,
+          together=False):
     """Every case to run: an agent, a scenario, a configuration and a repeat, each once."""
     values = catalog(plugin)
     scenarios = load_json('scenarios.json')
@@ -185,7 +225,7 @@ def cases(plugin, base, agents, suites, repeat=1, scenario_ids=(), config_match=
     for name in suites:
         if name not in definitions:
             raise ValueError(f'unknown suite: {name}; known: {", ".join(definitions)}')
-        for scenario, config in suite_pairs(definitions[name], base, values, scenarios, plugin):
+        for scenario, config in suite_pairs(definitions[name], base, values, scenarios, plugin, units, together):
             if scenario not in by_id:
                 raise ValueError(f'suite {name} names unknown scenario {scenario}')
             key = (scenario, slug(config))

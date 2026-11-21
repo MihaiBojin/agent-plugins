@@ -279,14 +279,15 @@ def summary(rows, analysis, repeated, conflicted, workflows):
     lines += ['', '## Rules that conflict', '']
     for name, first, second, note in CONFLICTS:
         lines.append(f'- **{name}**: {note}. Both rules are in {len(conflicted.get(name, []))} configurations.')
-    pairs = sorted({(item['situation'], item['signaling']) for item in workflows.values()})
-    lines += ['', '## Setup workflows', '',
-              f'Setup offers {len(workflows)} workflows. They reach {len(pairs)} of the '
-              f'{len(analysis["values"]["situation"]) * len(analysis["values"]["signals"])} situation and signals '
-              'pairs; `set` reaches the rest.', '',
-              '| Workflow | Situation | Signals |', '| --- | --- | --- |']
-    for name, item in workflows.items():
-        lines.append(f'| {name} | `{item["situation"]}` | `{item["signaling"]}` |')
+    if workflows:
+        pairs = sorted({(item['situation'], item['signaling']) for item in workflows.values()})
+        lines += ['', '## Setup workflows', '',
+                  f'Setup offers {len(workflows)} workflows. They reach {len(pairs)} of the '
+                  f'{len(analysis["values"]["situation"]) * len(analysis["values"]["signals"])} situation and '
+                  'signals pairs; `set` reaches the rest.', '',
+                  '| Workflow | Situation | Signals |', '| --- | --- | --- |']
+        for name, item in workflows.items():
+            lines.append(f'| {name} | `{item["situation"]}` | `{item["signaling"]}` |')
     lines += ['', '## Command forms that do the same thing', '',
               'Each side runs on a fresh, disabled session. Same settings means the saved settings match '
               'afterwards; same output compares what the last command of each side printed.', '',
