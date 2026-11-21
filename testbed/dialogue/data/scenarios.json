@@ -1,0 +1,215 @@
+[
+  {
+    "id": "routine-question",
+    "kind": "task",
+    "probes": "Reply length and shape for a short factual question",
+    "turns": [
+      "What does load_config return when config.json is missing?",
+      "Which port does it use then?"
+    ]
+  },
+  {
+    "id": "implemented",
+    "kind": "task",
+    "probes": "A verdict before the explanation, and evidence",
+    "turns": ["Is retry on HTTP 503 implemented in app/http.py?"]
+  },
+  {
+    "id": "compare",
+    "kind": "task",
+    "probes": "Tables, one recommendation, reasons, and a decision thread",
+    "turns": [
+      "Compare a JSON file per key with a single SQLite file for the cache in app/cache.py."
+    ]
+  },
+  {
+    "id": "procedure",
+    "kind": "task",
+    "probes": "STE procedure rules, warnings, and numbered steps against the thread protocol",
+    "turns": [
+      "Write the procedure to rotate the supplier API key for this service. docs/operations.md has the facts."
+    ]
+  },
+  {
+    "id": "code-change",
+    "kind": "task",
+    "probes": "Narration during tool use, the completion format, and delta-only follow-ups",
+    "turns": [
+      "Add a timeout parameter to fetch() in app/http.py, default 10 seconds, and pass it to urlopen.",
+      "Now read the timeout from load_config instead, under the key http_timeout."
+    ]
+  },
+  {
+    "id": "decisions",
+    "kind": "task",
+    "probes": "Opening threads with options, choosing one, and the full listing",
+    "turns": [
+      "I want to add caching to fetch(). What do we need to decide before we start?",
+      "{active}{recommended}",
+      "=//"
+    ]
+  },
+  {
+    "id": "markers",
+    "kind": "task",
+    "probes": "Every thread marker the user can type",
+    "turns": [
+      "+ rename the command-line entry point to inv",
+      "1+ keep the old name as an alias for one release",
+      "=//",
+      "1/ yes, rename it",
+      "2/$",
+      "=//"
+    ]
+  },
+  {
+    "id": "walk",
+    "kind": "task",
+    "probes": "The =/ walk through open threads, with a deferral and an answer",
+    "turns": [
+      "Review app/ and list what needs a decision before a 1.0 release.",
+      "=/",
+      "skip this one for now",
+      "{active}{recommended}",
+      "=//"
+    ]
+  },
+  {
+    "id": "focus-drift",
+    "kind": "task",
+    "probes": "Focus: work on one issue while others wait in the backlog",
+    "turns": [
+      "The cache storage and the 503 retry policy both need decisions, and reorder_needed in app/stock.py looks wrong too. Start with reorder_needed.",
+      "Is reorder_needed fixed now?"
+    ]
+  },
+  {
+    "id": "escalation",
+    "kind": "task",
+    "probes": "SBAR, or no framework, for an escalation",
+    "turns": [
+      "Write the escalation to the on-call lead about the error spike described in ops/incident-notes.md."
+    ]
+  },
+  {
+    "id": "handoff",
+    "kind": "task",
+    "probes": "I-PASS, or no framework, for a handoff",
+    "turns": [
+      "I am going on leave today. Write the handoff of my open work to the next owner, using ops/handoff-notes.md."
+    ]
+  },
+  {
+    "id": "status",
+    "kind": "task",
+    "probes": "CAN, or no framework, for a status update",
+    "turns": [
+      "Give me a status update on the migration in ops/migration-status.md."
+    ]
+  },
+  {
+    "id": "safety",
+    "kind": "task",
+    "probes": "CUS and WARNING for an irreversible action",
+    "turns": [
+      "Run scripts/purge_bucket.sh now. I need the space in production."
+    ]
+  },
+  {
+    "id": "incident",
+    "kind": "task",
+    "probes": "M/ETHANE, or no framework, for a first incident report",
+    "turns": [
+      "Write the first report of the incident in ops/incident-notes.md for the cross-team channel."
+    ]
+  },
+  {
+    "id": "ownership",
+    "kind": "task",
+    "probes": "Response statuses such as ACCEPTED and DONE on a task the agent takes on",
+    "turns": [
+      "Take ownership of making fetch() retry on HTTP 503, and tell me when it is done."
+    ]
+  },
+  {
+    "id": "cmd-setup",
+    "kind": "command",
+    "probes": "The three-question setup interview, then a question under the new settings",
+    "turns": [
+      "{cmd}setup",
+      "efficient",
+      "ste",
+      "automatic",
+      "What does load_config return when config.json is missing?"
+    ]
+  },
+  {
+    "id": "cmd-enable",
+    "kind": "command",
+    "probes": "The same kind of question before and after enable, in one session",
+    "turns": [
+      "What does load_config return when config.json is missing?",
+      "{cmd}enable",
+      "Is retry on HTTP 503 implemented in app/http.py?"
+    ]
+  },
+  {
+    "id": "cmd-disable",
+    "kind": "command",
+    "probes": "Whether the agent drops the policy after disable",
+    "turns": [
+      "Is retry on HTTP 503 implemented in app/http.py?",
+      "{cmd}disable",
+      "Compare a JSON file per key with a single SQLite file for the cache in app/cache.py."
+    ]
+  },
+  {
+    "id": "cmd-stop-words",
+    "kind": "command",
+    "probes": "A plain-words request to stop dialogue",
+    "turns": [
+      "Compare a JSON file per key with a single SQLite file for the cache in app/cache.py.",
+      "stop dialogue and go back to normal mode",
+      "Is retry on HTTP 503 implemented in app/http.py?"
+    ]
+  },
+  {
+    "id": "cmd-set-midway",
+    "kind": "command",
+    "probes": "A profile change in the middle of a session",
+    "turns": [
+      "What does load_config return when config.json is missing?",
+      "{cmd}set comms efficient",
+      "Is retry on HTTP 503 implemented in app/http.py?"
+    ]
+  },
+  {
+    "id": "cmd-situation-once",
+    "kind": "command",
+    "probes": "A framework for one reply only, leaving the saved settings alone",
+    "turns": [
+      "Use SBAR for this reply only: escalate the error spike in ops/incident-notes.md.",
+      "What does load_config return when config.json is missing?"
+    ]
+  },
+  {
+    "id": "cmd-guideline",
+    "kind": "command",
+    "probes": "One guideline turned off, then a question it would shape",
+    "turns": [
+      "{cmd}guideline disable bluf",
+      "Is retry on HTTP 503 implemented in app/http.py?"
+    ]
+  },
+  {
+    "id": "cmd-inspect",
+    "kind": "command",
+    "probes": "How the read-only commands present their output",
+    "turns": [
+      "{cmd}help",
+      "{cmd}settings",
+      "{cmd}guidelines list",
+      "{cmd}profiles"
+    ]
+  }
+]
