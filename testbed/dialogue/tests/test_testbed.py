@@ -59,9 +59,9 @@ class MatrixTest(unittest.TestCase):
         self.assertEqual(len(cases), len(list(matrix.product(self.base, self.values))) + 1)
 
     def test_filters_and_limit_apply_to_every_agent_alike(self):
-        cases = matrix.cases(PLUGIN, self.base, [CLAUDE, CODEX], ['situation'], config_match=['sbar'], limit=2)
+        cases = matrix.cases(PLUGIN, self.base, [CLAUDE, CODEX], ['style'], config_match=['.ste.'], limit=2)
         self.assertEqual([case['agent']['client'] for case in cases], ['claude', 'claude', 'codex', 'codex'])
-        self.assertTrue(all('sbar' in case['key'] for case in cases))
+        self.assertTrue(all('.ste.' in case['key'] for case in cases))
 
     def test_unknown_values_are_rejected(self):
         with self.assertRaises(ValueError):
@@ -92,9 +92,9 @@ class PluginTest(unittest.TestCase):
         values = matrix.catalog(PLUGIN)
         base = plugin.fresh_defaults(PLUGIN)
         with tempfile.TemporaryDirectory() as state:
-            plugin.seed(PLUGIN, state, matrix.make_config(base, {'situation': 'sbar', 'threads': 'off'}, values))
+            plugin.seed(PLUGIN, state, matrix.make_config(base, {'style': 'ste', 'threads': 'off'}, values))
             text = plugin.render(PLUGIN, state)
-            self.assertIn('## Situational framework: sbar', text)
+            self.assertIn('## Language standard: ste-inspired', text)
             self.assertIn('Thread tracking is off', text)
             self.assertIsNone(plugin.read_session(state, 'claude'))
         with tempfile.TemporaryDirectory() as state:
