@@ -15,6 +15,7 @@ Two files are generated and must not be hand-edited: the catalogs.
 ```text
 plugins/<name>/                   A plugin. The source, not a copy of one
 plugins/<name>/CHANGELOG.md       Its releases, and the choices behind them
+plugins/<name>/evals/             Its eval cases, run by `claude plugin eval`
 remote-plugins.json               Plugins listed from other repositories
 .claude-plugin/marketplace.json   Claude Code's catalog     (generated)
 .agents/plugins/marketplace.json  Codex's catalog           (generated)
@@ -142,6 +143,23 @@ readme is missing from dialogue or its text differs. Change every copy in one
 pull request, and bump and write an entry for each plugin it touches. A rule
 that comes to apply to both chat and documents joins technical-writing's
 section in the same pull request.
+
+## Evals
+
+```shell
+claude plugin eval plugins/technical-writing --runs 1
+```
+
+Each case under `plugins/technical-writing/evals/` gives the agent raw notes
+and asks for one document: a postmortem, a runbook, a design doc, a
+deprecation notice or a PR description. Each grader checks one rule and
+passes or fails, so the report gives a failure rate per rule. The command
+also runs every case without the plugin and reports the difference.
+
+A run spends money: one pass over the five cases, with Claude Fable 5.2 as
+writer and judge, cost $12.93 at list price, of which $10.51 was the judge.
+CI does not run it. `--max-cost-usd` sets a ceiling, and `--judge-model`
+picks a cheaper judge.
 
 ## Before committing
 
