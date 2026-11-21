@@ -34,13 +34,17 @@ def codex_limit(plugin_path):
     return None
 
 
-def policy_notes(chars, client, codex_chars_limit):
+def policy_notes(part_chars, client, codex_chars_limit):
+    """Each hook part is limited on its own, so the notes name the parts over their client's limit."""
     notes = []
-    if client == 'claude' and chars > CLAUDE_INLINE_LIMIT:
-        notes.append(f'over the {CLAUDE_INLINE_LIMIT:,}-character inline limit of Claude Code: '
-                     'the model gets a preview and a file path')
-    if client == 'codex' and codex_chars_limit and chars > codex_chars_limit:
-        notes.append(f'over the {codex_chars_limit:,}-character additionalContextLimit in hooks/codex.json')
+    for number, chars in enumerate(part_chars, 1):
+        name = f'hook part {number}' if len(part_chars) > 1 else 'the policy'
+        if client == 'claude' and chars > CLAUDE_INLINE_LIMIT:
+            notes.append(f'{name} is over the {CLAUDE_INLINE_LIMIT:,}-character inline limit of Claude Code: '
+                         'the model gets a preview and a file path')
+        if client == 'codex' and codex_chars_limit and chars > codex_chars_limit:
+            notes.append(f'{name} is over the {codex_chars_limit:,}-character additionalContextLimit in '
+                         'hooks/codex.json')
     return notes
 
 
@@ -182,13 +186,14 @@ class Run:
         make_workspace(workspace)
         plugin.seed(self.plugin_path, state, config)
         installed = self.codex.plugin if client == 'codex' else self.plugin_path
-        policy = plugin.render(installed, state, client)
+        parts = plugin.render_parts(installed, state, client)
+        policy = '\n\n'.join(parts)
         (case_dir / 'policy.md').write_text(policy, encoding='utf-8')
         variant = {'agent': agent, 'scenario': case['scenario'], 'config': config, 'slug': slug(config),
                    'repeat': case['repeat'], 'suites': case['suites'], 'plugin': self.plugin_info,
                    'client_version': self.versions[client], 'started': now(), 'status': 'running',
-                   'policy_chars': len(policy),
-                   'policy_notes': policy_notes(len(policy), client, self.codex_limit)}
+                   'policy_chars': len(policy), 'policy_parts': [len(part) for part in parts],
+                   'policy_notes': policy_notes([len(part) for part in parts], client, self.codex_limit)}
         report.write_json(case_dir / 'variant.json', variant)
         logs = {'events_log': case_dir / 'events.jsonl', 'stderr_log': case_dir / 'stderr.log',
                 'timeout': self.settings['turn_timeout']}
@@ -214,7 +219,7 @@ class Run:
         diff = workspace_diff(workspace)
         if diff:
             (case_dir / 'workspace.diff').write_text(diff, encoding='utf-8')
-        variant.update(self.client_facts(session, client, policy, case_dir))
+        variant.update(self.client_facts(session, client, parts, case_dir))
         variant.update(status='error' if error else 'complete', error=error, finished=now(),
                        session_id=session.session_id, turn_costs=[turn.get('cost_usd') for turn in turns],
                        cost_usd=None if any(turn.get('cost_usd') is None for turn in turns)
@@ -240,13 +245,14 @@ class Run:
             else:
                 turn['cost_usd'] = cost.price(model_rates, turn['tokens'])
 
-    def client_facts(self, session, client, policy, case_dir):
+    def client_facts(self, session, client, parts, case_dir):
         facts = {'client_init': session.init}
         if client == 'claude':
             injected = session.injected_policy()
+            # The hook parts may arrive in any order, so compare them as a set.
             facts['hook_policy_matches_render'] = None if injected is None else (
-                plugin.without_session(injected, session.session_id)
-                == plugin.without_session(policy, plugin.RENDER_SESSION))
+                sorted(plugin.without_session(part, session.session_id) for part in injected)
+                == sorted(plugin.without_session(part, plugin.RENDER_SESSION) for part in parts))
             facts['claude_command'] = session.command
         else:
             rollout = self.codex.rollout(session.session_id) if session.session_id else None

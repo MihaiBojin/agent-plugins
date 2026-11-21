@@ -73,16 +73,37 @@ def seed(plugin, state_dir, config):
         tool(plugin, state_dir, 'guideline', '--default', 'enable' if enabled else 'disable', identifier)
 
 
-def render(plugin, state_dir, client='claude'):
-    """The text the SessionStart hook injects into a new session seeded from state_dir."""
+def hook_commands(plugin, client):
+    """Every SessionStart command the plugin declares for the client, in order."""
+    name = 'hooks.json' if client == 'claude' else 'codex.json'
+    config = json.loads((Path(plugin) / 'hooks' / name).read_text(encoding='utf-8'))
+    return [hook['command'] for group in config['hooks'].get('SessionStart', [])
+            for hook in group.get('hooks', []) if hook.get('type') == 'command']
+
+
+def render_parts(plugin, state_dir, client='claude'):
+    """What each SessionStart hook injects into a new session seeded from state_dir; empty outputs left out.
+
+    Claude Code inlines each part only up to its limit, so the parts are measured one by one."""
+    payload = json.dumps({'session_id': RENDER_SESSION, 'source': 'startup', 'hook_event_name': 'SessionStart'})
+    parts = []
     with tempfile.TemporaryDirectory() as scratch:
         copy = Path(scratch) / 'state'
         shutil.copytree(state_dir, copy)
-        payload = json.dumps({'session_id': RENDER_SESSION, 'source': 'startup', 'hook_event_name': 'SessionStart'})
-        output = tool(plugin, copy, 'hook', client=client, stdin=payload)
-    if not output.strip():
-        return ''
-    return json.loads(output)['hookSpecificOutput']['additionalContext']
+        env = {key: value for key, value in os.environ.items() if key not in ('CLAUDE_SESSION_ID', 'CODEX_THREAD_ID')}
+        env.update(DIALOGUE_STATE_DIR=str(copy), CLAUDE_PLUGIN_ROOT=str(plugin), PLUGIN_ROOT=str(plugin))
+        for command in hook_commands(plugin, client):
+            result = subprocess.run(['bash', '-c', command], input=payload, capture_output=True, text=True, env=env)
+            if result.returncode != 0:
+                raise RuntimeError(f'hook {command} failed: {result.stderr.strip()}')
+            if result.stdout.strip():
+                parts.append(json.loads(result.stdout)['hookSpecificOutput']['additionalContext'])
+    return parts
+
+
+def render(plugin, state_dir, client='claude'):
+    """The whole policy a new session seeded from state_dir starts with: every hook part, joined."""
+    return '\n\n'.join(render_parts(plugin, state_dir, client))
 
 
 def without_session(text, session):

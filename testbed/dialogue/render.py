@@ -54,9 +54,10 @@ LISTINGS = ('profiles', 'languages', 'situations', 'signals')
 
 
 def render_one(plugin_path, config):
+    """Each SessionStart hook part the configuration prints."""
     with tempfile.TemporaryDirectory() as state:
         plugin.seed(plugin_path, state, config)
-        return plugin.render(plugin_path, state)
+        return plugin.render_parts(plugin_path, state)
 
 
 def comparable(text, rules_only):
@@ -174,14 +175,16 @@ def render_all(plugin_source, out_dir, jobs):
         base = plugin.fresh_defaults(plugin_path)
         configs = [make_config(base, 'disabled', values), *product(base, values)]
         with ThreadPoolExecutor(max_workers=max(jobs, 1)) as pool:
-            texts = list(pool.map(lambda config: render_one(plugin_path, config), configs))
+            all_parts = list(pool.map(lambda config: render_one(plugin_path, config), configs))
+        texts = ['\n\n'.join(parts) for parts in all_parts]
         pairs = command_pairs(plugin_path)
         coverage = listing_coverage(plugin_path)
         skill_rows = skills(plugin_path)
         limit = codex_limit(plugin_path)
     (out_dir / 'policies').mkdir(parents=True, exist_ok=True)
     rows, rules_classes, repeated, conflicted = [], {}, defaultdict(list), defaultdict(list)
-    for config, text in zip(configs, texts):
+    for config, text, parts in zip(configs, texts, all_parts):
+        largest = max((len(part) for part in parts), default=0)
         name = slug(config)
         header = report.settings_line(config)
         (out_dir / 'policies' / f'{name}.md').write_text(
@@ -201,8 +204,9 @@ def render_all(plugin_source, out_dir, jobs):
                      'chars': len(text), 'approx_tokens': round(len(text) / 4),
                      **{f'{section}_chars': sizes[section] for section in
                         ('header', 'profile', 'situation', 'language', 'signals', 'threads')},
-                     'over_claude_inline_limit': len(text) > CLAUDE_INLINE_LIMIT,
-                     'over_codex_limit': bool(limit and len(text) > limit),
+                     'hook_parts': len(parts), 'largest_part_chars': largest,
+                     'over_claude_inline_limit': largest > CLAUDE_INLINE_LIMIT,
+                     'over_codex_limit': bool(limit and largest > limit),
                      'repeated_lines': sum(count - 1 for count in repeated_lines(text).values()),
                      'conflicts': ' '.join(conflicts(text)), 'exact_class': exact, 'rules_class': rules})
     with open(out_dir / 'index.csv', 'w', newline='', encoding='utf-8') as stream:
@@ -249,8 +253,11 @@ def summary(rows, analysis, repeated, conflicted, workflows):
         f'- Enabled policies run from {min(chars):,} to {max(chars):,} characters, median {statistics.median(chars):,.0f}.',
         f'- The base configuration (`{base_row["config"]}`, what `enable` gives a fresh session) '
         f'is {base_row["chars"]:,} characters.',
-        f'- {over_claude} of {len(enabled)} exceed the {CLAUDE_INLINE_LIMIT:,}-character limit up to which '
-        'Claude Code puts hook context into the conversation. Above it, the model gets a 2 KB preview and a file path.',
+        f'- The policy is printed in {max(row["hook_parts"] for row in enabled)} hook parts; the largest part is '
+        f'{max(row["largest_part_chars"] for row in enabled):,} characters.',
+        f'- {over_claude} of {len(enabled)} have a part over the {CLAUDE_INLINE_LIMIT:,}-character limit up to which '
+        'Claude Code puts each hook\'s context into the conversation. Above it, the model gets a 2 KB preview and a '
+        'file path.',
         f'- {over_codex} of {len(enabled)} exceed the {analysis["codex_limit"] or "unset"}-character '
         '`additionalContextLimit` in `hooks/codex.json`.',
         '- A session with open threads adds its thread listing on top of these sizes.', '',

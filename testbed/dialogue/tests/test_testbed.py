@@ -90,6 +90,14 @@ class PluginTest(unittest.TestCase):
             self.assertEqual(plugin.render(PLUGIN, state), '')
 
 
+class PolicyNotesTest(unittest.TestCase):
+    def test_each_hook_part_is_held_to_the_limit_on_its_own(self):
+        self.assertEqual(runner.policy_notes([7000, 6000], 'claude', 16000), [])
+        [note] = runner.policy_notes([7000, 10500], 'claude', 16000)
+        self.assertTrue(note.startswith('hook part 2 is over'))
+        self.assertEqual(runner.policy_notes([12000], 'codex', 16000), [])
+
+
 class PlaceholderTest(unittest.TestCase):
     STATE = {'active': '2', 'threads': {
         '1': {'status': 'closed', 'options': {}},

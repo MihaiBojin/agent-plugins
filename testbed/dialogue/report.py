@@ -123,7 +123,8 @@ def write_case(case_dir, terms):
         # Over the inline limit the model sees a preview and a path; did it open the file?
         read = [number for number, turn in enumerate(turns, 1) if any(map(reads_policy_file, turn['items']))]
         variant['policy_read_turn'] = read[0] if read else None
-        variant['policy_read'] = bool(read) if variant['policy_chars'] > CLAUDE_INLINE_LIMIT else None
+        largest = max(variant.get('policy_parts') or [variant['policy_chars']])
+        variant['policy_read'] = bool(read) if largest > CLAUDE_INLINE_LIMIT else None
         write_json(case_dir / 'variant.json', variant)
     metrics = [turn_metrics(turn, terms) for turn in turns]
     write_json(case_dir / 'metrics.json', metrics)

@@ -175,7 +175,7 @@ class ClaudeSession:
         self.timeout = timeout
         self.events_log = events_log
         self.init = None
-        self.hook_output = None
+        self.hook_outputs = []
         command = ['claude', '-p', '--model', agent['model'], '--setting-sources', 'project,local',
                    '--plugin-dir', str(plugin), '--input-format', 'stream-json',
                    '--output-format', 'stream-json', '--verbose', '--no-session-persistence',
@@ -226,8 +226,9 @@ class ClaudeSession:
                     self.init = {'model': event.get('model'), 'plugins': event.get('plugins'),
                                  'claude_code_version': event.get('claude_code_version')}
                 if event.get('type') == 'system' and event.get('subtype') == 'hook_response' \
-                        and self.hook_output is None and 'dialogue' in json.dumps(event.get('output', '')):
-                    self.hook_output = event.get('output')
+                        and event.get('hook_event') == 'SessionStart' and turn == 1 \
+                        and 'dialogue' in json.dumps(event.get('output', '')):
+                    self.hook_outputs.append(event.get('output'))
                 if event.get('type') == 'result':
                     turn_result = parse_claude_turn(events)
                     turn_result['duration_s'] = round(time.monotonic() - started, 1)
@@ -250,11 +251,11 @@ class ClaudeSession:
         self.stderr.close()
 
     def injected_policy(self):
-        """What the dialogue hook printed into this session, from the hook_response event."""
-        if not self.hook_output:
+        """What each dialogue SessionStart hook printed into this session, from its hook_response event."""
+        if not self.hook_outputs:
             return None
         try:
-            return json.loads(self.hook_output)['hookSpecificOutput']['additionalContext']
+            return [json.loads(output)['hookSpecificOutput']['additionalContext'] for output in self.hook_outputs]
         except (ValueError, KeyError, TypeError):
             return None
 
