@@ -1,0 +1,10 @@
+# `lefthook install` turns these hooks on for this clone.
+
+# A push that carries a release tag, <plugin>/v<version>, runs that plugin's
+# e2e cases first. Every other push runs nothing.
+pre-push:
+  follow: true
+  commands:
+    e2e-on-release-tag:
+      run: python3 -B testbed/e2e/pushed_tags.py
+      use_stdin: true
