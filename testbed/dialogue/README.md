@@ -151,6 +151,9 @@ python3 testbed.py run --agent claude:opus:high --scenario decisions --config fo
 | `--out DIR`                      | Write to DIR; complete variants already there are kept              |
 | `--plugin PATH` (before command) | Test another copy of the plugin, such as one on another branch      |
 
+A plugin with no `situation` setting, dialogue 0.9.0 and later, runs every configuration as situation `none`: the
+suites leave out the configurations that set one, and the render has no setup workflows.
+
 The Makefile passes `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CODEX_MODEL`, `CODEX_EFFORT` and `JOBS` as these options, and
 `ARGS` as anything else.
 

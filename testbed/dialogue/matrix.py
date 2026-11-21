@@ -27,20 +27,24 @@ def load_json(name):
 
 
 def catalog(plugin):
-    """The values each setting accepts, read from the plugin's own policy files."""
+    """The values each setting accepts, read from the plugin's own policy files and settings.
+
+    A plugin without the situation setting takes only situation none, and has no setup workflows."""
+    import plugin as tested  # plugin imports this module, so the import waits for the call.
     policy = Path(plugin) / 'policy'
 
     def load(name):
         return json.loads((policy / name).read_text(encoding='utf-8'))
 
+    situations = 'situation' in tested.settings_table(plugin)
     return {
         'comms': list(load('profiles.json')),
         'style': ['ste' if key == 'ste-inspired' else key for key in load('language.json')],
-        'situation': ['none', 'auto', *load('situations.json')],
+        'situation': ['none', 'auto', *load('situations.json')] if situations else ['none'],
         'signals': list(SIGNALS),
         'threads': list(THREAD_MODES),
         'guidelines': [entry['id'] for entry in load('guidelines.json')],
-        'workflows': load('workflows.json'),
+        'workflows': load('workflows.json') if (policy / 'workflows.json').exists() else {},
     }
 
 
@@ -51,6 +55,21 @@ def thread_mode(threads, focus, compact):
         if values == {'threads': 'on', 'focus': 'on' if focus else 'off', 'compact': 'on' if compact else 'off'}:
             return name
     raise ValueError('no thread mode matches')
+
+
+class Unavailable(ValueError):
+    """A configuration sets a situation, and the plugin under test has no situation setting."""
+
+
+def available(specs, build):
+    """build(spec) for each spec, leaving out the ones the plugin under test cannot run."""
+    result = []
+    for spec in specs:
+        try:
+            result.append(build(spec))
+        except Unavailable:
+            pass
+    return result
 
 
 def make_config(base, spec, values):
@@ -72,6 +91,8 @@ def make_config(base, spec, values):
                 raise ValueError(f'unknown guideline: {", ".join(sorted(unknown))}')
             config['guidelines'] = dict(value)
         elif key in DIMENSIONS:
+            if key == 'situation' and value != 'none' and values['situation'] == ['none']:
+                raise Unavailable(f'the plugin has no situation setting for {value!r}')
             if value not in values[key]:
                 raise ValueError(f'{key} has no value {value!r}; it takes {", ".join(values[key])}')
             config[key] = value
@@ -100,7 +121,7 @@ def product(base, values):
 
 def suite_configs(spec, base, values):
     if 'configs' in spec:
-        return [make_config(base, item, values) for item in spec['configs']]
+        return available(spec['configs'], lambda item: make_config(base, item, values))
     if 'vary' in spec:
         return [make_config(base, {spec['vary']: value}, values) for value in values[spec['vary']]]
     if spec.get('workflows'):
@@ -159,7 +180,7 @@ def suite_pairs(spec, base, values, scenarios, plugin=None):
     if 'leave_one_out' in spec:
         return leave_one_out(spec['leave_one_out'], base, values, plugin)
     if 'cases' in spec:
-        return [(item['scenario'], make_config(base, item.get('config', {}), values)) for item in spec['cases']]
+        return available(spec['cases'], lambda item: (item['scenario'], make_config(base, item.get('config', {}), values)))
     wanted = spec['scenarios']
     ids = [item['id'] for item in scenarios if item['kind'] == 'task'] if wanted == ['*'] else wanted
     return [(scenario, config) for config in suite_configs(spec, base, values) for scenario in ids]
