@@ -8,12 +8,15 @@ it from happening again. They leave to fund and do the action items.
 
 A postmortem has nine sections:
 
-1. Summary: three to five sentences on what happened, the impact, the
-   duration, the trigger and the current status.
+1. Summary: five sentences at most, one each for what happened, the impact,
+   the duration, the trigger and the current status. What is still unknown
+   goes under Open questions.
 2. Impact in numbers: users, requests, error rate, money, error budget, and
    the duration with a time zone.
 3. Timeline: one event per line, in UTC and the past tense, each line linked
-   to its evidence.
+   to its evidence. A line holds the time, the actor, and what the actor did
+   or saw. Whether a guess was right, and what an event meant, go under
+   Causes.
 4. Causes: the trigger and the contributing conditions, described as systems
    and decisions.
 5. Detection: how the incident was noticed, and how long that took.

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.2.0 - 2026-11-21
+
+### Added
+
+Pull request descriptions have their own skill, `pr-description`, and their own agent. The skill collects why the change exists, what was verified, what was not, and what can break. The agent reads the diff, writes the title and the body, checks each claim against the diff, and returns the facts it could not find. The description opens with what the code does after the merge, then gives the reason, the verification and the risk.
+
+### Changed
+
+A postmortem summary has five sentences at most, one each for what happened, the impact, the duration, the trigger and the current status. A timeline line holds the time, the actor and what the actor did or saw.
+
+### Choices
+
+The main skill never loaded for "write the PR description": 0 of 5 eval runs, against 5 of 5 for the skill of its own. Without a skill the agent opened with a "Why" heading in 5 of 5 runs. With the new format, three runs judged by Claude Fable 5.2 passed 27 of 27 graders.
+
+The agent starts from the diff because the session that made the change remembers the attempts, and writes about them. The agent checks its own draft once. A second agent that only reviews would double the cost: one run on a 49-file pull request cost $0.93 at list price with Claude Fable 5.2 and took 61 seconds.
+
+The agent sets `model: inherit`, so it runs on the session's model. It reads the format and the shared rules through `${CLAUDE_PLUGIN_ROOT}`. The `skills` field would preload them, but Claude Code's documentation does not say how that field names a skill of the same plugin.
+
+The Codex instructions come from Codex's source for `spawn_agent`. Nobody has run them in Codex.
+
+The format differs from the one in the worktrees plugin's `describe-pr` skill, which writes one line per visible change and asks for verification only when the repository does. With both plugins installed, two formats apply to one pull request.
+
+The summary limit was "three to five sentences", and 2 of 5 runs wrote six. With one sentence per named item, 5 of 5 runs wrote five. One timeline in five carried a verdict, "The provider was not the cause"; after the change none of five did.
+
 ## 0.1.2 - 2026-11-13
 
 ### Fixed

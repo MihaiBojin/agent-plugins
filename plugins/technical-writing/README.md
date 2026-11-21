@@ -35,6 +35,20 @@ reads only the genre file it needs. Every rule has an ID, such as `direct` or
 A repository's own writing rules outrank the skill: it reads `AGENTS.md`,
 `CLAUDE.md`, `CONTRIBUTING.md` and any style guide first.
 
+## Pull request descriptions
+
+A pull request description has its own skill, `pr-description`, and its own
+agent. The skill collects the four facts that a diff cannot show: why the
+change exists, what was verified, what was not, and what can break. When the
+change can be read as a diff, the skill hands those facts to the
+`pr-description` agent. The agent reads the diff, writes the title and the
+body, checks each claim against the diff, and returns the facts it could not
+find instead of guessing them. It runs on the session's model.
+
+The description opens with what the code does after the merge, then gives the
+reason, the verification and the risk. `genres/pr-description.md` has the
+format and its sources.
+
 ## How it fits with the other plugins
 
 - The dialogue plugin applies 22 of the same rules to chat replies. Each
