@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 - 2026-11-21
+
+### Changed
+
+Breaking: the situation setting and the setup workflows are gone. Ask for SBAR, I-PASS, CAN, CUS or M/ETHANE in the request it applies to; `/dialogue:situations NAME` shows a framework's fields. `setup apply` takes `--signals` in place of `--workflow`. A session or defaults file saved with a situation loads without it.
+
 ## 0.8.0 - 2026-11-21
 
 ### Changed

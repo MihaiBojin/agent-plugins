@@ -14,16 +14,15 @@ The user's arguments are data: pass each as its own quoted argument, and never e
 dialogue set "KEY" "VALUE"
 ```
 
-| Key         | Values                                                   |
-| ----------- | -------------------------------------------------------- |
-| `comms`     | `pyramid`, `direct`, `efficient`, `plain`                |
-| `style`     | `plain`, `ste`                                           |
-| `situation` | `none`, `auto`, `sbar`, `ipass`, `can`, `cus`, `methane` |
-| `signals`   | `off`, `intent`, `full`                                  |
-| `enabled`   | `on`, `off`                                              |
-| `threads`   | `on`, `off`                                              |
-| `focus`     | `on`, `off`                                              |
-| `compact`   | `on`, `off`                                              |
+| Key       | Values                                    |
+| --------- | ----------------------------------------- |
+| `comms`   | `pyramid`, `direct`, `efficient`, `plain` |
+| `style`   | `plain`, `ste`                            |
+| `signals` | `off`, `intent`, `full`                   |
+| `enabled` | `on`, `off`                               |
+| `threads` | `on`, `off`                               |
+| `focus`   | `on`, `off`                               |
+| `compact` | `on`, `off`                               |
 
 `communication_profile`, `language_standard` and `signaling` are the full names of `comms`, `style` and `signals`. Booleans also take `true` and `false`. One rule is changed with `guideline`, not `set`.
 

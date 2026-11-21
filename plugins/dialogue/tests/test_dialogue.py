@@ -103,7 +103,7 @@ class DialogueTest(unittest.TestCase):
     def test_each_hook_part_fits_the_inline_limit_and_risk_levels_print_once(self):
         # Claude Code puts a hook's context into the conversation only up to 10,000 characters.
         self.run_cli('enable')
-        for key, value in (('comms', 'pyramid'), ('style', 'ste'), ('situation', 'methane'), ('signals', 'full')):
+        for key, value in (('comms', 'pyramid'), ('style', 'ste'), ('signals', 'full')):
             self.run_cli('set', key, value)
         sizes = []
         for args in (('hook',), ('hook', '--part', 'threads')):
@@ -265,14 +265,9 @@ class DialogueTest(unittest.TestCase):
         meanings = {item['id']: item['meaning'] for item in signals['intents']}
         self.assertNotIn('RISK', meanings)
         levels = '\n'.join(['Risk levels:', f"- WARNING: {meanings['WARNING']}", f"- CAUTION: {meanings['CAUTION']}"])
-        self.run_cli('set', 'situation', 'ipass')
-        rendered = self.run_cli('render').stdout
-        self.assertIn('stable, CAUTION, or WARNING', rendered)
-        self.assertIn(levels, rendered)
-        for name in ('methane', 'cus'):
+        for name in ('ipass', 'methane', 'cus'):
             self.assertIn(levels, self.run_cli('situation', 'preview', name).stdout)
         self.assertNotIn('Risk levels:', self.run_cli('situation', 'preview', 'sbar').stdout)
-        self.run_cli('set', 'situation', 'none')
         self.run_cli('set', 'style', 'ste')
         self.assertIn(levels, self.run_cli('render').stdout)
         self.run_cli('set', 'style', 'plain')
@@ -454,7 +449,7 @@ class DialogueTest(unittest.TestCase):
                                      env=self.env, capture_output=True, text=True)
             self.assertEqual(process.returncode, 0, process.stderr)
         overview = self.run_cli('setup').stdout
-        for prompt in ('1. Comms', '2. Style', '3. Workflow'):
+        for prompt in ('1. Comms', '2. Style', '3. Signals'):
             self.assertIn(prompt, overview)
         self.assertIn('Style ste adds 13 STE-derived guidelines', help_text)
         for output in (help_text, overview, self.run_cli('guidelines', 'list').stdout):
@@ -466,79 +461,66 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('enable')
         self.run_cli('set', 'threads', 'off')
         self.run_cli('setup', 'apply', '--comms', 'efficient', '--style', 'ste',
-                     '--workflow', 'handoff')
+                     '--signals', 'full')
         st = self.state()['settings']
         self.assertTrue(st['enabled'])
         self.assertFalse(st['threads'])
         self.assertEqual(st['communication_profile'], 'efficient')
         self.assertEqual(st['language_standard'], 'ste-inspired')
-        self.assertEqual(st['situation'], 'ipass')
         self.assertEqual(st['signaling'], 'full')
+        self.assertNotIn('situation', st)
         saved = (Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json').read_bytes()
         self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'invalid',
-                     '--workflow', 'quiet', ok=False)
+                     '--signals', 'off', ok=False)
         self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'plain',
-                     '--workflow', 'invalid', ok=False)
+                     '--signals', 'invalid', ok=False)
         self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'plain',
                      ok=False)
+        self.run_cli('setup', 'apply', '--comms', 'plain', '--style', 'plain',
+                     '--workflow', 'quiet', ok=False)
         self.assertEqual((Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json').read_bytes(), saved)
         self.run_cli('disable')
         self.run_cli('setup', 'apply', '--comms', 'pyramid', '--style', 'plain',
-                     '--workflow', 'automatic')
+                     '--signals', 'intent')
         self.assertFalse(self.state()['settings']['enabled'])
-        self.assertEqual(self.state()['settings']['situation'], 'auto')
+        self.assertEqual(self.state()['settings']['signaling'], 'intent')
 
     def test_short_setting_aliases(self):
         self.run_cli('enable')
         self.run_cli('set', 'comms', 'efficient')
         self.run_cli('set', 'style', 'ste')
-        self.run_cli('set', 'situation', 'sbar')
         self.run_cli('set', 'signals', 'intent')
         values = self.state()['settings']
         self.assertEqual(values['communication_profile'], 'efficient')
         self.assertEqual(values['language_standard'], 'ste-inspired')
-        self.assertEqual(values['situation'], 'sbar')
         self.assertEqual(values['signaling'], 'intent')
         self.run_cli('defaults', 'set', 'comms', 'direct')
         self.run_cli('defaults', 'set', 'style', 'ste')
         self.assertEqual(self.state(session='new')['settings']['communication_profile'], 'direct')
         self.assertEqual(self.state(session='new')['settings']['language_standard'], 'ste-inspired')
 
-    def test_situations_preview_and_selection(self):
+    def test_situations_preview_only_and_stay_out_of_the_policy(self):
         self.run_cli('enable')
         self.assertIn('sbar', self.run_cli('situations').stdout)
         preview = self.run_cli('situation', 'preview', 'sbar').stdout
         self.assertIn('Situation:', preview)
-        self.assertEqual(self.state()['settings']['situation'], 'none')
-        self.run_cli('situation', 'use', 'ipass')
-        self.assertEqual(self.state()['settings']['situation'], 'ipass')
-        self.assertIn('Synthesis by receiver', self.run_cli('render').stdout)
-        for client in ('codex', 'claude'):
-            self.run_cli('enable', client=client)
-            self.run_cli('situation', 'use', 'can', client=client)
-            for source in ('resume', 'compact'):
-                result = self.run_cli('hook', client=client,
-                                      payload={'session_id': 'a', 'source': source})
-                context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
-                self.assertIn('Situational framework: can', context)
-        self.run_cli('situation', 'clear')
-        self.assertNotIn('Situational framework: can', self.run_cli('render').stdout)
         self.run_cli('situation', 'preview', 'invalid', ok=False)
+        for refused in (('situation', 'use', 'ipass'), ('situation', 'clear'), ('set', 'situation', 'sbar'),
+                        ('defaults', 'set', 'situation', 'auto')):
+            self.run_cli(*refused, ok=False)
+        self.assertNotIn('Situational', self.run_cli('render').stdout)
 
-    def test_auto_situations_and_language_signals(self):
+    def test_language_and_signals(self):
         self.run_cli('enable')
-        self.run_cli('set', 'situation', 'auto')
         self.run_cli('set', 'language_standard', 'ste-inspired')
         self.run_cli('set', 'signaling', 'full')
         rendered = self.run_cli('render').stdout
-        self.assertIn('Situational mode: auto', rendered)
         self.assertIn('Language standard: ste-inspired', rendered)
         self.assertIn('Response markers:', self.run_cli('signals').stdout)
         self.assertIn('ACK:', rendered)
         self.assertIn('STE', self.run_cli('languages').stdout.upper())
         self.run_cli('set', 'signaling', 'invalid', ok=False)
         self.run_cli('set', 'language_standard', 'invalid', ok=False)
-        self.run_cli('set', 'situation', 'invalid', ok=False)
         self.run_cli('set', 'signaling', 'off')
         self.assertNotIn('ACK:', self.run_cli('render').stdout)
 
@@ -546,15 +528,25 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('enable')
         path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
         data = json.loads(path.read_text())
-        for name in ('situation', 'language_standard', 'signaling'):
+        for name in ('language_standard', 'signaling'):
             data['settings'].pop(name)
         path.write_text(json.dumps(data))
         settings = self.state()['settings']
-        self.assertEqual(settings['situation'], 'none')
         self.assertEqual(settings['language_standard'], 'plain')
         self.assertEqual(settings['signaling'], 'off')
-        self.run_cli('set', 'situation', 'sbar')
-        self.assertEqual(self.state()['settings']['situation'], 'sbar')
+
+    def test_saved_situation_is_dropped(self):
+        self.run_cli('enable')
+        self.run_cli('defaults', 'set', 'enabled', 'on')
+        path = Path(self.tmp.name) / 'sessions' / 'codex' / 'a.json'
+        defaults = Path(self.tmp.name) / 'defaults.json'
+        for saved, settings in ((path, 'settings'), (defaults, None)):
+            data = json.loads(saved.read_text())
+            (data[settings] if settings else data)['situation'] = 'sbar'
+            saved.write_text(json.dumps(data))
+        self.assertNotIn('situation', self.state()['settings'])
+        self.assertNotIn('situation', self.state(session='new')['settings'])
+        self.assertNotIn('Situational', self.run_cli('render').stdout)
 
     def test_disabled_fork_replaces_inherited_session_policy(self):
         self.run_cli('enable', session='parent')

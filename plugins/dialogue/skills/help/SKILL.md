@@ -18,8 +18,8 @@ Show the complete output. Then list the commands, as `/dialogue:NAME` in Claude 
 - `settings` shows every setting, its session value and its default; `state` prints the saved record as JSON.
 - `set <key> <value>` changes one setting for this session.
 - `defaults show` and `defaults set <key> <value>` read and change the defaults for future sessions.
-- `profiles`, `languages`, `signals` and `situations` list the options for `comms`, `style`, `signals` and `situation`.
+- `profiles`, `languages` and `signals` list the options for `comms`, `style` and `signals`.
 - `guidelines` lists the rules; `guideline` overrides one rule or one group.
-- `situation preview|use|clear` inspects or applies a situational framework.
+- `situations` lists the situational frameworks, and `situations NAME` shows the fields of one.
 
 This is read-only: it writes nothing and does not enable dialogue.

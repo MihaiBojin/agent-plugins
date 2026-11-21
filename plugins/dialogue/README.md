@@ -28,8 +28,7 @@ Installation does not enable response behavior; `enable` does. Each command is a
 | `profiles`                             | List the communication profiles and the one in use                     |
 | `languages`                            | List the language styles                                               |
 | `signals`                              | List the intent and response-status markers                            |
-| `situations`                           | List the situational frameworks                                        |
-| `situation preview\|use\|clear`        | Inspect, apply or remove a framework                                   |
+| `situations [name]`                    | List the situational frameworks, or show the fields of one             |
 | `guidelines`                           | List the guidelines and whether each applies                           |
 | `guideline`                            | Override one guideline or group, or restore it                         |
 
@@ -46,20 +45,19 @@ Setup asks **three questions, one at a time**:
 
 1. **Comms**: `pyramid` (answer, reasons and evidence), `direct` (concise and action-oriented), `efficient` (low-token), or `plain` (no response rules, and the start for turning guidelines on one at a time). Presets select guideline baselines; individual overrides take precedence.
 2. **Style**: `plain` (normal technical English), `ste` (STE-inspired controlled English; not official compliance).
-3. **Workflow**: `quiet` (no framework/signals), `automatic` (auto framework + intent), `verified` (auto + full acknowledgments), `status` (CAN), `escalation` (SBAR), `handoff` (I-PASS), `safety` (CUS), `incident` (M/ETHANE).
+3. **Signals**: `off` (no markers), `intent` (sender-intent labels), `full` (intent and response-status labels).
 
-All choices are saved **once after the third answer**. Cancelling does not change state. Setup preserves whether Dialogue is enabled and leaves decision-thread settings unchanged. The workflow choice maps to `situation` and `signals`; both can be adjusted independently afterward.
+All choices are saved **once after the third answer**. Cancelling does not change state. Setup preserves whether Dialogue is enabled and leaves decision-thread settings unchanged.
 
 ### Short commands
 
 ```text
 /dialogue:set comms efficient
 /dialogue:set style ste
-/dialogue:set situation sbar
 /dialogue:set signals intent
 ```
 
-`comms`, `style` and `signals` are short names for `communication_profile`, `language_standard` and `signaling`, and either name works. `situation use sbar` does the same as `set situation sbar`.
+`comms`, `style` and `signals` are short names for `communication_profile`, `language_standard` and `signaling`, and either name works.
 
 ### Codex state permissions
 
@@ -87,7 +85,7 @@ An `Operation not permitted` or `Permission denied` error on `.lock` or a state 
 | `/dialogue:defaults set enabled on`  | Explicitly enable automatic activation for future sessions |
 | `/dialogue:defaults set enabled off` | Make future sessions opt-in again                          |
 
-The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `situation`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain`; a session saved with `custom` loads as `plain`. Settings saved under the older `response_style` key load as `communication_profile`. Focus and compact have no effect while threads are disabled.
+The available settings are `enabled`, `threads`, `focus`, `compact`, `communication_profile`, `language_standard`, and `signaling`. Fresh defaults are disabled, with threads, focus, and compact enabled once activated, and the `pyramid` communication profile selected. Booleans accept `on/off` or `true/false`; communication profiles accept `pyramid/direct/efficient/plain`; a session saved with `custom` loads as `plain`. Settings saved under the older `response_style` key load as `communication_profile`, and a saved `situation` is dropped. Focus and compact have no effect while threads are disabled.
 
 ## Communication profiles
 
@@ -132,19 +130,16 @@ The [situational catalog](policy/situations.json) defines SBAR (escalation), I-P
 
 ```text
 /dialogue:situations
-/dialogue:situation preview sbar
-/dialogue:situation use can
-/dialogue:situation clear
-/dialogue:set situation auto
+/dialogue:situations sbar
 ```
 
-Preview is read-only. Use selects the protocol for this session. Clear resets it to none. Auto instructs the agent to select a framework only for an explicit matching request; it does not format every message. A single-message framework request can be answered without changing saved settings. Do not invent details to fill fields.
+Both are read-only. The policy does not mention the frameworks: a user asks for one by name in the request it applies to, and the agent writes that reply in its fields.
 
 ## Language and communication signals
 
 `languages` lists the language standards; `set style ste` applies a simplified, controlled technical-English style inspired by ASD-STE100. This is not official ASD-STE100 compliance or a vocabulary validator. `set style plain` removes it.
 
-`signals` lists the intent and response markers from [signals.json](policy/signals.json). `set signals intent` permits sender-intent markers such as FYI, REQUEST, DECISION and WARNING. `set signals full` also defines response statuses such as ACK, ACCEPTED, BLOCKED and DONE. WARNING and CAUTION are the two risk levels: `signals.json` defines them, and the `warnings` guideline, I-PASS, CUS and M/ETHANE use the same two words and print the same definitions. `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
+`signals` lists the intent and response markers from [signals.json](policy/signals.json). `set signals intent` permits sender-intent markers such as FYI, REQUEST, DECISION and WARNING. `set signals full` also defines response statuses such as ACK, ACCEPTED, BLOCKED and DONE. WARNING and CAUTION are the two risk levels: `signals.json` defines them, and the `warnings` guideline and the I-PASS, CUS and M/ETHANE previews use the same two words and print the same definitions. `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
 
 ## Templates and plugin boundaries
 
@@ -152,7 +147,7 @@ Dialogue controls _how_ a response is communicated. Drafting reusable artifacts 
 
 ## Session persistence
 
-The SessionStart hook prints the policy in two parts, `hook` and `hook --part threads`, because Claude Code puts a hook's context into the conversation only up to 10,000 characters and gives the model a short preview and a file path for anything longer. The first part carries the profile, style, situation and signals; the second carries the thread protocol and the saved threads. The startup hook takes a snapshot of defaults for each new session, including disabled sessions. Resume and compaction reload that session's saved settings. A change in one session cannot change another's settings, and changing defaults does not revise existing snapshots. New forks use their own session ID and take fresh defaults.
+The SessionStart hook prints the policy in two parts, `hook` and `hook --part threads`, because Claude Code puts a hook's context into the conversation only up to 10,000 characters and gives the model a short preview and a file path for anything longer. The first part carries the profile, style and signals; the second carries the thread protocol and the saved threads. The startup hook takes a snapshot of defaults for each new session, including disabled sessions. Resume and compaction reload that session's saved settings. A change in one session cannot change another's settings, and changing defaults does not revise existing snapshots. New forks use their own session ID and take fresh defaults.
 
 Claude blocks implicit skill invocation with `disable-model-invocation: true`. Codex uses `policy.allow_implicit_invocation: false`. The hook emits no conversation policy for a disabled startup. A disabled fork, or a resumed conversation without a saved snapshot, receives a short reset notice so inherited instructions cannot target the parent session. An explicit session disable wins over an enabled default.
 
