@@ -3,13 +3,14 @@ name: technical-writing
 description: >
   Write or review software prose in the shape its reader needs. Use when asked
   to write, draft, edit or review a bug report, postmortem, incident update,
-  design doc or RFC, decision record, runbook, error message, PR description,
-  commit message, code comment, README or tutorial, status update, review
-  comment, deprecation notice, decision request, escalation or handoff, or a
-  brief for another agent. Triggers on: write a postmortem, draft an RFC, file
-  a bug, write the runbook, word this error message, review this doc. Picks
-  the genre, then applies sentence rules adapted from ASD-STE100 and Google's
-  technical writing courses.
+  design doc or RFC, decision record, runbook, error message, commit message,
+  code comment, README or tutorial, status update, review comment,
+  deprecation notice, decision request, escalation or handoff, or a brief for
+  another agent. Triggers on: write a postmortem, draft an RFC, file a bug,
+  write the runbook, word this error message, review this doc. Picks the
+  genre, then applies sentence rules adapted from ASD-STE100 and Google's
+  technical writing courses. A pull request description has its own skill,
+  pr-description.
 ---
 
 # technical-writing: the reader decides the shape

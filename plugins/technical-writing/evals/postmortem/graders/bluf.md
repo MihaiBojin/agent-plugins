@@ -5,7 +5,7 @@ weight: 1
 
 Rule `bluf`: a reader who stops after the summary still has the point.
 
-Pass only if the document opens with a summary of three to five sentences that states all of these:
+Pass only if the document opens with a summary of five sentences at most that states all of these:
 
 - What happened: checkout requests failed after deploy 812 changed the format of the session cache key.
 - The impact: about 41,000 failed checkout requests, or the peak 5xx rate of 38%.

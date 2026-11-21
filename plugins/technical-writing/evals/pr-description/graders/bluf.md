@@ -5,6 +5,8 @@ weight: 1
 
 Rule `bluf`: the first paragraph says what the code does.
 
+A line that starts "Title:" may come before the body. The first paragraph is the first text after it, and no heading stands above that paragraph.
+
 Pass only if the first paragraph states all of these:
 
 - Each destination host has a retry budget.
