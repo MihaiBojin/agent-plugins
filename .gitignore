@@ -5,3 +5,6 @@ testbed/dialogue/out/
 
 # `claude plugin eval` writes each run's report and JSON here.
 plugins/*/evals/results/
+
+# Each `make e2e` run keeps its replies here.
+testbed/e2e/out/

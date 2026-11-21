@@ -26,6 +26,9 @@ scripts/sync-catalogs.mjs         Writes both catalogs from plugins/
 scripts/catalogs.mjs              What all of those agree on
 __tests__/                        Jest, run by `npm test`
 testbed/dialogue/                 Runs dialogue under each setting with claude -p and codex; not published
+testbed/e2e/                      Runs the e2e cases with both clients; not published
+Makefile                          `make e2e`
+lefthook.yml                      Runs `make e2e` before a release tag is pushed
 ```
 
 ## The two catalogs
@@ -161,6 +164,36 @@ A run spends money: one pass over the five cases, with Claude Fable 5.2 as
 writer and judge, cost $12.93 at list price, of which $10.51 was the judge.
 CI does not run it. `--max-cost-usd` sets a ceiling, and `--judge-model`
 picks a cheaper judge.
+
+## End-to-end tests
+
+```shell
+make e2e                          # technical-writing, with both clients
+make e2e PLUGIN=readme            # another plugin
+make e2e CODEX_MODEL=             # an empty model skips that client
+```
+
+An eval case tagged `e2e` is an end-to-end test: one for each skill that
+writes, in `plugins/<name>/evals/e2e-<skill>/`. It holds a short request and
+graders of the types `regex` and `tool_used`, which cost nothing to run. The
+test passes when the client loads the skill and the reply has the skill's
+shape. A new skill that writes gets a case of its own.
+
+`testbed/e2e/e2e.py` runs the cases with both clients. Claude Code runs them
+through `claude plugin eval`. Codex has no such command, so the script
+installs the plugin into a throwaway `CODEX_HOME`, sends each request through
+`codex exec`, and applies the same `regex` graders to the reply. A pattern
+therefore has to mean the same thing in JavaScript and in Python.
+
+One run of the two technical-writing cases cost $0.48 with Claude Fable 5.2,
+and 133,000 input tokens, 105,000 of them cached, with Codex on
+`gpt-6-astra`. CI has no login for either client and does not run them.
+
+`lefthook install` turns on the hook in `lefthook.yml`, once per clone. A
+push that carries a release tag, `<plugin>/v<version>`, then runs that
+plugin's cases first, against the plugin as the tagged commit has it. A
+failure stops the push. Every other push runs nothing. `LEFTHOOK=0 git push`
+skips the hook for one command.
 
 ## Before committing
 
