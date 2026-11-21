@@ -25,6 +25,7 @@ scripts/sync-catalogs.mjs         Writes both catalogs from plugins/
 .releasetools.yaml                What this repository holds, for every releasetools tool
 scripts/catalogs.mjs              What all of those agree on
 __tests__/                        Jest, run by `npm test`
+testbed/dialogue/                 Runs dialogue under each setting with claude -p and codex; not published
 testbed/e2e/                      Runs the e2e cases with both clients; not published
 Makefile                          `make e2e`
 lefthook.yml                      Runs `make e2e` before a release tag is pushed
