@@ -30,6 +30,15 @@ class DialogueTest(unittest.TestCase):
     def state(self, **kwargs):
         return json.loads(self.run_cli('state', **kwargs).stdout)
 
+    def hook_context(self, payload, client='codex'):
+        """What both SessionStart hook parts inject, joined, or '' when neither prints."""
+        parts = []
+        for args in (('hook',), ('hook', '--part', 'threads')):
+            output = self.run_cli(*args, client=client, payload=payload).stdout
+            if output:
+                parts.append(json.loads(output)['hookSpecificOutput']['additionalContext'])
+        return '\n\n'.join(parts)
+
     def test_settings_are_read_only_and_do_not_activate(self):
         self.assertIn('| enabled |', self.run_cli('settings').stdout)
         self.assertFalse(self.state()['settings']['enabled'])
@@ -80,19 +89,32 @@ class DialogueTest(unittest.TestCase):
             self.run_cli('enable', client=client)
             self.run_cli('thread', 'open', 'Choose storage', '--body', 'Need a portable runtime', client=client)
             for source in ('startup', 'resume', 'compact'):
-                result = self.run_cli('hook', client=client, payload={'session_id': 'a', 'source': source})
-                context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
+                context = self.hook_context({'session_id': 'a', 'source': source}, client=client)
                 self.assertIn('Choose storage', context)
                 self.assertIn('Need a portable runtime', context)
         self.run_cli('disable', client='codex')
         self.assertTrue(self.state(client='claude')['settings']['enabled'])
 
     def test_installed_hook_is_silent_until_enabled(self):
-        out = self.run_cli('hook', payload={'session_id': 'fresh', 'source': 'startup'})
-        self.assertEqual(out.stdout, '')
+        self.assertEqual(self.hook_context({'session_id': 'fresh', 'source': 'startup'}), '')
         self.run_cli('defaults', 'set', 'enabled', 'on')
-        out = self.run_cli('hook', payload={'session_id': 'fresh', 'source': 'resume'})
-        self.assertEqual(out.stdout, '')
+        self.assertEqual(self.hook_context({'session_id': 'fresh', 'source': 'resume'}), '')
+
+    def test_each_hook_part_fits_the_inline_limit_and_risk_levels_print_once(self):
+        # Claude Code puts a hook's context into the conversation only up to 10,000 characters.
+        self.run_cli('enable')
+        for key, value in (('comms', 'pyramid'), ('style', 'ste'), ('situation', 'methane'), ('signals', 'full')):
+            self.run_cli('set', key, value)
+        sizes = []
+        for args in (('hook',), ('hook', '--part', 'threads')):
+            output = self.run_cli(*args, payload={'session_id': 'a', 'source': 'startup'}).stdout
+            context = json.loads(output)['hookSpecificOutput']['additionalContext']
+            sizes.append(len(context))
+            self.assertLessEqual(len(context), 10_000)
+        self.assertGreater(sum(sizes), 10_000)
+        rendered = self.run_cli('render').stdout
+        self.assertEqual(rendered.count('Irreversible harm is possible'), 1)
+        self.assertNotIn('Effective settings', rendered)
 
     def test_thread_ids_and_options_are_never_reused(self):
         self.run_cli('enable')
@@ -160,19 +182,25 @@ class DialogueTest(unittest.TestCase):
     def test_packaged_hooks_execute_with_each_client_payload(self):
         for client, filename in (('claude', 'hooks.json'), ('codex', 'codex.json')):
             config = json.loads((ROOT / 'hooks' / filename).read_text())
-            command = config['hooks']['SessionStart'][0]['hooks'][0]['command']
+            commands = [hook['command'] for hook in config['hooks']['SessionStart'][0]['hooks']]
+            self.assertEqual(len(commands), 2)
             env = dict(self.env, CLAUDE_PLUGIN_ROOT=str(ROOT), PLUGIN_ROOT=str(ROOT))
             payload = json.dumps({'session_id': 'packaged', 'source': 'startup'})
-            result = subprocess.run(['bash', '-c', command], env=env, input=payload,
-                                    capture_output=True, text=True)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(result.stdout, '')
+            for command in commands:
+                result = subprocess.run(['bash', '-c', command], env=env, input=payload,
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, '')
             self.run_cli('enable', session='packaged', client=client)
-            result = subprocess.run(['bash', '-c', command], env=env, input=payload,
-                                    capture_output=True, text=True)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            context = json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
-            self.assertIn(client + ' session packaged', context)
+            contexts = []
+            for command in commands:
+                result = subprocess.run(['bash', '-c', command], env=env, input=payload,
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                contexts.append(json.loads(result.stdout)['hookSpecificOutput']['additionalContext'])
+            self.assertIn(client + ' session packaged', contexts[0])
+            self.assertIn('## Thread protocol', contexts[1])
+            self.assertNotIn('## Thread protocol', contexts[0])
 
     def test_rejected_transition_preserves_saved_bytes(self):
         self.run_cli('enable')

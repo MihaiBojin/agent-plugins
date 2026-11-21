@@ -8,6 +8,11 @@
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/dialogue\" --client claude hook",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/dialogue\" --client claude hook --part threads",
+            "timeout": 15
           }
         ]
       }
