@@ -2,6 +2,14 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.3.1 - 2026-11-22
+
+The decisions Stop hook runs when the plugin's installation path contains spaces.
+
+### Choices
+
+The quoted command string works with both the CI-pinned and current Claude Code versions.
+
 ## 0.3.0 - 2026-11-15
 
 An agent that goes against a request because the docs or research show it cannot work, or that it is deprecated, wrong or non-idiomatic, picks the best approach without asking. The decisions skill records each such case, with the request as an `alt:` and the source in `why:`. The decision-interview skill stops queueing questions that only confirm such a request, and asks only when the goal itself is unknown.
