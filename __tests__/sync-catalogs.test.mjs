@@ -190,6 +190,7 @@ describe("syncCatalogs", () => {
       name: "worktrees",
       source,
       description: "The worktrees plugin",
+      version: "0.7.0",
     });
     expect(readJson(root, CODEX).plugins[1]).toEqual({
       name: "worktrees",
@@ -198,6 +199,14 @@ describe("syncCatalogs", () => {
       category: "Developer Tools",
     });
     expect(syncCatalogs({ root }).changed).toEqual([]);
+  });
+
+  it("lists no version for a remote plugin pinned to a branch", () => {
+    const root = build(["docket", {}]);
+    remote(root, "worktrees", { ref: "main" });
+
+    expect(syncCatalogs({ root }).errors).toEqual([]);
+    expect(readJson(root, CLAUDE).plugins[1]).not.toHaveProperty("version");
   });
 
   it.each([
