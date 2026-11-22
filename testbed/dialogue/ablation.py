@@ -2,13 +2,14 @@
 
 A unit is a configuration named `REF.-GUIDELINE` or `REF.~FILELINE` for one rule, or `REF.*NAME` for several removed
 at once; its reference is the configuration named REF. Most units change nothing, so the null is all of them:
-for each agent, scenario and count, a unit's mean is compared with the mean of every other configuration, scaled
+for each agent, scenario and count, a unit's mean is compared with the median of the other configurations' means, scaled
 by the spread between repeats pooled over all configurations. A unit's score is its largest such z over every
 scenario and count. Shuffling the configuration labels within each scenario gives the scores noise alone
 produces; a unit's p-value is the share of shuffles in which its label scores as high. A unit has an effect when
 it passes the Benjamini-Hochberg cut at a 10% false discovery rate across the agent's units.
 """
 
+import bisect
 import csv
 import json
 import math
@@ -39,8 +40,22 @@ def totals(metrics, state_threads):
     return values
 
 
+def median_without(ordered, value):
+    """The median of a sorted list with one occurrence of value taken out."""
+    index = bisect.bisect_left(ordered, value)
+    rest = len(ordered) - 1
+
+    def at(position):
+        return ordered[position] if position < index else ordered[position + 1]
+
+    return at(rest // 2) if rest % 2 else (at(rest // 2 - 1) + at(rest // 2)) / 2
+
+
 def scores(rows):
     """For rows of (config, values) from one scenario: config -> [(metric, z, moved)] for every count that varies.
+
+    A configuration's move is its mean less the median of the other configurations' means, so one unit with a
+    large effect does not shift every other unit's comparison.
 
     A session without a metric is left out of it: a compliance check runs only where the policy has its rule, so
     a unit that removes the rule has no value for that check rather than a failing one."""
@@ -58,11 +73,15 @@ def scores(rows):
                      for config, xs in measured.items() if len(xs) > 1]
         spread = math.sqrt(sum(variances) / len(variances)) if variances else 0.0
         if not spread:
-            continue
-        total, others = sum(means.values()), len(means) - 1
+            if max(means.values()) == min(means.values()):
+                continue
+            # No session differs from its configuration's others, yet the configurations differ, as when a check
+            # always passes except where its rule is gone: a floor keeps that z finite and large.
+            spread = 0.5 / math.sqrt(sum(len(xs) for xs in measured.values()))
+        ordered, others = sorted(means.values()), len(means) - 1
         repeats = sum(len(xs) for xs in measured.values()) / len(measured)
         for config, mean in means.items():
-            moved = mean - (total - mean) / others
+            moved = mean - median_without(ordered, mean)
             z = moved / (spread * math.sqrt(1 / len(measured[config]) + 1 / (others * repeats)))
             result[config].append((metric, z, moved))
     return {config: tests for config, tests in result.items() if tests}

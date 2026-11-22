@@ -311,6 +311,15 @@ class AblationTest(unittest.TestCase):
         p = ablation.p_values(rows, units, shuffles=200)
         self.assertEqual(ablation.discoveries(p), {'ref.-loud'})
 
+    def test_a_check_that_fails_only_where_its_rule_is_gone_is_an_effect(self):
+        rows = [(config, {'rule: check': 0.0 if config == 'ref.-check' else 1.0})
+                for config in ['ref', 'ref.-check'] + [f'ref.-quiet{n}' for n in range(8)] for _ in range(4)]
+        [(metric, z, moved)] = ablation.scores(rows)['ref.-check']
+        self.assertEqual((metric, moved), ('rule: check', -1.0))
+        self.assertLess(z, -10)
+        p = ablation.p_values({'one': rows}, sorted({config for config, _ in rows} - {'ref'}), shuffles=200)
+        self.assertEqual(ablation.discoveries(p), {'ref.-check'})
+
     def test_a_session_without_a_metric_is_left_out_of_it(self):
         rng = random.Random(2)
         rows = [(config, {'words': rng.gauss(100, 10),

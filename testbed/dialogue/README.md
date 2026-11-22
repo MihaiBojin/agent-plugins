@@ -81,7 +81,7 @@ four, as `data/suites.json` sets.
 `ablation.md` and `ablation.csv` then list, for every unit, the characters it costs, a p-value, the counts that
 moved most and, after `testbed.py judge RUN --against ref`, the judge's verdicts against the reference. The null is
 every configuration, not the reference alone, since most units change nothing. For each scenario and count, a
-unit's mean is compared with the mean of all other configurations, using the spread between repeats pooled over
+unit's mean is compared with the median of the other configurations' means, using the spread between repeats pooled over
 all of them; compliance pass rates count as counts. The unit's score is its largest z. The p-value is the share of
 1,000 shuffles of the configuration labels, within each scenario, in which the unit's label scores as high. A unit
 has an effect when it passes the Benjamini-Hochberg cut at a 10% false discovery rate. A unit without one is a
