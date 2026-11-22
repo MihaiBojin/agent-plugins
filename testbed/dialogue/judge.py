@@ -141,7 +141,8 @@ def judge_pair(judge, pair, rubric, run_dir):
         side = {'A': 'variant' if first_is_variant else 'base', 'B': 'base' if first_is_variant else 'variant'}
         orders.append({'variant_is': 'A' if first_is_variant else 'B', 'raw': text, 'error': error,
                        'cost_usd': spent, 'winner': side.get(parsed['winner'], 'tie') if parsed else None,
-                       'scores': {side[key]: value for key, value in parsed['scores'].items()}
+                       # A judge sometimes adds keys such as A_note; only the A and B scores count.
+                       'scores': {side[key]: value for key, value in parsed['scores'].items() if key in side}
                        if parsed and isinstance(parsed.get('scores'), dict) else None,
                        'reason': parsed.get('reason') if parsed else None})
     winners = [order['winner'] for order in orders]

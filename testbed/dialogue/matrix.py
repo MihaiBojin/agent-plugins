@@ -154,14 +154,16 @@ def paragraphs(numbered):
     return blocks
 
 
-def leave_one_out(spec, base, values, plugin, units=None, together=False):
+def leave_one_out(spec, base, values, plugin, units=None, together=False, sets=None):
     """The reference configuration, then one configuration per unit with that unit removed.
 
     Each unit carries the scenarios where removing it can show; the reference runs on all of them. A unit with
     `"group": true` removes a group at a time instead of one rule: the guidelines of one type, as
-    `REF.*type-TYPE`, or one paragraph of rule lines, as `REF.*STEMFIRST-LAST`. `units` keeps only the units with
-    those configuration names. `together` adds one configuration, `REF.*together`, that removes every kept unit at
-    once, on all their scenarios, for rules that only matter when another is gone."""
+    `REF.*type-TYPE`, or one paragraph of rule lines, as `REF.*STEMFIRST-LAST`. `sets` maps a name to units of the
+    suite, such as `{"half": ["ref.-bluf", "ref.~threads3"]}`, and replaces the units with one `REF.*NAME` per set,
+    on the scenarios of all its members. `units` keeps only the units with those configuration names. `together`
+    adds one configuration, `REF.*together`, that removes every kept unit at once, on all their scenarios, for
+    rules that only matter when another is gone."""
     reference = dict(spec['reference'])
     every = reference.pop('all_guidelines', False)
     if every:
@@ -211,6 +213,21 @@ def leave_one_out(spec, base, values, plugin, units=None, together=False):
                 kept.append((unit['scenarios'], [], lines, config))
         else:
             raise ValueError(f'unknown unit kind: {unit["kind"]}')
+    if sets is not None:
+        by_slug = {slug(item[3]): item for item in kept}
+        unknown = {member for members in sets.values() for member in members} - set(by_slug)
+        if unknown:
+            raise ValueError(f'unknown ablation unit in a set: {", ".join(sorted(unknown))}')
+        grouped = []
+        for label, members in sets.items():
+            items = [by_slug[member] for member in members]
+            scenarios = []
+            for item in items:
+                scenarios += [scenario for scenario in item[0] if scenario not in scenarios]
+            guidelines = [identifier for item in items for identifier in item[1]]
+            lines = [line for item in items for line in item[2]]
+            grouped.append((scenarios, guidelines, lines, removing(f'{name}.*{label}', guidelines, lines, members)))
+        kept = grouped
     if units is not None:
         unknown = set(units) - {slug(config) for *_, config in kept}
         if unknown:
@@ -228,10 +245,10 @@ def leave_one_out(spec, base, values, plugin, units=None, together=False):
     return [(scenario, config) for scenario in union] + result
 
 
-def suite_pairs(spec, base, values, scenarios, plugin=None, units=None, together=False):
+def suite_pairs(spec, base, values, scenarios, plugin=None, units=None, together=False, sets=None):
     """The (scenario id, configuration) pairs one suite asks for."""
     if 'leave_one_out' in spec:
-        return leave_one_out(spec['leave_one_out'], base, values, plugin, units, together)
+        return leave_one_out(spec['leave_one_out'], base, values, plugin, units, together, sets)
     if 'cases' in spec:
         return available(spec['cases'], lambda item: (item['scenario'], make_config(base, item.get('config', {}), values)))
     wanted = spec['scenarios']
@@ -250,7 +267,7 @@ def parse_agent(text):
 
 
 def cases(plugin, base, agents, suites, repeat=1, scenario_ids=(), config_match=(), limit=None, units=None,
-          together=False):
+          together=False, sets=None):
     """Every case to run: an agent, a scenario, a configuration and a repeat, each once."""
     values = catalog(plugin)
     scenarios = load_json('scenarios.json')
@@ -260,7 +277,8 @@ def cases(plugin, base, agents, suites, repeat=1, scenario_ids=(), config_match=
     for name in suites:
         if name not in definitions:
             raise ValueError(f'unknown suite: {name}; known: {", ".join(definitions)}')
-        for scenario, config in suite_pairs(definitions[name], base, values, scenarios, plugin, units, together):
+        for scenario, config in suite_pairs(definitions[name], base, values, scenarios, plugin, units, together,
+                                            sets):
             if scenario not in by_id:
                 raise ValueError(f'suite {name} names unknown scenario {scenario}')
             key = (scenario, slug(config))

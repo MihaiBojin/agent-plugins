@@ -239,6 +239,24 @@ class JudgeTest(unittest.TestCase):
         self.assertIsNone(judge.parse('{"winner": "C"}'))
         self.assertIsNone(judge.parse('no json'))
 
+    def test_a_pair_keeps_only_the_a_and_b_scores(self):
+        class Fake:
+            agent = CLAUDE
+
+            def ask(self, system, text):
+                return '{"winner": "A", "scores": {"A": {"correct": 5}, "B": {"correct": 3}, "A_note": "x"}}', 0, None
+
+        with tempfile.TemporaryDirectory() as root:
+            run_dir = Path(root)
+            for name in ('variant', 'base'):
+                (run_dir / name).mkdir()
+                (run_dir / name / 'turns.json').write_text('[{"sent": "q", "reply": "a"}]', encoding='utf-8')
+            pair = {'variant': run_dir / 'variant', 'base': run_dir / 'base', 'agent': 'a', 'scenario': 'implemented',
+                    'repeat': 1, 'config': 'ref.-bluf', 'base_slug': 'ref'}
+            record = judge.judge_pair(Fake(), pair, matrix.load_json('rubric.json'), run_dir)
+        self.assertEqual(record['orders'][0]['scores'], {'variant': {'correct': 5}, 'base': {'correct': 3}})
+        self.assertEqual(record['verdict'], 'tie')
+
     def test_prompt_is_blind_to_settings(self):
         rubric = matrix.load_json('rubric.json')
         turns = [{'sent': 'Is retry on HTTP 503 implemented?', 'reply': 'No.'}]
@@ -263,6 +281,27 @@ class AblationTest(unittest.TestCase):
         unit = next(config for _, config in pairs if matrix.slug(config) == 'ref.-bluf')
         self.assertFalse(unit['guidelines']['bluf'])
         self.assertTrue(unit['guidelines']['tables'])
+
+    def test_sets_remove_their_units_at_once_in_place_of_the_units(self):
+        values = matrix.catalog(PLUGIN)
+        base = plugin.fresh_defaults(PLUGIN)
+        spec = matrix.load_json('suites.json')['suites']['ablation']['leave_one_out']
+        line = 'ref.~threads' + str(matrix.rule_lines(PLUGIN, 'policy/threads.md')[0][0])
+        pairs = matrix.leave_one_out(spec, base, values, PLUGIN, sets={'mixed': ['ref.-bluf', line],
+                                                                       'one': ['ref.-tables']})
+        by_name = {}
+        for scenario, config in pairs:
+            by_name.setdefault(matrix.slug(config), (config, []))[1].append(scenario)
+        self.assertEqual(set(by_name), {'ref', 'ref.*mixed', 'ref.*one'})
+        mixed, scenarios = by_name['ref.*mixed']
+        self.assertEqual(sorted(scenarios), sorted(by_name['ref'][1]))
+        self.assertFalse(mixed['guidelines']['bluf'])
+        self.assertTrue(mixed['guidelines']['tables'])
+        self.assertEqual(len(mixed['drops']), 1)
+        self.assertEqual(mixed['together'], ['ref.-bluf', line])
+        self.assertNotIn('decisions', by_name['ref.*one'][1])
+        with self.assertRaises(ValueError):
+            matrix.leave_one_out(spec, base, values, PLUGIN, sets={'bad': ['ref.-nothing']})
 
     def test_chosen_units_and_all_of_them_removed_together(self):
         values = matrix.catalog(PLUGIN)
