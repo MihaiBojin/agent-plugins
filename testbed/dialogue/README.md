@@ -91,8 +91,9 @@ The suite is large: about 1,300 sessions per agent. `make plan ARGS='--suite abl
 estimate. Three repeats detect only a removal that about doubles a count, so a single rule rarely shows an effect.
 `make ablation-groups` runs the `ablation-groups` suite at `--repeat 6` instead: the same reference, with one
 configuration per guideline type, such as `ref.*type-language`, and one per paragraph of `policy/threads.md`, such
-as `ref.*threads3-20`. It is about 430 sessions per agent. Split a group that shows an effect with `--units` on the
-`ablation` suite.
+as `ref.*threads3-20`. It is about 430 sessions per agent. Split a group that shows an effect with `--sets FILE` on
+the `ablation` suite. The file maps a name to units, such as `{"threads3-11": ["ref.~threads3", "ref.~threads4"]}`,
+and each set runs as one configuration, `ref.*threads3-11`, that removes its units at once.
 
 A model that already writes the way a rule asks shows no effect when the rule is removed, and neither do two rules
 that ask for the same thing. So check the candidates on a model that follows the policy closely, and then remove

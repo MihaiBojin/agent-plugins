@@ -9,6 +9,7 @@
 
 import argparse
 from datetime import datetime
+import json
 import os
 from pathlib import Path
 import sys
@@ -46,7 +47,8 @@ def selection(args):
     base = plugin.fresh_defaults(args.plugin)
     cases = matrix.cases(args.plugin, base, agents, suites, repeat=args.repeat, scenario_ids=args.scenario or (),
                          config_match=args.config or (), limit=args.limit,
-                         units=args.units.split(',') if args.units else None, together=args.together)
+                         units=args.units.split(',') if args.units else None, together=args.together,
+                         sets=json.loads(Path(args.sets).read_text(encoding='utf-8')) if args.sets else None)
     return agents, suites, cases
 
 
@@ -178,6 +180,9 @@ def parser():
                              help='ablation suite: only these units, such as ref.-bluf,ref.~threads12, and the reference')
         command.add_argument('--together', action='store_true',
                              help='ablation suite: add ref.*together, which removes every unit selected at once')
+        command.add_argument('--sets', metavar='FILE',
+                             help='ablation suite: a JSON file of {NAME: [UNIT, ...]}; runs ref.*NAME for each set, '
+                                  'which removes its units at once, in place of the units')
         command.add_argument('--repeat', type=int, default=1, help='sessions per case')
         command.add_argument('--limit', type=int, help='only the first N scenario and configuration pairs')
         command.add_argument('--jobs', type=int, default=4, help='sessions at a time')

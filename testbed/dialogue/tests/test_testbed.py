@@ -264,6 +264,27 @@ class AblationTest(unittest.TestCase):
         self.assertFalse(unit['guidelines']['bluf'])
         self.assertTrue(unit['guidelines']['tables'])
 
+    def test_sets_remove_their_units_at_once_in_place_of_the_units(self):
+        values = matrix.catalog(PLUGIN)
+        base = plugin.fresh_defaults(PLUGIN)
+        spec = matrix.load_json('suites.json')['suites']['ablation']['leave_one_out']
+        line = 'ref.~threads' + str(matrix.rule_lines(PLUGIN, 'policy/threads.md')[0][0])
+        pairs = matrix.leave_one_out(spec, base, values, PLUGIN, sets={'mixed': ['ref.-bluf', line],
+                                                                       'one': ['ref.-tables']})
+        by_name = {}
+        for scenario, config in pairs:
+            by_name.setdefault(matrix.slug(config), (config, []))[1].append(scenario)
+        self.assertEqual(set(by_name), {'ref', 'ref.*mixed', 'ref.*one'})
+        mixed, scenarios = by_name['ref.*mixed']
+        self.assertEqual(sorted(scenarios), sorted(by_name['ref'][1]))
+        self.assertFalse(mixed['guidelines']['bluf'])
+        self.assertTrue(mixed['guidelines']['tables'])
+        self.assertEqual(len(mixed['drops']), 1)
+        self.assertEqual(mixed['together'], ['ref.-bluf', line])
+        self.assertNotIn('decisions', by_name['ref.*one'][1])
+        with self.assertRaises(ValueError):
+            matrix.leave_one_out(spec, base, values, PLUGIN, sets={'bad': ['ref.-nothing']})
+
     def test_chosen_units_and_all_of_them_removed_together(self):
         values = matrix.catalog(PLUGIN)
         base = plugin.fresh_defaults(PLUGIN)
