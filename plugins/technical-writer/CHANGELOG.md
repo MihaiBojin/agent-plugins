@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 - 2026-11-22
+
+### Changed
+
+The plugin is technical-writer, and its skill is `technical-writer:technical-writer`. Install it with `/plugin install technical-writer@mihaibojin` and remove `technical-writing@mihaibojin`, which the marketplace no longer lists. The `pr-description` skill is `technical-writer:pr-description`.
+
 ## 0.2.0 - 2026-11-21
 
 ### Added
