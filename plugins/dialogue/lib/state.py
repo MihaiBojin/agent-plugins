@@ -12,6 +12,11 @@ from communication import names, language_standards, catalog
 
 MISSING = object()
 
+# Guidelines the plugin had before 0.10.0, when removing them changed no measured reply.
+REMOVED_GUIDELINES = frozenset({
+    'direct', 'epistemic', 'quantify', 'current_state', 'terminology', 'evidence', 'reasons', 'one_question',
+    'one_action', 'imperatives', 'conditions', 'notes_not_steps'})
+
 SETTINGS = {
     'enabled': (False, 'Apply dialogue behavior in this session.'),
     'threads': (True, 'Track decisions with stable IDs and saved state.'),
@@ -71,6 +76,10 @@ def migrate_settings(value):
     if isinstance(value, dict) and 'situation' in value:
         # A saved situation is dropped: a framework applies only when the user asks for one.
         value = {key: item for key, item in value.items() if key != 'situation'}
+    if isinstance(value, dict) and isinstance(value.get('guideline_overrides'), dict):
+        # An override for a guideline the plugin no longer has is dropped; any other unknown ID is still invalid.
+        value = {**value, 'guideline_overrides': {key: item for key, item in value['guideline_overrides'].items()
+                                                  if key not in REMOVED_GUIDELINES}}
     if isinstance(value, dict):
         value = {**{k: spec[0] for k, spec in SETTINGS.items() if k in ('language_standard', 'signaling', 'guideline_overrides')}, **value}
     return value

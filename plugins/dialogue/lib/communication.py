@@ -4,14 +4,14 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1] / "policy"
+TYPES = ("structure", "brevity", "risk", "language")
 
 
 def catalog():
     guidelines = json.loads((ROOT / "guidelines.json").read_text(encoding="utf-8"))
     profiles = json.loads((ROOT / "profiles.json").read_text(encoding="utf-8"))
     ids = [entry["id"] for entry in guidelines]
-    types = ("structure", "brevity", "precision", "evidence", "risk", "language", "procedures")
-    if any(entry.get("type") not in types for entry in guidelines):
+    if any(entry.get("type") not in TYPES for entry in guidelines):
         raise ValueError("invalid guideline type")
     if len(ids) != len(set(ids)):
         raise ValueError("duplicate guideline ID")
@@ -57,7 +57,7 @@ def list_guidelines(profile, overrides=None, all_guidelines=False, group=None, s
     overrides = overrides or {}
     enabled = {e["id"] for e in effective_guidelines(profile, overrides, style)} if active else set()
     lines = [f'Guidelines for {profile} ({len(enabled)}/{len(guidelines)} enabled)' + (" (Dialogue disabled):" if not active else ":")]
-    for kind in ("structure", "brevity", "precision", "evidence", "risk", "language", "procedures"):
+    for kind in TYPES:
         if group and group != kind:
             continue
         entries = [e for e in guidelines if e["type"] == kind and (all_guidelines or e["id"] in enabled)]
@@ -78,7 +78,7 @@ def list_groups(profile, overrides=None, style="plain", active=True):
     guidelines, _ = catalog()
     enabled = {e["id"] for e in effective_guidelines(profile, overrides, style)} if active else set()
     lines = ["Guideline groups" + (" (Dialogue disabled)" if not active else "") + ":"]
-    for kind in ("structure", "brevity", "precision", "evidence", "risk", "language", "procedures"):
+    for kind in TYPES:
         count = sum(e["type"] == kind for e in guidelines)
         on = sum(e["type"] == kind and e["id"] in enabled for e in guidelines)
         lines.append(f'- {kind}: {on}/{count} enabled')
@@ -249,7 +249,7 @@ def full_help():
     lines.append("Guidelines: guidelines list (all rules and status); guidelines group list (categories); guidelines group list TYPE (category details).")
     lines.append("Override: guideline enable|disable|reset ID; guideline reset all; guideline group enable|disable|reset TYPE.")
     lines.append("For future sessions add --default: guideline --default on ID.")
-    lines.append("Group types: structure, brevity, precision, evidence, risk, language, procedures.")
+    lines.append("Group types: " + ", ".join(TYPES) + ".")
     lines.append(f'Style ste adds {sum(1 for entry in guidelines if entry.get("source"))} STE-derived guidelines before per-rule overrides.')
     lines.append("Help/setup/preview do not enable Dialogue or write state.")
     return "\n".join(lines)
