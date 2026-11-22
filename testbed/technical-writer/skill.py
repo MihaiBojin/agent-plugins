@@ -1,4 +1,4 @@
-"""The technical-writer skill under test: its rules, their groups, and plugin copies with rules removed."""
+"""The write-technical-prose skill under test: its rules, their groups, and plugin copies with rules removed."""
 
 import json
 from pathlib import Path
@@ -6,7 +6,8 @@ import re
 import shutil
 
 HERE = Path(__file__).resolve().parent
-SKILL = Path('skills') / 'technical-writer' / 'SKILL.md'
+NAME = 'write-technical-prose'
+SKILL = Path('skills') / NAME / 'SKILL.md'
 RULE = re.compile(r'^### `([a-z_]+)`\s*$')
 HEADING = re.compile(r'^(#{1,3}) ')
 # Sections that hold guidance but no rule IDs, removed as one unit each.

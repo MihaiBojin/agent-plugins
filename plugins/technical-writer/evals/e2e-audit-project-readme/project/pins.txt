@@ -1,0 +1,3 @@
+# Release dependencies
+widget=2.5
+gizmo=1.7

@@ -1,7 +1,7 @@
 {
   "name": "technical-writer",
-  "version": "0.3.0",
-  "description": "Write bug reports, postmortems, runbooks, design docs, error messages and other software prose in the shape their reader needs",
+  "version": "0.4.0",
+  "description": "Write technical prose, PR descriptions and project READMEs, and audit README claims against the repository",
   "author": {
     "name": "Mihai Bojin",
     "url": "https://github.com/MihaiBojin"
@@ -16,26 +16,30 @@
     "postmortem",
     "runbook",
     "error-messages",
-    "accessibility"
+    "accessibility",
+    "readme",
+    "audit"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "technical-writer",
-    "shortDescription": "Software prose in the shape its reader needs",
-    "longDescription": "One skill with a genre file per kind of software writing: bug reports, postmortems, incident updates, design docs, decision records, runbooks, error messages, PR descriptions, commit messages, code comments, READMEs, status updates, review comments, deprecation notices, decision requests, handoffs and agent briefs. Each genre names its reader, the question that reader arrives with, and the shape that answers it. The agent reads only the genre it needs, then applies sentence rules adapted from ASD-STE100 and Google's technical writing courses, with an ID per rule so that a review can cite the one a sentence breaks.",
+    "shortDescription": "Technical prose, pull request descriptions and verified READMEs",
+    "longDescription": "Choose a format for software prose, write a pull request title and description from its diff, or write and audit a project README. The README audit checks documented commands, formats and quickstart steps against the repository and reports the evidence.",
     "developerName": "Mihai Bojin",
     "category": "Developer Tools",
     "capabilities": [
       "Choose the shape of a document from its reader and the moment they read it",
       "Draft a postmortem, runbook, design doc or error message in that shape",
       "Review prose and cite the rule each finding breaks",
-      "Keep color, images and links usable without sight"
+      "Keep color, images and links usable without sight",
+      "Write a project README and check its examples",
+      "Audit a README against the project and report discrepancies"
     ],
     "websiteURL": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/technical-writer#readme",
     "defaultPrompt": [
-      "Write the postmortem for this incident.",
-      "Turn these notes into a runbook.",
-      "Review this design doc against its reader."
+      "Write a runbook from these notes.",
+      "Write a project README.",
+      "Audit this README against the code."
     ]
   }
 }

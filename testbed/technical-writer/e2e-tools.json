@@ -1,0 +1,8 @@
+{
+  "fixture_cases": ["e2e-audit-project-readme", "e2e-write-project-readme"],
+  "commands": {
+    "bin/readme": "Bash(bash {path} all:*)",
+    "evals/e2e-audit-project-readme/project/pin-count.sh": "Bash(sh pin-count.sh:*)",
+    "evals/e2e-write-project-readme/project/level-count.sh": "Bash(sh level-count.sh:*)"
+  }
+}

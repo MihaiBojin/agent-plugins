@@ -1,6 +1,6 @@
 # technical-writer benchmark
 
-The benchmark writes six documents with the technical-writer skill, without it, and with each rule or group of
+The benchmark writes six documents with the `write-technical-prose` skill, without it, and with each rule or group of
 rules removed. It measures how simple each document reads, and a judge model grades it against every rule of the
 skill. A rule earns its place when removing it changes what gets written.
 
@@ -32,7 +32,7 @@ make clean       # delete out/ and the scratch space
 | `-ID`   | the plugin with one rule removed, with `--units rules`                                                                      |
 
 A configuration without a rule deletes that rule's `### \`id\``section from a copy of`SKILL.md`, up to the next
-heading. Every configuration with the plugin starts its prompt with "Use the technical-writer skill.", so a short
+heading. Every configuration with the plugin starts its prompt with "Use the write-technical-prose skill.", so a short
 task cannot skip the skill and leave every rule untested; `off` gets the task as written.
 
 ## Tasks

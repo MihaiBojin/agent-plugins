@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark the technical-writer skill: each task written with every rule, without the plugin, and with each rule
+"""Benchmark the write-technical-prose skill: each task written with every rule, without the plugin, and with each rule
 or group of rules removed, then measured for simplicity and graded against every rule.
 
   plan     List the sessions a run would start, and estimate tokens and dollars.
@@ -49,7 +49,7 @@ SESSION_TOKENS = {'claude': {'input': 50, 'cache_write': 25_000, 'cache_read': 6
 GRADE_TOKENS = {'input': 9_000, 'cache_write': 0, 'cache_read': 0, 'output': 1_000}
 FRONT_MATTER = re.compile(r'\A---\n.*?\n---\n', re.DOTALL)
 # Configurations with the plugin name the skill, so a short task cannot skip it and leave every rule untested.
-INVOKE = f'Use the {PLUGIN_NAME} skill.\n\n'
+INVOKE = f'Use the {skill.NAME} skill.\n\n'
 
 
 def tasks(plugin):
@@ -216,13 +216,25 @@ class Bench:
                 future.result()
 
 
+PROSE_READ = re.compile(
+    r"""(?:^|[\s'";|&(])(?:cat|head|tail|sed|awk|nl|less|more)\s+[^;|&\n]*?(?<![\w-])"""
+    + re.escape(skill.SKILL.as_posix()) + r"""(?=$|[\s'";|&)])"""
+)
+
+
 def fired(items):
-    """Whether the session loaded the skill: Claude's Skill tool, or Codex reading the SKILL.md file."""
+    """Detect an invocation of the prose skill or a read of its own SKILL.md."""
     for item in items:
-        if item['type'] != 'tool':
+        if item['type'] != 'tool' or item.get('is_error'):
             continue
-        text = json.dumps(item.get('input'))
-        if (item['name'] == 'Skill' and PLUGIN_NAME in text) or ('SKILL.md' in text and PLUGIN_NAME in text):
+        name, arguments = item['name'], item.get('input')
+        if name == 'Skill' and isinstance(arguments, dict):
+            if arguments.get('skill') in (skill.NAME, f'{PLUGIN_NAME}:{skill.NAME}'):
+                return True
+        if name == 'Read' and isinstance(arguments, dict):
+            if Path(arguments.get('file_path', '')).parts[-3:] == skill.SKILL.parts:
+                return True
+        if name == 'shell' and isinstance(arguments, str) and PROSE_READ.search(arguments):
             return True
     return False
 

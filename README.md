@@ -27,13 +27,13 @@ codex plugin add <name>@mihaibojin
 
 ## What is published
 
-| Plugin                                                                       | What it does                                                                           |
-| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| [dialogue](./plugins/dialogue#readme)                                        | Opt-in conversation settings and a persistent thread backlog                           |
-| [docket](./plugins/docket#readme)                                            | Numbered document collections, argued through review, frozen into an immutable archive |
-| [decisions](./plugins/decisions#readme)                                      | A decision log written while the work happens, in the repositories that ask for one    |
-| [readme](./plugins/readme#readme)                                            | A README checked against the code it describes, then rewritten                         |
-| [worktrees](https://github.com/MihaiBojin/worktrees/tree/main/plugin#readme) | Read CI, ship and merge pull requests, and prune finished worktrees                    |
+| Plugin                                                                       | What it does                                                                                         |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [dialogue](./plugins/dialogue#readme)                                        | Opt-in conversation settings and a persistent thread backlog                                         |
+| [docket](./plugins/docket#readme)                                            | Numbered document collections, argued through review, frozen into an immutable archive               |
+| [decisions](./plugins/decisions#readme)                                      | A decision log written while the work happens, in the repositories that ask for one                  |
+| [technical-writer](./plugins/technical-writer#readme)                        | Write software prose, PR descriptions and project READMEs, and audit a README against its repository |
+| [worktrees](https://github.com/MihaiBojin/worktrees/tree/main/plugin#readme) | Read CI, ship and merge pull requests, and prune finished worktrees                                  |
 
 Each plugin lives in `plugins/<name>/` in this repository: the source, not a
 copy of one. Editing a plugin is an ordinary pull request, and the merge is the

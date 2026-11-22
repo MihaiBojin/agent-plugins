@@ -20,26 +20,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * The rules that dialogue, technical-writer and readme carry in common.
- *
- * A plugin cannot read another plugin's files, so each one ships its own copy.
- * A shared rule is a "### `id`" heading in the "Shared rules" section of
- * technical-writer's SKILL.md. When dialogue has a guideline with that ID, the
- * first line under the heading has to be dialogue's description of it, word
- * for word. Each "### `id`" heading in readme's writing.md has to be a shared
- * rule, with technical-writer's first line. The WARNING and CAUTION
- * definitions under `warnings` have to match the meanings in dialogue's
- * signals.json the same way.
+ * Dialogue and the prose skill ship the writing rules they share. Where both
+ * declare the same ID, their first lines agree. The warning levels agree too.
  */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIALOGUE = path.join(ROOT, "plugins/dialogue/policy");
 const SKILL = path.join(
   ROOT,
-  "plugins/technical-writer/skills/technical-writer/SKILL.md",
-);
-const WRITING = path.join(
-  ROOT,
-  "plugins/readme/skills/readme/references/writing.md",
+  "plugins/technical-writer/skills/write-technical-prose/SKILL.md",
 );
 
 /** The text under a "## name" heading, up to the next "## " heading. */
@@ -117,22 +105,5 @@ describe("the rules dialogue and technical-writer share", () => {
   it.each(["WARNING", "CAUTION"])("%s has dialogue's definition", (level) => {
     expect(levels.has(level)).toBe(true);
     expect(shared.split("\n")).toContain(`- ${level}: ${levels.get(level)}`);
-  });
-});
-
-describe("the rules readme restates", () => {
-  const restated = rules(fs.readFileSync(WRITING, "utf8"));
-
-  it("readme's writing.md names them, once each", () => {
-    const ids = restated.map((rule) => rule.id);
-    expect(ids.length).toBeGreaterThan(0);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  const lines = new Map(rules(shared).map((rule) => [rule.id, rule.line]));
-
-  it.each(restated)("$id has technical-writer's line", ({ id, line }) => {
-    expect(lines.has(id)).toBe(true);
-    expect(line).toBe(lines.get(id));
   });
 });
