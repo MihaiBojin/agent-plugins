@@ -2,6 +2,12 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.1.2 - 2026-11-22
+
+### Changed
+
+Dialogue no longer has the `direct`, `epistemic`, `quantify`, `current_state`, `terminology`, `evidence`, `reasons`, `one_question`, `one_action`, `imperatives`, `conditions` and `notes_not_steps` guidelines, or the precision, evidence and procedures groups, and drops a saved override for any of them. The pyramid, direct and efficient profiles and style `ste` apply fewer rules. The technical-writing and readme plugins keep these rules for documents.
+
 ## 0.1.1 - 2026-11-12
 
 The sentence rules in the readme skill open with the IDs and first lines that the dialogue and technical-writing plugins give the same rules, so the three plugins state each rule the same way. The new lines add limits the old text did not have: 20 words in an instruction and 25 in a description, identifiers quoted exactly, lists one level deep, and an actor that is named or stated as unknown.
