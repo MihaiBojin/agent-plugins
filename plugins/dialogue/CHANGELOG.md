@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.1 - 2026-11-22
+
+### Fixed
+
+The thread protocol is 315 characters shorter: it no longer restates how related threads are numbered and listed, which the dialogue tool already shows.
+
 ## 0.10.0 - 2026-11-22
 
 ### Changed
