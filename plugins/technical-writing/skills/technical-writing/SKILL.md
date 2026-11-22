@@ -84,10 +84,10 @@ the reader distance unless the genre says otherwise:
 
 ## Shared rules
 
-The dialogue plugin applies these rules to chat replies. Each one has the same
-ID and the same first line in both plugins, and a test in the marketplace
-repository fails when the two differ. The text under the first line is for
-documents only.
+The dialogue plugin applies some of these rules to chat replies. Each rule it
+has carries the same ID and the same first line in both plugins, and a test in
+the marketplace repository fails when the two differ. The text under the first
+line is for documents only.
 
 ### `bluf`
 

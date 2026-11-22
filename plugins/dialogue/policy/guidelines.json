@@ -18,28 +18,10 @@
     "description": "Report changes; restate context only when the reader may have lost it: a resume, a reopened thread, a handoff."
   },
   {
-    "id": "direct",
-    "name": "Direct language",
-    "type": "precision",
-    "description": "Use active voice, precise nouns, and concrete verbs. Name the actor, or say it is unknown."
-  },
-  {
     "id": "no_filler",
     "name": "No filler",
     "type": "brevity",
     "description": "Remove praise, pleasantries, repetition, and needless adjectives or superlatives."
-  },
-  {
-    "id": "evidence",
-    "name": "Evidence over claims",
-    "type": "evidence",
-    "description": "Support results with tests, measurements, paths, or source references."
-  },
-  {
-    "id": "epistemic",
-    "name": "Facts before speculation",
-    "type": "precision",
-    "description": "Separate verified facts, inferences, unknowns and proposals; name missing evidence instead of filling the gap."
   },
   {
     "id": "formats",
@@ -60,12 +42,6 @@
     "description": "Omit routine tool-call narration; report material changes or blockers."
   },
   {
-    "id": "quantify",
-    "name": "Quantify where useful",
-    "type": "precision",
-    "description": "Use measurements and thresholds instead of vague qualifiers when relevant."
-  },
-  {
     "id": "risk_detail",
     "name": "Risk-based detail",
     "type": "risk",
@@ -76,12 +52,6 @@
     "name": "Verdict first",
     "type": "structure",
     "description": "For implementation questions, say implemented, absent, or broken before explaining."
-  },
-  {
-    "id": "reasons",
-    "name": "Reasons that cover the answer",
-    "type": "evidence",
-    "description": "Support a substantive answer with reasons that do not overlap and together cover it, each with its evidence; let the evidence set the count."
   },
   {
     "id": "one_recommendation",
@@ -108,35 +78,16 @@
     "description": "Routine replies take one to three sentences."
   },
   {
-    "id": "current_state",
-    "name": "Current state",
-    "type": "precision",
-    "description": "Describe what the code does now, not its history."
-  },
-  {
     "id": "define_terms",
     "name": "Defined terms",
     "type": "language",
     "description": "Define or link a term the reader may not know; spell out an acronym on first use."
   },
   {
-    "id": "one_question",
-    "name": "One question at a time",
-    "type": "procedures",
-    "description": "In an interview, ask only the current question; never invent an answer to fill a field."
-  },
-  {
     "id": "plain_punctuation",
     "name": "Plain punctuation",
     "type": "language",
     "description": "No em-dashes; use a comma, colon, semicolon or full stop."
-  },
-  {
-    "id": "terminology",
-    "name": "Consistent terminology",
-    "type": "precision",
-    "description": "One name per concept and one sentence pattern per repeated step. Introduce a short form once and then use only it. Quote identifiers exactly.",
-    "source": "ASD-STE100 1.3, 1.11, 9.4"
   },
   {
     "id": "plain_words",
@@ -165,34 +116,6 @@
     "type": "language",
     "description": "One idea per sentence. Aim for 20 words in an instruction and 25 in a description; an identifier, number or quoted string counts as one word.",
     "source": "ASD-STE100 4.1, 5.1, 6.3, 8.6"
-  },
-  {
-    "id": "one_action",
-    "name": "One instruction per step",
-    "type": "procedures",
-    "description": "Give one executable action per instruction unless actions must happen simultaneously; put the expected result or limit in the same step.",
-    "source": "ASD-STE100 5.2"
-  },
-  {
-    "id": "imperatives",
-    "name": "Action-oriented procedures",
-    "type": "procedures",
-    "description": "Use direct imperative verbs for instructions and order steps explicitly. Do not put \"you must\" before a command unless skipping it causes damage.",
-    "source": "ASD-STE100 5.2–5.3"
-  },
-  {
-    "id": "conditions",
-    "name": "Explicit prerequisites",
-    "type": "procedures",
-    "description": "State necessary conditions before an action and identify conditional branches.",
-    "source": "ASD-STE100 5.4"
-  },
-  {
-    "id": "notes_not_steps",
-    "name": "Notes are informational",
-    "type": "procedures",
-    "description": "Notes carry background only: no steps, limits or risks. Check that the procedure still works with every note deleted.",
-    "source": "ASD-STE100 5.5"
   },
   {
     "id": "one_topic",
