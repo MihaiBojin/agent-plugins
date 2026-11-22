@@ -70,7 +70,8 @@
         "path": "plugin",
         "ref": "v0.14.0"
       },
-      "description": "Read CI, rebase onto the head branch, describe, ship and merge pull requests, and prune finished worktrees through the worktrees CLI"
+      "description": "Read CI, rebase onto the head branch, describe, ship and merge pull requests, and prune finished worktrees through the worktrees CLI",
+      "version": "0.14.0"
     },
     {
       "name": "technical-writer",

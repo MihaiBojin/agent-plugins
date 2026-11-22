@@ -121,16 +121,20 @@ export const remoteSource = (remote) => ({
 });
 
 /**
- * Claude Code's entry for a remote plugin: the source and the description it
- * shows before installing. The version and the rest of the metadata are read
- * from the plugin's own manifest at `ref`, which this repository cannot see.
+ * Claude Code's entry for a remote plugin: the source, the description it
+ * shows before installing, and the version when `ref` is a `vX.Y.Z` tag. The
+ * rest of the metadata is read from the plugin's own manifest at `ref`, which
+ * this repository cannot see. A branch ref has no version to list.
  */
 export function remoteClaudeEntry(remote) {
-  return {
+  const version = remote.ref?.replace(/^v/, "");
+  return withoutUndefined({
     name: remote.name,
     source: remoteSource(remote),
     description: remote.description,
-  };
+    version:
+      remote.ref?.startsWith("v") && SEMVER.test(version) ? version : undefined,
+  });
 }
 
 /** Codex's entry for a remote plugin, with the policy a local one carries. */
