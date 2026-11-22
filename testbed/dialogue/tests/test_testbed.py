@@ -1,6 +1,7 @@
 """The testbed's deterministic parts: the matrix, placeholders, parsing, metrics, cost and rendering."""
 
 import json
+import random
 from pathlib import Path
 import sys
 import tempfile
@@ -10,6 +11,7 @@ HERE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HERE))
 sys.dont_write_bytecode = True
 
+import ablation  # noqa: E402
 import clients  # noqa: E402
 import compliance  # noqa: E402
 import cost  # noqa: E402
@@ -280,6 +282,34 @@ class AblationTest(unittest.TestCase):
         self.assertEqual(together['together'], ['ref.-bluf', line])
         with self.assertRaises(ValueError):
             matrix.leave_one_out(spec, base, values, PLUGIN, units=['ref.-nothing'])
+
+    def test_groups_remove_a_guideline_type_or_a_paragraph_at_a_time(self):
+        values = matrix.catalog(PLUGIN)
+        base = plugin.fresh_defaults(PLUGIN)
+        spec = matrix.load_json('suites.json')['suites']['ablation-groups']['leave_one_out']
+        configs = {matrix.slug(config): config for _, config in matrix.leave_one_out(spec, base, values, PLUGIN)}
+        language = configs['ref.*type-language']
+        self.assertFalse(language['guidelines']['complete_grammar'])
+        self.assertTrue(language['guidelines']['bluf'])
+        self.assertIn('complete_grammar', language['together'])
+        lines = matrix.rule_lines(PLUGIN, 'policy/threads.md')
+        blocks = matrix.paragraphs(lines)
+        first = configs[f'ref.*threads{blocks[0][0][0]}-{blocks[0][-1][0]}']
+        self.assertEqual(len(first['drops']), len(blocks[0]))
+        self.assertEqual(sum(len(block) for block in blocks), len(lines))
+        types = {entry['type'] for entry in json.loads((PLUGIN / 'policy' / 'guidelines.json').read_text())}
+        self.assertEqual(len(configs), 1 + len(types) + len(blocks))
+
+    def test_calibrated_analysis_finds_a_planted_effect_and_not_noise(self):
+        rng = random.Random(1)
+        rows = {}
+        for scenario in ('one', 'two'):
+            rows[scenario] = [(config, {'words': rng.gauss(100, 10) + (60 if config == 'ref.-loud' else 0)})
+                              for config in ['ref', 'ref.-loud'] + [f'ref.-quiet{n}' for n in range(10)]
+                              for _ in range(3)]
+        units = sorted({config for config, _ in rows['one'] if config != 'ref'})
+        p = ablation.p_values(rows, units, shuffles=200)
+        self.assertEqual(ablation.discoveries(p), {'ref.-loud'})
 
     def test_drop_lines_removes_only_the_named_lines(self):
         with tempfile.TemporaryDirectory() as root:
