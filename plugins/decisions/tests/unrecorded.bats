@@ -59,10 +59,14 @@ payload() {
   [ "$status" -eq 0 ]
 }
 
-@test "blocks once when a multi-turn session recorded nothing" {
+@test "manifest hook blocks from a plugin path with spaces" {
   "$DECISIONS" enable
   transcript 3
-  run --separate-stderr bash -c "printf '%s' '$(payload)' | \"$HOOK\""
+  local plugin_root="${BATS_TEST_TMPDIR}/plugin with spaces"
+  ln -s "${BATS_TEST_DIRNAME}/.." "$plugin_root"
+  local hook_command
+  hook_command="$(node -p 'require(process.argv[1]).hooks.Stop[0].hooks[0].command' "$plugin_root/hooks/hooks.json")"
+  run --separate-stderr env CLAUDE_PLUGIN_ROOT="$plugin_root" bash -c "$hook_command" <<<"$(payload)"
   [ "$status" -eq 2 ]
   [[ "$stderr" == *"nothing reached .decisions/"* ]]
   [[ "$stderr" == *"q: / a: / why: / alt:"* ]]
