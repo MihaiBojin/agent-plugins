@@ -239,6 +239,24 @@ class JudgeTest(unittest.TestCase):
         self.assertIsNone(judge.parse('{"winner": "C"}'))
         self.assertIsNone(judge.parse('no json'))
 
+    def test_a_pair_keeps_only_the_a_and_b_scores(self):
+        class Fake:
+            agent = CLAUDE
+
+            def ask(self, system, text):
+                return '{"winner": "A", "scores": {"A": {"correct": 5}, "B": {"correct": 3}, "A_note": "x"}}', 0, None
+
+        with tempfile.TemporaryDirectory() as root:
+            run_dir = Path(root)
+            for name in ('variant', 'base'):
+                (run_dir / name).mkdir()
+                (run_dir / name / 'turns.json').write_text('[{"sent": "q", "reply": "a"}]', encoding='utf-8')
+            pair = {'variant': run_dir / 'variant', 'base': run_dir / 'base', 'agent': 'a', 'scenario': 'implemented',
+                    'repeat': 1, 'config': 'ref.-bluf', 'base_slug': 'ref'}
+            record = judge.judge_pair(Fake(), pair, matrix.load_json('rubric.json'), run_dir)
+        self.assertEqual(record['orders'][0]['scores'], {'variant': {'correct': 5}, 'base': {'correct': 3}})
+        self.assertEqual(record['verdict'], 'tie')
+
     def test_prompt_is_blind_to_settings(self):
         rubric = matrix.load_json('rubric.json')
         turns = [{'sent': 'Is retry on HTTP 503 implemented?', 'reply': 'No.'}]
