@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0 - 2026-11-22
+
+### Changed
+
+Dialogue no longer has the `direct`, `epistemic`, `quantify`, `current_state`, `terminology`, `evidence`, `reasons`, `one_question`, `one_action`, `imperatives`, `conditions` and `notes_not_steps` guidelines, or the precision, evidence and procedures groups, and drops a saved override for any of them. The pyramid, direct and efficient profiles and style `ste` apply fewer rules. The technical-writing and readme plugins keep these rules for documents.
+
 ## 0.9.0 - 2026-11-21
 
 ### Changed

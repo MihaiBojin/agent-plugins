@@ -2,6 +2,7 @@
 node_modules/
 __pycache__/
 testbed/dialogue/out/
+testbed/technical-writing/out/
 
 # `claude plugin eval` writes each run's report and JSON here.
 plugins/*/evals/results/

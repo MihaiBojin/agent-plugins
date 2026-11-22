@@ -1,0 +1,14 @@
+[
+  { "id": "runbook", "eval": "runbook" },
+  { "id": "postmortem", "eval": "postmortem" },
+  { "id": "design-doc", "eval": "design-doc" },
+  { "id": "deprecation", "eval": "deprecation" },
+  {
+    "id": "incident-update",
+    "prompt": "Write the next incident update for the status channel. Reply with only the update, in Markdown.\n\nnotes: its 14:20 UTC. search on the storefront has been returning empty results for about 25% of queries since 13:05. we think its the new index shard that went live at 13:00, shard 7 looks like it has zero documents. rolled traffic off shard 7 at 14:10 and empty results dropped to maybe 5%, not zero yet, still checking why. checkout and browse are fine. we need someone from the search infra team, nobody has answered the page yet. next update at 14:50."
+  },
+  {
+    "id": "error-message",
+    "prompt": "Word the error message that our CLI prints for this failure. Reply with only the message.\n\nnotes: the command is `deployctl push`. it fails when the image tag the user passed with --tag already exists in the registry, because tags are immutable there. right now it prints `Error: 409`. the user can pick a new tag, or pass --tag with a git sha like `--tag $(git rev-parse --short HEAD)`. internal error code is DPL-409."
+  }
+]
