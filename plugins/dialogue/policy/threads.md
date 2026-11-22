@@ -32,10 +32,6 @@ Interpret these markers and run the corresponding tool command before replying:
 - `=/`: audit for missed decisions, then `thread focus` the first open ID and show it
 - `=//`: audit, then `thread list --details`; print every open thread with live choices
 
-A related thread takes the next unused number and prints a `Related: 5/` line under its heading.
-`thread list` places it right after the thread it relates to, so 7/ related to 5/ lists as 5/, 7/, 6/.
-It is its own decision: closing 5/ leaves 7/ open. Show threads in a reply in the order `thread list` prints them.
-
 `=/` goes through the open threads one at a time: each reply shows one thread with its details and live choices.
 Stay on that thread while the user discusses it. A thread deferred during the walk stays open.
 Once the user answers or defers it, `thread focus` the next open thread after it in `thread list` order and show that one.
