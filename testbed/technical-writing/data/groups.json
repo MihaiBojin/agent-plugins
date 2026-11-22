@@ -1,0 +1,22 @@
+{
+  "structure": ["bluf", "one_topic", "scannable", "tables"],
+  "brevity": ["sufficient", "no_filler"],
+  "precision": [
+    "direct",
+    "quantify",
+    "epistemic",
+    "terminology",
+    "current_state"
+  ],
+  "language": [
+    "plain_words",
+    "noun_clusters",
+    "complete_grammar",
+    "short_sentences",
+    "define_terms",
+    "pronouns"
+  ],
+  "procedures": ["one_action", "imperatives", "conditions", "notes_not_steps"],
+  "risk": ["warnings"],
+  "document": ["self_edit", "no_visual_only", "navigable", "inclusive_language"]
+}
