@@ -28,7 +28,7 @@ __tests__/                        Jest, run by `npm test`
 testbed/dialogue/                 Runs dialogue under each setting with claude -p and codex; not published
 testbed/e2e/                      Runs the e2e cases with both clients; not published
 Makefile                          `make e2e`
-lefthook.yml                      Runs `make e2e` before a release tag is pushed
+lefthook.yml, .lefthook/          Run `make e2e` before a release tag is pushed
 ```
 
 ## The two catalogs
@@ -193,7 +193,9 @@ and 133,000 input tokens, 105,000 of them cached, with Codex on
 push that carries a release tag, `<plugin>/v<version>`, then runs that
 plugin's cases first, against the plugin as the tagged commit has it. A
 failure stops the push. Every other push runs nothing. `LEFTHOOK=0 git push`
-skips the hook for one command.
+skips the hook for one command. The hook is a script under `.lefthook/pre-push/`,
+because lefthook skips a pre-push command when the push changes no file, and
+a tag on a merged commit changes none.
 
 ## Before committing
 

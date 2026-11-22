@@ -4,7 +4,7 @@
 # e2e cases first. Every other push runs nothing.
 pre-push:
   follow: true
-  commands:
-    e2e-on-release-tag:
-      run: python3 -B testbed/e2e/pushed_tags.py
+  scripts:
+    "e2e-on-release-tag.sh":
+      runner: sh
       use_stdin: true
