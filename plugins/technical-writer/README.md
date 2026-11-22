@@ -1,17 +1,19 @@
 # technical-writer
 
-Write software prose in the shape its reader needs: bug reports, postmortems,
-runbooks, design docs, error messages and the rest.
+Write software documentation and pull request descriptions, or check a project
+README by running the steps it describes. Install `technical-writer@mihaibojin`
+to use all four skills.
 
-A postmortem, a runbook and an error message fail in different ways, because
-each one has a different reader at a different moment. The skill starts from
-that reader: who they are, the question they arrive with, and what they do
-next. Sentence rules adapted from ASD-STE100 Simplified Technical English and
-Google's technical writing courses apply to all of it.
+| Skill                                                          | When to use it                                                                              |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| [write-technical-prose](skills/write-technical-prose/SKILL.md) | Draft or review a runbook, design doc, postmortem or another kind of software prose.        |
+| [write-pr-description](skills/write-pr-description/SKILL.md)   | Write or revise a pull request title and body using the diff and the author's verification. |
+| [write-project-readme](skills/write-project-readme/SKILL.md)   | Create or rewrite a README. Verify what the project does and check the finished draft.      |
+| [audit-project-readme](skills/audit-project-readme/SKILL.md)   | Report which claims disagree with the project, with evidence for each finding.              |
 
 ## What it covers
 
-The skill has one genre file for each of these:
+The prose skill selects a format for the reader and the task. It covers these kinds of writing:
 
 - Release notes, which the release plugin owns when it is installed
 - Bug reports and problem statements
@@ -19,8 +21,8 @@ The skill has one genre file for each of these:
 - Design docs, RFCs and decision records
 - Runbooks and procedures
 - Error messages
-- PR descriptions, commit messages and code comments
-- READMEs, tutorials, how-tos and references
+- Commit messages and code comments
+- Tutorials, how-tos and references
 - Status updates, review comments and decision requests
 - Deprecation and breaking-change notices
 - Escalations and handoffs, in SBAR, I-PASS or CUS form
@@ -37,7 +39,7 @@ A repository's own writing rules outrank the skill: it reads `AGENTS.md`,
 
 ## Pull request descriptions
 
-A pull request description has its own skill, `pr-description`, and its own
+A pull request description has its own skill, `write-pr-description`, and its own
 agent. The skill collects the four facts that a diff cannot show: why the
 change exists, what was verified, what was not, and what can break. When the
 change can be read as a diff, the skill hands those facts to the
@@ -46,12 +48,27 @@ body, checks each claim against the diff, and returns the facts it could not
 find instead of guessing them. It runs on the session's model.
 
 The description opens with what the code does after the merge, then gives the
-reason, the verification and the risk. `genres/pr-description.md` has the
-format and its sources.
+reason, the verification and the risk. The [PR description format](skills/write-technical-prose/genres/pr-description.md) gives the full structure and its sources.
+
+## Project READMEs
+
+Both README skills accept a path and default to `README.md` in the current
+directory. The audit compares the README with the CLI, generated files,
+quickstart results, links and workflow badges. It reports wrong claims,
+broken references, omissions, structural issues and prose findings in that
+order. The writer uses the same checks before editing an existing README
+and on the final draft. For a new README it starts from the repository.
+
+The [checker](bin/readme) measures the file and checks links, badges and
+inbound anchors with `bin/readme all [file]`. Use
+`bin/readme commands <cli> [file]` to compare documented commands with
+the command list in the CLI's help. Findings and their total go to stdout.
+The individual checks print progress counts to stderr. A successful check
+can report findings.
 
 ## How it fits with the other plugins
 
-- The dialogue plugin applies 22 of the same rules to chat replies. Each
+- The dialogue plugin applies some of the same rules to chat replies. Each
   shared rule has the same ID and the same first line in both plugins, and a
   test in this repository fails when the two differ.
 - The release plugin, from the
@@ -60,7 +77,6 @@ format and its sources.
   one change's note; `release:prepare` drafts a release's changelog entry.
 - The docket plugin handles the lifecycle of design docs and decision records,
   and this skill supplies their body.
-- The readme plugin checks a README against the code it describes.
 
 ## Credit
 
@@ -72,6 +88,14 @@ and
 [Tech Writing for Accessibility](https://developers.google.com/tech-writing/accessibility),
 CC BY 4.0. ASD-STE100 may not be reproduced, so the skill cites its rule
 numbers and paraphrases them. [NOTICE](NOTICE) has the full attribution.
+
+The README writer includes the prose patterns from
+[blader/humanizer](https://github.com/blader/humanizer) 3.0.0, MIT, © 2025
+Siqi Chen. See the [license](skills/write-project-readme/references/humanizer-LICENSE)
+and [source revision](skills/write-project-readme/references/humanizer-VENDOR.json).
+The patterns draw on Wikipedia's
+[Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing),
+maintained by WikiProject AI Cleanup under CC BY-SA 4.0.
 
 ## Install
 

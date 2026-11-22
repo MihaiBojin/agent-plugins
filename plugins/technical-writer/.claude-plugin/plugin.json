@@ -1,7 +1,7 @@
 {
   "name": "technical-writer",
-  "version": "0.3.0",
-  "description": "Write bug reports, postmortems, runbooks, design docs, error messages and other software prose in the shape their reader needs",
+  "version": "0.4.0",
+  "description": "Write technical prose, PR descriptions and project READMEs, and audit README claims against the repository",
   "author": {
     "name": "Mihai Bojin",
     "url": "https://github.com/MihaiBojin"
@@ -16,6 +16,8 @@
     "postmortem",
     "runbook",
     "error-messages",
-    "accessibility"
+    "accessibility",
+    "readme",
+    "audit"
   ]
 }

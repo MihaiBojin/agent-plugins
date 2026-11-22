@@ -3,8 +3,9 @@
 An e2e case is an eval case tagged `e2e`: `<plugin>/evals/e2e-<skill>/`, with a `prompt.md`
 and graders that cost nothing to run. Claude Code runs the cases itself, through
 `claude plugin eval`. Codex has no such command, so this script installs the plugin into a
-throwaway CODEX_HOME, sends each prompt through `codex exec`, and applies the same `regex`
-graders to the reply.
+throwaway CODEX_HOME, sends each prompt through `codex exec`, and grades its reply and trace.
+A case can supply an example repository in project/. Its scaffold.sh stages those files for
+Claude, and Codex runs in a read-only copy.
 """
 
 import argparse
@@ -61,7 +62,7 @@ def front_matter(text):
 
 
 def load_cases(plugin):
-    """Every eval case of the plugin that is tagged e2e, with its prompt and its regex graders."""
+    """Every e2e case of the plugin, with its prompt and supported free graders."""
     cases = []
     for prompt_file in sorted(Path(plugin).glob('evals/*/prompt.md')):
         fields, prompt = front_matter(prompt_file.read_text(encoding='utf-8'))
@@ -73,7 +74,9 @@ def load_cases(plugin):
             if grader.get('type') == 'regex':
                 graders.append({'name': grader_file.stem, **grader})
         name = prompt_file.parent.name
-        cases.append({'name': name, 'skill': name.removeprefix('e2e-'), 'prompt': prompt, 'graders': graders})
+        project = prompt_file.parent / 'project'
+        cases.append({'name': name, 'skill': name.removeprefix('e2e-'), 'prompt': prompt, 'graders': graders,
+                      'project': project if project.is_dir() else None})
     return cases
 
 
@@ -130,6 +133,30 @@ def keep_claude_trace(trace, to):
         delete_sealed(trace.parent.parent)
 
 
+def claude_fixture_tools(plugin):
+    """Operator grants live in the testbed, so a case can only request commands the harness permits."""
+    grants = HERE.parent / plugin.name / 'e2e-tools.json'
+    if not grants.is_file():
+        return []
+    settings = json.loads(grants.read_text(encoding='utf-8'))
+    suite = plugin / 'evals'
+    approved = {suite / name / 'case.yaml' for name in settings['fixture_cases']}
+    # --scaffold applies suite-wide and runs outside the model's sandbox. Only these
+    # native case declarations may select a script, and it must be the static copy.
+    if set(suite.rglob('case.yaml')) != approved:
+        return []
+    for manifest in approved:
+        declared = ('schema_version: "1.0"\n' + f'name: {manifest.parent.name}\n' +
+                    'context:\n  scaffold_script: scaffold.sh\n')
+        script = manifest.with_name('scaffold.sh')
+        if manifest.read_text(encoding='utf-8') != declared or not script.is_file():
+            return []
+        if script.read_bytes() != b'#!/bin/sh\nset -eu\ncp -R "$(dirname "$0")/project/." .\n':
+            return []
+    return [rule.replace('{path}', str(plugin / path))
+            for path, rule in settings['commands'].items() if (plugin / path).is_file()]
+
+
 def run_claude(plugin, model, out):
     """One `claude plugin eval` over the tagged cases. Returns the rows and a line on what it cost.
 
@@ -138,6 +165,9 @@ def run_claude(plugin, model, out):
     command = ['claude', 'plugin', 'eval', str(plugin), '--tag', TAG, '--ablation', 'none', '--runs', '1',
                '--concurrency', '4', '--model', model, '--no-publish', '--trust-plugin', '--keep-temp',
                '--output-dir', str(out / 'claude'), '--json', str(result_file)]
+    grants = claude_fixture_tools(plugin)
+    if grants:
+        command += ['--eval-dir', 'evals', '--scaffold', '--allow-tools', *grants]
     done = run(command, env=clean_env(), timeout=TIMEOUT_SECONDS * 2)
     (out / 'claude.log').write_text(done.stdout + done.stderr, encoding='utf-8')
     if not result_file.exists():
@@ -213,8 +243,12 @@ def skill_was_read(commands, skill):
 
 
 def run_codex_case(case, home, model, out):
-    workspace = out / 'codex' / case['name']
-    workspace.mkdir(parents=True)
+    result_dir = out / 'codex' / case['name']
+    result_dir.mkdir(parents=True)
+    workspace = result_dir
+    if case['project']:
+        workspace = out / 'projects' / case['name']
+        shutil.copytree(case['project'], workspace)
     command = ['codex', 'exec', '--json', '--skip-git-repo-check', '--sandbox', 'read-only', '-m', model,
                '--', case['prompt']]
     try:
@@ -223,15 +257,17 @@ def run_codex_case(case, home, model, out):
     except subprocess.TimeoutExpired as expired:
         stdout = expired.stdout.decode() if isinstance(expired.stdout, bytes) else expired.stdout or ''
         failure = f'timed out after {TIMEOUT_SECONDS}s'
-    (workspace / 'events.jsonl').write_text(stdout, encoding='utf-8')
+    (result_dir / 'events.jsonl').write_text(stdout, encoding='utf-8')
     turn = parse_codex(stdout.splitlines())
-    (workspace / 'reply.md').write_text(turn['reply'], encoding='utf-8')
+    (result_dir / 'reply.md').write_text(turn['reply'], encoding='utf-8')
     rows = []
     if turn['error'] or failure:
         rows.append(('codex', case['name'], f'run: {turn["error"] or failure}', False))
     rows.append(('codex', case['name'], 'skill_fired', skill_was_read(turn['commands'], case['skill'])))
     for grader in case['graders']:
-        rows.append(('codex', case['name'], grader['name'], regex_passes(grader, turn['reply'])))
+        text = stdout if grader.get('target') == 'trace' else turn['reply']
+        passed = regex_passes(grader, text)
+        rows.append(('codex', case['name'], grader['name'], passed))
     return rows, turn['usage']
 
 

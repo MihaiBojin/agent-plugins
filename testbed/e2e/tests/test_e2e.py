@@ -1,9 +1,11 @@
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -91,12 +93,78 @@ class Codex(unittest.TestCase):
         self.assertTrue(e2e.skill_was_read(turn['commands'], 'writer'))
         self.assertFalse(e2e.skill_was_read(turn['commands'], 'other'))
 
+    def test_a_case_with_a_project_runs_read_only_in_its_own_copy(self):
+        plugin = REPOSITORY / 'plugins' / 'technical-writer'
+        case = next(case for case in e2e.load_cases(plugin) if case['skill'] == 'audit-project-readme')
+        with tempfile.TemporaryDirectory() as scratch:
+            def read_project(command, *, cwd, **options):
+                self.assertEqual(command[command.index('--sandbox') + 1], 'read-only')
+                self.assertTrue(cwd.is_relative_to(Path(scratch)))
+                self.assertIn('--input', (cwd / 'README.md').read_text())
+                self.assertIn('--manifest', (cwd / 'pin-count.sh').read_text())
+                self.assertFalse((cwd / 'graders').exists())
+                return subprocess.CompletedProcess(command, 0, '', '')
+
+            with patch.object(e2e, 'run', side_effect=read_project):
+                e2e.run_codex_case(case, Mock(), 'test-model', Path(scratch))
+            results = Path(scratch) / 'codex' / case['name']
+            self.assertTrue((results / 'reply.md').exists())
+            self.assertFalse((results / 'README.md').exists())
+
+    def test_trace_grader_requires_observed_fixture_output(self):
+        plugin = REPOSITORY / 'plugins' / 'technical-writer'
+        case = next(case for case in e2e.load_cases(plugin) if case['skill'] == 'write-project-readme')
+        with tempfile.TemporaryDirectory() as scratch:
+            def grades(output, exit_code):
+                item = {'type': 'command_execution', 'command': 'sh level-count.sh --level WARN examples/events.txt',
+                        'aggregated_output': output, 'exit_code': exit_code}
+                event = {'type': 'item.completed', 'item': item}
+                result = subprocess.CompletedProcess([], 0, json.dumps(event), '')
+                with tempfile.TemporaryDirectory(dir=scratch) as out, patch.object(e2e, 'run', return_value=result):
+                    rows, _ = e2e.run_codex_case(case, Mock(), 'test-model', Path(out))
+                return {name: passed for _, _, name, passed in rows}
+
+            self.assertTrue(grades('WARN=2\n', 0)['run_example'])
+            self.assertTrue(grades('Usage text\nWARN=2\nmore output\n', 0)['run_example'])
+            self.assertFalse(grades('Operation not permitted', 2)['run_example'])
+            self.assertFalse(grades('WARN=2\n', 1)['run_example'])
+
+    def test_claude_trace_grader_needs_successful_tool_output(self):
+        plugin = REPOSITORY / 'plugins' / 'technical-writer'
+        case = next(case for case in e2e.load_cases(plugin) if case['skill'] == 'audit-project-readme')
+        grader = next(grader for grader in case['graders'] if grader['name'] == 'check_cli')
+        for kind, failed, expected in [('tool_result', False, True), ('tool_result', True, False),
+                                       ('text', False, False)]:
+            event = {'type': kind, 'content': 'observed output\n2\n', 'is_error': failed}
+            with self.subTest(kind=kind, failed=failed):
+                self.assertEqual(e2e.regex_passes(grader, json.dumps(event)), expected)
+
     def test_a_failed_turn_reports_its_message(self):
         turn = e2e.parse_codex([json.dumps({'type': 'turn.failed', 'error': {'message': 'no quota'}})])
         self.assertEqual(turn['error'], 'no quota')
 
 
 class ClaudeTrace(unittest.TestCase):
+    def test_scaffold_requires_the_two_copy_only_fixtures(self):
+        plugin = REPOSITORY / 'plugins' / 'technical-writer'
+        with tempfile.TemporaryDirectory() as scratch:
+            copy = Path(scratch) / plugin.name
+            shutil.copytree(plugin, copy)
+            self.assertTrue(e2e.claude_fixture_tools(copy))
+            unexpected = copy / 'evals' / 'another-case' / 'case.yaml'
+            unexpected.parent.mkdir()
+            unexpected.write_text('context: {scaffold_script: setup.sh}\n')
+            self.assertEqual(e2e.claude_fixture_tools(copy), [])
+            unexpected.unlink()
+            approved = copy / 'evals' / 'e2e-audit-project-readme'
+            script = approved / 'scaffold.sh'
+            original = script.read_bytes()
+            script.write_text('echo unexpected\n')
+            self.assertEqual(e2e.claude_fixture_tools(copy), [])
+            script.write_bytes(original)
+            (approved / 'case.yaml').write_text('context: {scaffold_script: setup.sh}\n')
+            self.assertEqual(e2e.claude_fixture_tools(copy), [])
+
     def test_the_reply_is_the_result_of_the_last_result_event(self):
         lines = [json.dumps({'type': 'assistant', 'message': {}}), 'not json',
                  json.dumps({'type': 'result', 'result': 'Title: Add a timeout'})]

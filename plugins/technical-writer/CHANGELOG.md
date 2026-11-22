@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 - 2026-11-22
+
+### Changed
+
+Install `technical-writer@mihaibojin` and remove `readme@mihaibojin`. Under `technical-writer`, `audit-project-readme` replaces `readme:audit` and reports discrepancies without editing. `write-project-readme` replaces `readme:rewrite` and can also create a README. Update references to the former `technical-writer:technical-writer` and `technical-writer:pr-description` skills to `technical-writer:write-technical-prose` and `technical-writer:write-pr-description`.
+
+### Choices
+
+Writing and auditing are separate skills because only the writer edits the project. Both use the same checker and the same verification steps. Keeping them in one plugin lets README authors reuse the prose rules directly.
+
 ## 0.3.0 - 2026-11-22
 
 ### Changed

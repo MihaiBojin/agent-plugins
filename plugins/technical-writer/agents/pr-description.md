@@ -3,7 +3,7 @@ name: pr-description
 description: >
   Writes the title and the body of one pull request or merge request from its
   diff and from the facts its author supplies, or corrects an existing
-  description against the diff. The pr-description skill builds the brief
+  description against the diff. The write-pr-description skill builds the brief
   that this agent needs.
 model: inherit
 tools: Read, Grep, Glob, Bash
@@ -25,9 +25,9 @@ nothing to it. A fact that says `not stated` stays missing.
 
 ## What you read first
 
-1. The format: `${CLAUDE_PLUGIN_ROOT}/skills/technical-writer/genres/pr-description.md`.
+1. The format: `${CLAUDE_PLUGIN_ROOT}/skills/write-technical-prose/genres/pr-description.md`.
 2. The sentence rules: the "Shared rules" section of
-   `${CLAUDE_PLUGIN_ROOT}/skills/technical-writer/SKILL.md`.
+   `${CLAUDE_PLUGIN_ROOT}/skills/write-technical-prose/SKILL.md`.
 3. The repository's own rules, which outrank both: `AGENTS.md`, `CLAUDE.md`,
    `CONTRIBUTING.md` and `.github/pull_request_template.md`, and the last
    twenty subjects on the base branch for the title's prefix.

@@ -56,6 +56,34 @@ class SkillTest(unittest.TestCase):
             self.assertTrue(task['prompt'])
             self.assertFalse(task['prompt'].startswith('---'))
 
+    def test_plugin_configurations_ask_for_the_prose_skill(self):
+        task = {'prompt': 'Write a runbook.'}
+        self.assertEqual(bench.prompt_for({'task': task, 'spans': []}),
+                         'Use the write-technical-prose skill.\n\nWrite a runbook.')
+        self.assertEqual(bench.prompt_for({'task': task, 'spans': None}), task['prompt'])
+
+    def test_detects_only_successful_loads_of_the_prose_skill(self):
+        plugin = '/cache/technical-writer/0.4.0/skills'
+        prose = f'{plugin}/write-technical-prose/SKILL.md'
+        readme = f'{plugin}/write-project-readme/SKILL.md'
+        for name, arguments, error, expected in [
+                ('Skill', {'skill': 'write-technical-prose'}, False, True),
+                ('Skill', {'skill': 'technical-writer:write-technical-prose'}, False, True),
+                ('Skill', {'skill': 'technical-writer:write-pr-description'}, False, False),
+                ('Skill', {'skill': 'other:write-technical-prose'}, False, False),
+                ('Skill', {'skill': 'technical-writer:audit-project-readme', 'args': prose}, False, False),
+                ('shell', f"/bin/zsh -lc 'cat {prose}'", False, True),
+                ('shell', f"cat {readme}", False, False),
+                ('shell', f"cat {prose}.bak", False, False),
+                ('shell', f"ls {prose}", False, False),
+                ('shell', f"cat {readme} && ls {prose}", False, False),
+                ('shell', f"cat {prose}", True, False),
+                ('Read', {'file_path': prose}, False, True),
+                ('Grep', {'pattern': prose}, False, False)]:
+            with self.subTest(name=name, arguments=arguments, error=error):
+                item = {'type': 'tool', 'name': name, 'input': arguments, 'is_error': error}
+                self.assertEqual(bench.fired([item]), expected)
+
     def test_cases_cover_each_configuration_task_and_repeat(self):
         agents = [bench.matrix.parse_agent('claude:haiku')]
         selected = bench.cases(PLUGIN, agents, 'groups', 2, task_ids=['runbook'])
