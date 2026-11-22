@@ -10,7 +10,7 @@ A repository with writing rules of its own outranks all of this. Read
 apply them where they disagree with what follows.
 
 Each rule under a `###` heading opens with the ID and the first line that the
-technical-writing plugin gives it, and the dialogue plugin states most of them
+technical-writer plugin gives it, and the dialogue plugin states most of them
 the same way.
 
 ## Before the first sentence
