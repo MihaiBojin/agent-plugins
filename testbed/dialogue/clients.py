@@ -264,7 +264,8 @@ class ClaudeSession:
 class CodexHome:
     """A throwaway CODEX_HOME holding the user's auth, the plugin under test and nothing else."""
 
-    def __init__(self, root, marketplace):
+    def __init__(self, root, marketplace, plugin='dialogue'):
+        """With marketplace None, the home has no plugin at all: a baseline."""
         self.path = Path(root) / 'codex-home'
         self.path.mkdir(parents=True)
         auth = Path(os.environ.get('CODEX_HOME', '~/.codex')).expanduser() / 'auth.json'
@@ -272,7 +273,8 @@ class CodexHome:
             raise RuntimeError(f'no Codex login at {auth}; run codex login first')
         (self.path / 'auth.json').symlink_to(auth)
         env = self.env()
-        for args in (['plugin', 'marketplace', 'add', str(marketplace)], ['plugin', 'add', 'dialogue@testbed']):
+        steps = (['plugin', 'marketplace', 'add', str(marketplace)], ['plugin', 'add', f'{plugin}@testbed'])
+        for args in steps if marketplace else ():
             result = subprocess.run(['codex', *args], capture_output=True, text=True, env=env,
                                     stdin=subprocess.DEVNULL)
             if result.returncode != 0:
@@ -281,8 +283,8 @@ class CodexHome:
             # Remote plugins from the account add context the test did not ask for,
             # and the dialogue tool needs DIALOGUE_STATE_DIR in its shell.
             config.write('\n[features]\nremote_plugin = false\n\n[shell_environment_policy]\ninherit = "all"\n')
-        installed = sorted((self.path / 'plugins' / 'cache' / 'testbed' / 'dialogue').iterdir())
-        self.plugin = installed[-1]
+        self.plugin = sorted((self.path / 'plugins' / 'cache' / 'testbed' / plugin).iterdir())[-1] \
+            if marketplace else None
 
     def env(self, **extra):
         return clean_env(CODEX_HOME=str(self.path), **extra)
