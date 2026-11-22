@@ -94,15 +94,15 @@
       "description": "Read CI, rebase onto the head branch, describe, ship and merge pull requests, and prune finished worktrees through the worktrees CLI"
     },
     {
-      "name": "technical-writing",
-      "source": "./plugins/technical-writing",
+      "name": "technical-writer",
+      "source": "./plugins/technical-writer",
       "description": "Write bug reports, postmortems, runbooks, design docs, error messages and other software prose in the shape their reader needs",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"
       },
-      "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/technical-writing#readme",
+      "homepage": "https://github.com/MihaiBojin/agent-plugins/tree/main/plugins/technical-writer#readme",
       "repository": "https://github.com/MihaiBojin/agent-plugins",
       "license": "Apache-2.0",
       "keywords": [

@@ -1,8 +1,8 @@
-# Set these on the command line: make e2e PLUGIN=technical-writing CODEX_MODEL=
+# Set these on the command line: make e2e PLUGIN=technical-writer CODEX_MODEL=
 # An empty model skips that client. Plain `=` keeps a variable in the shell
 # environment from changing a run; values on the command line still win.
 PYTHON ?= python3
-PLUGIN = technical-writing
+PLUGIN = technical-writer
 PLUGIN_DIR = plugins/$(PLUGIN)
 CLAUDE_MODEL = fable
 CODEX_MODEL = gpt-6-astra

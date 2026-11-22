@@ -127,12 +127,12 @@ class PushedTags(unittest.TestCase):
     def test_finds_release_tags_and_skips_branches_other_tags_and_deletions(self):
         lines = [
             'refs/heads/main 1111111 refs/heads/main 2222222',
-            'refs/tags/technical-writing/v0.2.0 aaaaaaa refs/tags/technical-writing/v0.2.0 0000000',
+            'refs/tags/technical-writer/v0.2.0 aaaaaaa refs/tags/technical-writer/v0.2.0 0000000',
             'refs/tags/v1.0.0 bbbbbbb refs/tags/v1.0.0 0000000',
             '(delete) 0000000 refs/tags/readme/v0.1.0 ccccccc',
             'refs/tags/readme/v0.1.1 0000000 refs/tags/readme/v0.1.1 ccccccc',
         ]
-        self.assertEqual(pushed_tags.released(lines), [('technical-writing', 'aaaaaaa')])
+        self.assertEqual(pushed_tags.released(lines), [('technical-writer', 'aaaaaaa')])
 
     def test_exports_the_plugin_as_the_commit_has_it(self):
         with tempfile.TemporaryDirectory() as scratch:
