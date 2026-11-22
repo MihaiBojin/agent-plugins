@@ -93,11 +93,50 @@ def run(command, **options):
     return subprocess.run(command, capture_output=True, text=True, stdin=subprocess.DEVNULL, **options)
 
 
+def claude_reply(lines):
+    """The reply in a `claude plugin eval` trace: the result of its last result event."""
+    reply = ''
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict) and event.get('type') == 'result':
+            reply = event.get('result') or ''
+    return reply
+
+
+def delete_sealed(folder):
+    """Delete a directory tree whose directories the eval left without write or read permission."""
+    folder.chmod(0o700)
+    for entry in folder.iterdir():
+        if entry.is_dir() and not entry.is_symlink():
+            delete_sealed(entry)
+        else:
+            entry.unlink()
+    folder.rmdir()
+
+
+def keep_claude_trace(trace, to):
+    """Copy one run's trace and reply to `to`, then delete the scaffold directory `--keep-temp` left."""
+    trace = Path(trace or '')
+    if trace.name != 'trace.jsonl' or not trace.is_file():
+        return
+    to.mkdir(parents=True, exist_ok=True)
+    text = trace.read_text(encoding='utf-8')
+    (to / 'events.jsonl').write_text(text, encoding='utf-8')
+    (to / 'reply.md').write_text(claude_reply(text.splitlines()), encoding='utf-8')
+    if trace.parent.name == 'out':
+        delete_sealed(trace.parent.parent)
+
+
 def run_claude(plugin, model, out):
-    """One `claude plugin eval` over the tagged cases. Returns the rows and a line on what it cost."""
+    """One `claude plugin eval` over the tagged cases. Returns the rows and a line on what it cost.
+
+    The eval keeps no reply, only a trace in a scaffold directory that it deletes, so `--keep-temp` holds it."""
     result_file = out / 'claude.json'
     command = ['claude', 'plugin', 'eval', str(plugin), '--tag', TAG, '--ablation', 'none', '--runs', '1',
-               '--concurrency', '4', '--model', model, '--no-publish', '--trust-plugin',
+               '--concurrency', '4', '--model', model, '--no-publish', '--trust-plugin', '--keep-temp',
                '--output-dir', str(out / 'claude'), '--json', str(result_file)]
     done = run(command, env=clean_env(), timeout=TIMEOUT_SECONDS * 2)
     (out / 'claude.log').write_text(done.stdout + done.stderr, encoding='utf-8')
@@ -107,6 +146,7 @@ def run_claude(plugin, model, out):
     rows = []
     for case in result['cases']:
         for attempt in case['arms']['with']:
+            keep_claude_trace(attempt.get('tracePath'), out / 'claude' / case['name'])
             if attempt.get('error'):
                 rows.append(('claude', case['name'], 'run', False))
             for grader in attempt['graders']:
