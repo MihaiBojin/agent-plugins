@@ -40,30 +40,32 @@ def totals(metrics, state_threads):
 
 
 def scores(rows):
-    """For rows of (config, values) from one scenario: config -> [(metric, z, moved)] for every count that varies."""
+    """For rows of (config, values) from one scenario: config -> [(metric, z, moved)] for every count that varies.
+
+    A session without a metric is left out of it: a compliance check runs only where the policy has its rule, so
+    a unit that removes the rule has no value for that check rather than a failing one."""
     groups = {}
     for config, values in rows:
         groups.setdefault(config, []).append(values)
-    if len(groups) < 3:
-        return {}
     result = {config: [] for config in groups}
     for metric in sorted({key for _, values in rows for key in values}):
-        means, variances = {}, []
-        for config, items in groups.items():
-            xs = [item.get(metric, 0.0) for item in items]
-            means[config] = sum(xs) / len(xs)
-            if len(xs) > 1:
-                variances.append(sum((x - means[config]) ** 2 for x in xs) / (len(xs) - 1))
+        measured = {config: [item[metric] for item in items if metric in item] for config, items in groups.items()}
+        measured = {config: xs for config, xs in measured.items() if xs}
+        if len(measured) < 3:
+            continue
+        means = {config: sum(xs) / len(xs) for config, xs in measured.items()}
+        variances = [sum((x - means[config]) ** 2 for x in xs) / (len(xs) - 1)
+                     for config, xs in measured.items() if len(xs) > 1]
         spread = math.sqrt(sum(variances) / len(variances)) if variances else 0.0
         if not spread:
             continue
         total, others = sum(means.values()), len(means) - 1
-        repeats = sum(len(items) for items in groups.values()) / len(groups)
+        repeats = sum(len(xs) for xs in measured.values()) / len(measured)
         for config, mean in means.items():
             moved = mean - (total - mean) / others
-            z = moved / (spread * math.sqrt(1 / len(groups[config]) + 1 / (others * repeats)))
+            z = moved / (spread * math.sqrt(1 / len(measured[config]) + 1 / (others * repeats)))
             result[config].append((metric, z, moved))
-    return result
+    return {config: tests for config, tests in result.items() if tests}
 
 
 def top(by_scenario):

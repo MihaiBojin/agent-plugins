@@ -311,6 +311,16 @@ class AblationTest(unittest.TestCase):
         p = ablation.p_values(rows, units, shuffles=200)
         self.assertEqual(ablation.discoveries(p), {'ref.-loud'})
 
+    def test_a_session_without_a_metric_is_left_out_of_it(self):
+        rng = random.Random(2)
+        rows = [(config, {'words': rng.gauss(100, 10),
+                          **({} if config == 'ref.-check' else {'rule: check': float(rng.random() < 0.8)})})
+                for config in ['ref', 'ref.-check'] + [f'ref.-quiet{n}' for n in range(5)] for _ in range(3)]
+        tests = ablation.scores(rows)
+        self.assertEqual([metric for metric, _, _ in tests['ref.-check']], ['words'])
+        self.assertIn('rule: check', [metric for metric, _, _ in tests['ref.-quiet0']])
+        self.assertEqual(ablation.discoveries(ablation.p_values({'one': rows}, ['ref.-check'], shuffles=100)), set())
+
     def test_drop_lines_removes_only_the_named_lines(self):
         with tempfile.TemporaryDirectory() as root:
             target = Path(root) / 'policy' / 'threads.md'
