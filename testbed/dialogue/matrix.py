@@ -143,33 +143,72 @@ def rule_lines(plugin, path):
     return [(number, line) for number, line in enumerate(lines, 1) if line.strip() and not line.startswith('#')]
 
 
+def paragraphs(numbered):
+    """Rule lines split where the file has a blank line or a heading between them, as lists of (number, text)."""
+    blocks = []
+    for number, text in numbered:
+        if blocks and number == blocks[-1][-1][0] + 1:
+            blocks[-1].append((number, text))
+        else:
+            blocks.append([(number, text)])
+    return blocks
+
+
 def leave_one_out(spec, base, values, plugin, units=None, together=False):
     """The reference configuration, then one configuration per unit with that unit removed.
 
-    Each unit carries the scenarios where removing it can show; the reference runs on all of them. `units` keeps
-    only the units with those configuration names. `together` adds one configuration, `REF.*together`, that
-    removes every kept unit at once, on all their scenarios, for rules that only matter when another is gone."""
+    Each unit carries the scenarios where removing it can show; the reference runs on all of them. A unit with
+    `"group": true` removes a group at a time instead of one rule: the guidelines of one type, as
+    `REF.*type-TYPE`, or one paragraph of rule lines, as `REF.*STEMFIRST-LAST`. `units` keeps only the units with
+    those configuration names. `together` adds one configuration, `REF.*together`, that removes every kept unit at
+    once, on all their scenarios, for rules that only matter when another is gone."""
     reference = dict(spec['reference'])
     every = reference.pop('all_guidelines', False)
     if every:
         reference['guidelines'] = {identifier: True for identifier in values['guidelines']}
     name = spec.get('name', 'ref')
-    kept = []  # (scenarios, guideline removed or None, (drop, text) or None, configuration)
+
+    def removing(label, guidelines, lines, members=None):
+        """The reference with these guidelines off and these (drop, text) lines deleted."""
+        config = make_config(base, {**reference, 'name': label, 'drops': [drop for drop, _ in lines],
+                                    'guidelines': {**reference.get('guidelines', {}),
+                                                   **{identifier: False for identifier in guidelines}}}, values)
+        if lines:
+            config['drops_text'] = [text for _, text in lines]
+        if members is not None:
+            config['together'] = members
+        return config
+
+    kept = []  # (scenarios, guidelines removed, (drop, text) lines removed, configuration)
     for unit in spec['units']:
+        grouped = unit.get('group', False)
         if unit['kind'] == 'guidelines':
-            for identifier in values['guidelines']:
-                if every or identifier in reference.get('guidelines', {}):
-                    guidelines = {**reference.get('guidelines', {}), identifier: False}
-                    config = make_config(base, {**reference, 'guidelines': guidelines, 'name': f'{name}.-{identifier}'},
-                                         values)
-                    kept.append((unit['scenarios'], identifier, None, config))
+            chosen = [identifier for identifier in values['guidelines']
+                      if every or identifier in reference.get('guidelines', {})]
+            if grouped:
+                entries = json.loads((Path(plugin) / 'policy' / 'guidelines.json').read_text(encoding='utf-8'))
+                types = {entry['id']: entry['type'] for entry in entries}
+                groups = {}
+                for identifier in chosen:
+                    groups.setdefault(types[identifier], []).append(identifier)
+                for kind, group in groups.items():
+                    kept.append((unit['scenarios'], group, [], removing(f'{name}.*type-{kind}', group, [], group)))
+            else:
+                for identifier in chosen:
+                    kept.append((unit['scenarios'], [identifier], [],
+                                 removing(f'{name}.-{identifier}', [identifier], [])))
         elif unit['kind'] == 'lines':
             stem = Path(unit['file']).stem
-            for number, text in rule_lines(plugin, unit['file']):
-                drop = f'{unit["file"]}:{number}'
-                config = make_config(base, {**reference, 'name': f'{name}.~{stem}{number}', 'drops': [drop]}, values)
-                config['drops_text'] = [text]
-                kept.append((unit['scenarios'], None, (drop, text), config))
+            numbered = rule_lines(plugin, unit['file'])
+            blocks = paragraphs(numbered) if grouped else [[line] for line in numbered]
+            for block in blocks:
+                lines = [(f'{unit["file"]}:{number}', text) for number, text in block]
+                if grouped:
+                    label = f'{name}.*{stem}{block[0][0]}-{block[-1][0]}'
+                    config = removing(label, [], lines, [f'{stem}{number}' for number, _ in block])
+                else:
+                    config = removing(f'{name}.~{stem}{block[0][0]}', [], lines)
+                kept.append((unit['scenarios'], [], lines, config))
         else:
             raise ValueError(f'unknown unit kind: {unit["kind"]}')
     if units is not None:
@@ -182,12 +221,8 @@ def leave_one_out(spec, base, values, plugin, units=None, together=False):
         union += [scenario for scenario in scenarios if scenario not in union]
         result += [(scenario, config) for scenario in scenarios]
     if together and kept:
-        guidelines = {**reference.get('guidelines', {}), **{item[1]: False for item in kept if item[1]}}
-        lines = [item[2] for item in kept if item[2]]
-        config = make_config(base, {**reference, 'guidelines': guidelines, 'name': f'{name}.*together',
-                                    'drops': [drop for drop, _ in lines]}, values)
-        config['drops_text'] = [text for _, text in lines]
-        config['together'] = [slug(item[3]) for item in kept]
+        config = removing(f'{name}.*together', [identifier for item in kept for identifier in item[1]],
+                          [line for item in kept for line in item[2]], [slug(item[3]) for item in kept])
         result += [(scenario, config) for scenario in union]
     config = make_config(base, {**reference, 'name': name}, values)
     return [(scenario, config) for scenario in union] + result

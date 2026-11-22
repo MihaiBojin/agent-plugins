@@ -18,19 +18,20 @@ make clean                                    # delete out/ and any scratch spac
 
 ## Make targets
 
-| Target           | Runs                                                                       |
-| ---------------- | -------------------------------------------------------------------------- |
-| `make render`    | `testbed.py render`: every configuration's policy and the report, no model |
-| `make plan`      | `testbed.py plan`: the default suites, with the estimate for each agent    |
-| `make run`       | `testbed.py run`: the default suites; asks before it starts                |
-| `make plan-full` | `plan --full`: the default suites plus every combination                   |
-| `make run-full`  | `run --full`                                                               |
-| `make noise`     | `run --suite noise --repeat 3`: the spread between repeats                 |
-| `make ablation`  | `run --suite ablation --repeat 3`: one rule removed at a time              |
-| `make report`    | `testbed.py report` on `RUN`, `out/latest-run` by default                  |
-| `make judge`     | `testbed.py judge` on `RUN` with the `JUDGE` model; asks before it starts  |
-| `make test`      | the unit tests                                                             |
-| `make clean`     | deletes `out/` and the scratch space in `WORK`                             |
+| Target                 | Runs                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| `make render`          | `testbed.py render`: every configuration's policy and the report, no model     |
+| `make plan`            | `testbed.py plan`: the default suites, with the estimate for each agent        |
+| `make run`             | `testbed.py run`: the default suites; asks before it starts                    |
+| `make plan-full`       | `plan --full`: the default suites plus every combination                       |
+| `make run-full`        | `run --full`                                                                   |
+| `make noise`           | `run --suite noise --repeat 3`: the spread between repeats                     |
+| `make ablation`        | `run --suite ablation --repeat 3`: one rule removed at a time                  |
+| `make ablation-groups` | `run --suite ablation-groups --repeat 6`: one group of rules removed at a time |
+| `make report`          | `testbed.py report` on `RUN`, `out/latest-run` by default                      |
+| `make judge`           | `testbed.py judge` on `RUN` with the `JUDGE` model; asks before it starts      |
+| `make test`            | the unit tests                                                                 |
+| `make clean`           | deletes `out/` and the scratch space in `WORK`                                 |
 
 | Variable        | Default                    | Effect                                         |
 | --------------- | -------------------------- | ---------------------------------------------- |
@@ -77,14 +78,21 @@ A unit is one guideline, turned off with an override, or one rule line of `polic
 of the plugin made for that configuration only. Guideline units run on six scenarios and thread-protocol lines on
 four, as `data/suites.json` sets.
 
-`ablation.md` and `ablation.csv` then list, for every unit, the characters it costs, the counts that changed, the
-compliance rates that moved and, after `testbed.py judge RUN --against ref`, the judge's verdicts against the
-reference. A unit with none of these has no measurable effect on these scenarios: a candidate to delete. A count
-changes only when the unit's values and the reference's do not overlap across repeats, so run it with
-`--repeat 3`, and read the transcripts behind a unit that changed a single count.
+`ablation.md` and `ablation.csv` then list, for every unit, the characters it costs, a p-value, the counts that
+moved most and, after `testbed.py judge RUN --against ref`, the judge's verdicts against the reference. The null is
+every configuration, not the reference alone, since most units change nothing. For each scenario and count, a
+unit's mean is compared with the mean of all other configurations, using the spread between repeats pooled over
+all of them; compliance pass rates count as counts. The unit's score is its largest z. The p-value is the share of
+1,000 shuffles of the configuration labels, within each scenario, in which the unit's label scores as high. A unit
+has an effect when it passes the Benjamini-Hochberg cut at a 10% false discovery rate. A unit without one is a
+candidate to delete.
 
 The suite is large: about 1,300 sessions per agent. `make plan ARGS='--suite ablation --repeat 3'` prints the
-estimate.
+estimate. Three repeats detect only a removal that about doubles a count, so a single rule rarely shows an effect.
+`make ablation-groups` runs the `ablation-groups` suite at `--repeat 6` instead: the same reference, with one
+configuration per guideline type, such as `ref.*type-language`, and one per paragraph of `policy/threads.md`, such
+as `ref.*threads3-20`. It is about 430 sessions per agent. Split a group that shows an effect with `--units` on the
+`ablation` suite.
 
 A model that already writes the way a rule asks shows no effect when the rule is removed, and neither do two rules
 that ask for the same thing. So check the candidates on a model that follows the policy closely, and then remove

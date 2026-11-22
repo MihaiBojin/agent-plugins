@@ -130,6 +130,40 @@
         ]
       }
     },
+    "ablation-groups": {
+      "about": "Opt-in. Run with --repeat 6. The ablation reference; each other configuration removes one type of guideline, or one paragraph of the thread protocol",
+      "leave_one_out": {
+        "name": "ref",
+        "reference": {
+          "comms": "pyramid",
+          "style": "ste",
+          "situation": "none",
+          "signals": "intent",
+          "threads": "focus-compact",
+          "all_guidelines": true
+        },
+        "units": [
+          {
+            "kind": "guidelines",
+            "group": true,
+            "scenarios": [
+              "routine-question",
+              "implemented",
+              "compare",
+              "procedure",
+              "code-change",
+              "escalation"
+            ]
+          },
+          {
+            "kind": "lines",
+            "file": "policy/threads.md",
+            "group": true,
+            "scenarios": ["decisions", "markers", "walk", "compare"]
+          }
+        ]
+      }
+    },
     "guidelines": {
       "about": "Opt-in. The custom profile with exactly one guideline turned on, for each guideline",
       "ablate": "custom",
