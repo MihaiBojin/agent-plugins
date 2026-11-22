@@ -266,6 +266,14 @@ class JudgeTest(unittest.TestCase):
         self.assertIn('"correct": 1-5', judge.system_prompt(rubric))
 
 
+class SuitesTest(unittest.TestCase):
+    def test_every_suite_plans_against_the_plugin_as_it_is(self):
+        base = plugin.fresh_defaults(PLUGIN)
+        for name in matrix.load_json('suites.json')['suites']:
+            with self.subTest(suite=name):
+                self.assertTrue(matrix.cases(PLUGIN, base, [CLAUDE], [name]))
+
+
 class AblationTest(unittest.TestCase):
     def test_leave_one_out_removes_each_unit_once_and_runs_the_reference_on_every_scenario(self):
         values = matrix.catalog(PLUGIN)

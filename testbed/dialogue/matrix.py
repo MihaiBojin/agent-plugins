@@ -29,7 +29,7 @@ def load_json(name):
 def catalog(plugin):
     """The values each setting accepts, read from the plugin's own policy files and settings.
 
-    A plugin without the situation setting takes only situation none, and has no setup workflows."""
+    A plugin without the situation setting takes only situation none."""
     import plugin as tested  # plugin imports this module, so the import waits for the call.
     policy = Path(plugin) / 'policy'
 
@@ -44,7 +44,6 @@ def catalog(plugin):
         'signals': list(SIGNALS),
         'threads': list(THREAD_MODES),
         'guidelines': [entry['id'] for entry in load('guidelines.json')],
-        'workflows': load('workflows.json') if (policy / 'workflows.json').exists() else {},
     }
 
 
@@ -124,9 +123,6 @@ def suite_configs(spec, base, values):
         return available(spec['configs'], lambda item: make_config(base, item, values))
     if 'vary' in spec:
         return [make_config(base, {spec['vary']: value}, values) for value in values[spec['vary']]]
-    if spec.get('workflows'):
-        return [make_config(base, {'situation': item['situation'], 'signals': item['signaling']}, values)
-                for item in values['workflows'].values()]
     if 'ablate' in spec:
         profile = {'comms': spec['ablate']}
         return [make_config(base, profile, values)] + [
@@ -134,7 +130,7 @@ def suite_configs(spec, base, values):
             for identifier in values['guidelines']]
     if spec.get('product'):
         return [make_config(base, 'disabled', values), *product(base, values)]
-    raise ValueError('a suite needs configs, vary, workflows, ablate or product')
+    raise ValueError('a suite needs configs, vary, ablate or product')
 
 
 def rule_lines(plugin, path):
