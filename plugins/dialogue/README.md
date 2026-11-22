@@ -43,7 +43,7 @@ Help lists commands, profiles, language styles, situational frameworks, signalin
 
 Setup asks **three questions, one at a time**:
 
-1. **Comms**: `pyramid` (answer, reasons and evidence), `direct` (concise and action-oriented), `efficient` (low-token), or `plain` (no response rules, and the start for turning guidelines on one at a time). Presets select guideline baselines; individual overrides take precedence.
+1. **Comms**: `pyramid` (answer first, with a verdict and tables), `direct` (concise and action-oriented), `efficient` (low-token), or `plain` (no response rules, and the start for turning guidelines on one at a time). Presets select guideline baselines; individual overrides take precedence.
 2. **Style**: `plain` (normal technical English), `ste` (STE-inspired controlled English; not official compliance).
 3. **Signals**: `off` (no markers), `intent` (sender-intent labels), `full` (intent and response-status labels).
 
@@ -91,12 +91,12 @@ The available settings are `enabled`, `threads`, `focus`, `compact`, `communicat
 
 Communication rules are defined once in [guidelines.json](policy/guidelines.json), each with an ID, category, name, and short description. [profiles.json](policy/profiles.json) contains optional baseline bundles. Individual guideline overrides take precedence; presets do not add hidden instructions.
 
-| Profile     | Behavior                                                                                                                                                       |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pyramid`   | Answer first, then reasons that do not overlap, each with its evidence; a verdict for implementation questions, one recommendation, and tables for comparisons |
-| `direct`    | Concise, factual, and action-oriented; reports changes only and puts exceptions first                                                                          |
-| `efficient` | Fewer guidelines for routine coding tasks; routine replies take one to three sentences                                                                         |
-| `plain`     | No communication guidelines                                                                                                                                    |
+| Profile     | Behavior                                                                                             |
+| ----------- | ---------------------------------------------------------------------------------------------------- |
+| `pyramid`   | Answer first; a verdict for implementation questions, one recommendation, and tables for comparisons |
+| `direct`    | Concise, factual, and action-oriented; reports changes only and puts exceptions first                |
+| `efficient` | Fewer guidelines for routine coding tasks; routine replies take one to three sentences               |
+| `plain`     | No communication guidelines                                                                          |
 
 Use `profiles` to compare optional presets and `guidelines` to see effective rules grouped by type. Change the current session with `set comms direct`, or new-session defaults with `defaults set communication_profile direct`. Disabled sessions have no active guidelines. Existing sessions retain their saved profiles.
 
@@ -109,16 +109,16 @@ Use the individual guideline controls instead of a preset if you prefer a custom
 /dialogue:guidelines list
 /dialogue:guidelines group list
 /dialogue:guidelines group list language
-/dialogue:guideline enable terminology
+/dialogue:guideline enable plain_words
 /dialogue:guideline disable no_narration
 /dialogue:guideline reset no_narration
-/dialogue:guideline group enable procedures
-/dialogue:guideline group reset procedures
+/dialogue:guideline group enable risk
+/dialogue:guideline group reset risk
 /dialogue:guideline reset all
 /dialogue:guideline --default enable bluf
 ```
 
-Each guideline belongs to one group: **structure**, **brevity**, **precision**, **evidence**, **risk**, **language**, or **procedures**. Guidelines with an ASD-STE100 Issue 9 source form the `style ste` bundle. They are adaptations, not a certification of compliance with the standard. Individual overrides disable or restore any one of them.
+Each guideline belongs to one group: **structure**, **brevity**, **risk**, or **language**. Guidelines with an ASD-STE100 Issue 9 source form the `style ste` bundle. They are adaptations, not a certification of compliance with the standard. Individual overrides disable or restore any one of them.
 
 `guidelines list` reports each rule's effective state and whether the profile, the style or an override set it. `guidelines group list` shows the count per group; append a group to inspect its rules. Overrides persist per session and take priority over profile and style bundles, and resetting one restores the inherited value. `guideline --default enable|disable|reset ID` and `guideline --default group enable|disable|reset TYPE` change the defaults for future sessions only. `guideline on|off ID`, `guideline group TYPE on|off|reset` and `guidelines --all|--group` are aliases of these commands. Disabling Dialogue turns off every response policy and keeps the saved choices.
 
