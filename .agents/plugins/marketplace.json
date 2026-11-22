@@ -67,10 +67,10 @@
       "category": "Developer Tools"
     },
     {
-      "name": "technical-writing",
+      "name": "technical-writer",
       "source": {
         "source": "local",
-        "path": "./plugins/technical-writing"
+        "path": "./plugins/technical-writer"
       },
       "policy": {
         "installation": "AVAILABLE",

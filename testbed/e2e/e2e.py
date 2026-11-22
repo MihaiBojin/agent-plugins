@@ -252,7 +252,7 @@ def run_codex(plugin, model, cases, out):
 
 def main(arguments=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('plugin', type=Path, help='the plugin directory, such as plugins/technical-writing')
+    parser.add_argument('plugin', type=Path, help='the plugin directory, such as plugins/technical-writer')
     parser.add_argument('--claude', metavar='MODEL', help='run the cases with Claude Code on this model')
     parser.add_argument('--codex', metavar='MODEL', help='run the cases with Codex on this model')
     parser.add_argument('--out', type=Path, default=HERE / 'out', help='where each run keeps its replies')

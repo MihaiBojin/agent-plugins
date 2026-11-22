@@ -132,29 +132,29 @@ already stops it.
 
 ## Rules the plugins share
 
-A plugin cannot read another plugin's files, so dialogue, technical-writing
+A plugin cannot read another plugin's files, so dialogue, technical-writer
 and readme each carry the rules they share. A shared rule has the same ID and
 the same one-line text in `plugins/dialogue/policy/guidelines.json`,
 in the `## Shared rules` section of
-`plugins/technical-writing/skills/technical-writing/SKILL.md`, and under a
+`plugins/technical-writer/skills/technical-writer/SKILL.md`, and under a
 "### `id`" heading in `plugins/readme/skills/readme/references/writing.md`.
 Its detail and examples sit under the line. The WARNING and CAUTION lines
-under `warnings` in technical-writing repeat the meanings in dialogue's
+under `warnings` in technical-writer repeat the meanings in dialogue's
 `signals.json` the same way.
 
-`__tests__/shared-rules.test.mjs` fails when a rule in technical-writing or
+`__tests__/shared-rules.test.mjs` fails when a rule in technical-writer or
 readme is missing from dialogue or its text differs. Change every copy in one
 pull request, and bump and write an entry for each plugin it touches. A rule
-that comes to apply to both chat and documents joins technical-writing's
+that comes to apply to both chat and documents joins technical-writer's
 section in the same pull request.
 
 ## Evals
 
 ```shell
-claude plugin eval plugins/technical-writing --runs 1
+claude plugin eval plugins/technical-writer --runs 1
 ```
 
-Each case under `plugins/technical-writing/evals/` gives the agent raw notes
+Each case under `plugins/technical-writer/evals/` gives the agent raw notes
 and asks for one document: a postmortem, a runbook, a design doc, a
 deprecation notice or a PR description. Each grader checks one rule and
 passes or fails, so the report gives a failure rate per rule. The command
@@ -168,7 +168,7 @@ picks a cheaper judge.
 ## End-to-end tests
 
 ```shell
-make e2e                          # technical-writing, with both clients
+make e2e                          # technical-writer, with both clients
 make e2e PLUGIN=readme            # another plugin
 make e2e CODEX_MODEL=             # an empty model skips that client
 ```
@@ -185,7 +185,7 @@ installs the plugin into a throwaway `CODEX_HOME`, sends each request through
 `codex exec`, and applies the same `regex` graders to the reply. A pattern
 therefore has to mean the same thing in JavaScript and in Python.
 
-One run of the two technical-writing cases cost $0.48 with Claude Fable 5.2,
+One run of the two technical-writer cases cost $0.48 with Claude Fable 5.2,
 and 133,000 input tokens, 105,000 of them cached, with Codex on
 `gpt-6-astra`. CI has no login for either client and does not run them.
 
