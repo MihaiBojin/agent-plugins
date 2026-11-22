@@ -33,8 +33,6 @@ CONFLICTS = (
 
 # Two ways to say the same thing. Each side starts from a fresh session after the setup commands.
 COMMAND_PAIRS = (
-    ('situation use', [], [['set', 'situation', 'sbar']], [['situation', 'use', 'sbar']]),
-    ('situation clear', [['set', 'situation', 'sbar']], [['set', 'situation', 'none']], [['situation', 'clear']]),
     ('comms alias', [], [['set', 'comms', 'direct']], [['set', 'communication_profile', 'direct']]),
     ('style alias', [], [['set', 'style', 'ste']], [['set', 'language_standard', 'ste-inspired']]),
     ('signals alias', [], [['set', 'signals', 'full']], [['set', 'signaling', 'full']]),
@@ -45,9 +43,8 @@ COMMAND_PAIRS = (
     ('guideline group legacy', [], [['guideline', 'group', 'enable', 'risk']], [['guideline', 'group', 'risk', 'on']]),
     ('guidelines --all', [], [['guidelines', 'list']], [['guidelines', '--all']]),
     ('guidelines --group', [], [['guidelines', 'list', 'risk']], [['guidelines', '--group', 'risk']]),
-    ('setup apply', [], [['setup', 'apply', '--comms', 'efficient', '--style', 'ste', '--workflow', 'handoff']],
-     [['set', 'comms', 'efficient'], ['set', 'style', 'ste'], ['set', 'situation', 'ipass'],
-      ['set', 'signals', 'full']]),
+    ('setup apply', [], [['setup', 'apply', '--comms', 'efficient', '--style', 'ste', '--signals', 'full']],
+     [['set', 'comms', 'efficient'], ['set', 'style', 'ste'], ['set', 'signals', 'full']]),
 )
 
 LISTINGS = ('profiles', 'languages', 'situations', 'signals')
@@ -217,12 +214,12 @@ def render_all(plugin_source, out_dir, jobs):
                 'equivalences': equivalences(rules_classes, values), 'command_pairs': pairs,
                 'listing_coverage': coverage, 'skills': skill_rows, 'codex_limit': limit}
     (out_dir / 'report.md').write_text(
-        summary(rows, analysis, repeated, conflicted, values['workflows']) + '\n', encoding='utf-8')
+        summary(rows, analysis, repeated, conflicted) + '\n', encoding='utf-8')
     report.write_json(out_dir / 'analysis.json', analysis)
     return rows
 
 
-def summary(rows, analysis, repeated, conflicted, workflows):
+def summary(rows, analysis, repeated, conflicted):
     enabled = [row for row in rows if row['enabled']]
     chars = [row['chars'] for row in enabled]
     base = analysis['base']
@@ -279,15 +276,6 @@ def summary(rows, analysis, repeated, conflicted, workflows):
     lines += ['', '## Rules that conflict', '']
     for name, first, second, note in CONFLICTS:
         lines.append(f'- **{name}**: {note}. Both rules are in {len(conflicted.get(name, []))} configurations.')
-    if workflows:
-        pairs = sorted({(item['situation'], item['signaling']) for item in workflows.values()})
-        lines += ['', '## Setup workflows', '',
-                  f'Setup offers {len(workflows)} workflows. They reach {len(pairs)} of the '
-                  f'{len(analysis["values"]["situation"]) * len(analysis["values"]["signals"])} situation and '
-                  'signals pairs; `set` reaches the rest.', '',
-                  '| Workflow | Situation | Signals |', '| --- | --- | --- |']
-        for name, item in workflows.items():
-            lines.append(f'| {name} | `{item["situation"]}` | `{item["signaling"]}` |')
     lines += ['', '## Command forms that do the same thing', '',
               'Each side runs on a fresh, disabled session. Same settings means the saved settings match '
               'afterwards; same output compares what the last command of each side printed.', '',

@@ -7,7 +7,6 @@
     "signals",
     "threads",
     "conflicts",
-    "workflows",
     "commands"
   ],
   "suites": {
@@ -67,11 +66,6 @@
         { "style": "ste", "situation": "ipass", "signals": "intent" }
       ],
       "scenarios": ["procedure", "handoff", "safety"]
-    },
-    "workflows": {
-      "about": "The setup workflows, each a situation and signals pair",
-      "workflows": true,
-      "scenarios": ["routine-question", "ownership", "escalation", "handoff"]
     },
     "commands": {
       "about": "The dialogue commands, typed by the user in the conversation",
@@ -165,8 +159,8 @@
       }
     },
     "guidelines": {
-      "about": "Opt-in. The custom profile with exactly one guideline turned on, for each guideline",
-      "ablate": "custom",
+      "about": "Opt-in. The plain profile with exactly one guideline turned on, for each guideline",
+      "ablate": "plain",
       "scenarios": ["routine-question", "compare", "procedure"]
     },
     "full": {

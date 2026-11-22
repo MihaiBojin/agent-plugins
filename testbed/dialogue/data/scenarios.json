@@ -25,7 +25,7 @@
   {
     "id": "procedure",
     "kind": "task",
-    "probes": "STE procedure rules, warnings, and numbered steps against the thread protocol",
+    "probes": "Warnings before a risky step, and numbered steps against the thread protocol",
     "turns": [
       "Write the procedure to rotate the supplier API key for this service. docs/operations.md has the facts."
     ]

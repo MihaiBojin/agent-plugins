@@ -109,16 +109,15 @@ unit at once. A unit is safe to delete when it shows no effect on its own and th
 
 ## Two tiers
 
-`render` needs no model. It seeds a fresh state directory with each of the 1,050 combinations of `comms`, `style`,
-`situation`, `signals` and the thread mode, runs the plugin's own SessionStart hook, and saves the policy the hook
-injects. `report.md` then lists:
+`render` needs no model. It seeds a fresh state directory with each combination of the settings the plugin has,
+121 of `comms`, `style`, `signals` and the thread mode for dialogue 0.10.0, runs the plugin's own SessionStart
+hook, and saves the policy the hook injects. `report.md` then lists:
 
-- setting values that give the same policy in every context, such as `comms custom` and `comms plain`
+- setting values that give the same policy in every context
 - the size of each policy against the 10,000 characters that Claude Code puts into the conversation, and against the
   `additionalContextLimit` in `hooks/codex.json`
 - lines a policy prints more than once, and pairs of rules that cannot both hold
-- the situation and signals pairs that the setup workflows reach
-- command forms that leave the same saved settings, such as `situation use sbar` and `set situation sbar`
+- command forms that leave the same saved settings, such as `set comms direct` and `set communication_profile direct`
 - how much of each listing command `help` already prints, and which commands are read-only
 
 `run` starts real agent sessions, one per case. A case is one agent, one scenario, one configuration and one repeat.
@@ -136,7 +135,6 @@ injects. `report.md` then lists:
 | `signals`   | each signaling mode                                              | ownership of a task, a safety stop, ...    |
 | `threads`   | focus and compact on and off, and threads off                    | decisions, thread markers, the `=/` walk   |
 | `conflicts` | `ste` with threads off; `ste` with `ipass` and `intent` together | a procedure, a handoff, a safety stop      |
-| `workflows` | the eight setup workflows                                        | a question, ownership, escalation, handoff |
 | `commands`  | the base configuration, or disabled for `cmd-enable`             | each command, typed in the conversation    |
 
 The base configuration is what `enable` gives a fresh session: `pyramid.plain.none.off.focus-compact` today. The
@@ -145,7 +143,7 @@ removes a value changes the plan with it.
 
 Two suites run only when asked:
 
-- `--suite guidelines`: the `custom` profile with exactly one guideline on, for each of the 35 guidelines.
+- `--suite guidelines`: the `plain` profile with exactly one guideline on, for each of the plugin's guidelines.
 - `--full`: every combination of the five settings on every task scenario, about 15,800 sessions for each agent.
   Run `make plan-full` first to see the estimate.
 
@@ -173,7 +171,7 @@ python3 testbed.py run --agent claude:opus:high --scenario decisions --config fo
 | `--plugin PATH` (before command) | Test another copy of the plugin, such as one on another branch      |
 
 A plugin with no `situation` setting, dialogue 0.9.0 and later, runs every configuration as situation `none`: the
-suites leave out the configurations that set one, and the render has no setup workflows.
+suites leave out the configurations that set one.
 
 The Makefile passes `CLAUDE_MODEL`, `CLAUDE_EFFORT`, `CODEX_MODEL`, `CODEX_EFFORT` and `JOBS` as these options, and
 `ARGS` as anything else.
