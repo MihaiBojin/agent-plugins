@@ -96,6 +96,33 @@ class Codex(unittest.TestCase):
         self.assertEqual(turn['error'], 'no quota')
 
 
+class ClaudeTrace(unittest.TestCase):
+    def test_the_reply_is_the_result_of_the_last_result_event(self):
+        lines = [json.dumps({'type': 'assistant', 'message': {}}), 'not json',
+                 json.dumps({'type': 'result', 'result': 'Title: Add a timeout'})]
+        self.assertEqual(e2e.claude_reply(lines), 'Title: Add a timeout')
+
+    def test_keeps_the_trace_and_the_reply_and_deletes_the_scaffold(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            scaffold = Path(scratch) / 'e-abc'
+            (scaffold / 'out').mkdir(parents=True)
+            trace = scaffold / 'out' / 'trace.jsonl'
+            trace.write_text(json.dumps({'type': 'result', 'result': 'the reply'}) + '\n', encoding='utf-8')
+            (scaffold / 'sealed' / 'inner').mkdir(parents=True)
+            (scaffold / 'sealed').chmod(0)  # as the eval leaves it
+            scaffold.chmod(0o500)
+            kept = Path(scratch) / 'claude' / 'case'
+            e2e.keep_claude_trace(str(trace), kept)
+            self.assertEqual((kept / 'reply.md').read_text(encoding='utf-8'), 'the reply')
+            self.assertTrue((kept / 'events.jsonl').is_file())
+            self.assertFalse(scaffold.exists())
+
+    def test_a_run_without_a_trace_keeps_nothing(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            e2e.keep_claude_trace(None, Path(scratch) / 'case')
+            self.assertFalse((Path(scratch) / 'case').exists())
+
+
 class PushedTags(unittest.TestCase):
     def test_finds_release_tags_and_skips_branches_other_tags_and_deletions(self):
         lines = [
