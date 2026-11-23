@@ -72,12 +72,6 @@
     "description": "Routine replies take one to three sentences."
   },
   {
-    "id": "define_terms",
-    "name": "Defined terms",
-    "type": "language",
-    "description": "Define or link a term the reader may not know; spell out an acronym on first use."
-  },
-  {
     "id": "plain_punctuation",
     "name": "Plain punctuation",
     "type": "language",

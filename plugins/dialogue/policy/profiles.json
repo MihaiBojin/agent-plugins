@@ -11,7 +11,6 @@
       "tables",
       "no_frame",
       "plain_punctuation",
-      "define_terms",
       "pronouns"
     ]
   },
@@ -25,7 +24,6 @@
       "exceptions",
       "no_narration",
       "risk_detail",
-      "define_terms",
       "pronouns"
     ]
   },
@@ -42,7 +40,6 @@
       "no_narration",
       "risk_detail",
       "short_replies",
-      "define_terms",
       "pronouns"
     ]
   }
