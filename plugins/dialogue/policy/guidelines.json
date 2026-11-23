@@ -24,12 +24,6 @@
     "description": "Remove praise, pleasantries, repetition, and needless adjectives or superlatives."
   },
   {
-    "id": "formats",
-    "name": "Standard formats",
-    "type": "structure",
-    "description": "Match response structure to the task; omit empty sections."
-  },
-  {
     "id": "exceptions",
     "name": "Exceptions first",
     "type": "risk",
