@@ -248,13 +248,13 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('set', 'communication_profile', 'direct')
         self.assertEqual(self.state()['settings']['communication_profile'], 'direct')
         enabled = self.run_cli('guidelines').stdout
-        self.assertIn('(8/21 enabled)', enabled)
+        self.assertIn('(8/20 enabled)', enabled)
         self.assertIn('No routine narration', enabled)
         self.assertIn('## Communication profile: direct', self.run_cli('render').stdout)
         self.run_cli('set', 'communication_profile', 'efficient')
-        self.assertIn('(7/21 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(7/20 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('set', 'communication_profile', 'plain')
-        self.assertIn('(0/21 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(0/20 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('set', 'communication_profile', 'invalid', ok=False)
 
     def test_pyramid_renders_the_rules_it_selects(self):
@@ -331,12 +331,12 @@ class DialogueTest(unittest.TestCase):
     def test_guideline_individual_and_group_overrides(self):
         self.run_cli('enable')
         self.run_cli('set', 'comms', 'plain')
-        self.assertIn('(0/21 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(0/20 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('guideline', 'on', 'bluf')
         self.assertIn('BLUF', self.run_cli('render').stdout)
-        self.assertIn('(1/21 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(1/20 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('guideline', 'off', 'bluf')
-        self.assertIn('(0/21 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(0/20 enabled)', self.run_cli('guidelines').stdout)
         self.run_cli('guideline', 'reset', 'bluf')
         self.assertEqual(self.state()['settings']['guideline_overrides'], {})
         self.run_cli('guideline', 'group', 'risk', 'on')
@@ -375,7 +375,7 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('enable')
         self.run_cli('set', 'comms', 'plain')
         self.run_cli('set', 'style', 'ste')
-        self.assertIn('(8/21 enabled)', self.run_cli('guidelines').stdout)
+        self.assertIn('(7/20 enabled)', self.run_cli('guidelines').stdout)
         self.assertIn('plain_words [on, style]', self.run_cli('guidelines', '--all').stdout)
         self.run_cli('guideline', 'off', 'plain_words')
         enabled = self.run_cli('guidelines', '--all').stdout
@@ -570,7 +570,7 @@ class DialogueTest(unittest.TestCase):
         for saved, settings in ((path, 'settings'), (defaults, None)):
             data = json.loads(saved.read_text())
             (data[settings] if settings else data).setdefault('guideline_overrides', {}).update(
-                {'terminology': True, 'notes_not_steps': False, 'formats': True, 'define_terms': True})
+                {'terminology': True, 'notes_not_steps': False, 'formats': True, 'define_terms': True, 'noun_clusters': True})
             saved.write_text(json.dumps(data))
         self.assertEqual(self.state()['settings']['guideline_overrides'], {'warnings': True})
         self.assertEqual(self.state(session='new')['settings']['guideline_overrides'], {})

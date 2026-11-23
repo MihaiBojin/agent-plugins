@@ -85,13 +85,6 @@
     "source": "ASD-STE100 1.9, 1.10, 9.3, GR-6"
   },
   {
-    "id": "noun_clusters",
-    "name": "Short noun phrases",
-    "type": "language",
-    "description": "Keep noun stacks to three words. Unpack longer ones with of, for or that. Write a long official name in full once, then use a declared short form.",
-    "source": "ASD-STE100 2.1–2.2"
-  },
-  {
     "id": "complete_grammar",
     "name": "No ambiguous shorthand",
     "type": "language",
