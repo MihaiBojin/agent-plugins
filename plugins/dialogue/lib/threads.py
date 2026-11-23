@@ -121,6 +121,8 @@ def show(data, identifier, details=True):
     lines = ['---', '', f'### {identifier}/ {item["title"]}']
     if item.get('related'):
         lines.extend(['', f'Related: {item["related"]}/'])
+    if item['status'] == 'closed':
+        lines.extend(['', 'Outcome: ' + outcome(item, identifier)])
     if details:
         if item['context']:
             lines.extend(['', 'Context: ' + item['context']])
@@ -131,6 +133,17 @@ def show(data, identifier, details=True):
         if item['body']:
             lines.extend(['', item['body']])
     return '\n'.join(lines)
+
+
+def outcome(item, identifier):
+    chosen = [f'{identifier}{key}/ {value["text"]}' for key, value in item['options'].items() if value['status'] == 'chosen']
+    return 'chose ' + '; '.join(chosen) if chosen else 'no option chosen'
+
+
+def settled(data, limit=10):
+    """One line for each of the last closed threads by ID, so a resumed session knows what was decided."""
+    ids = sorted((k for k, v in data['threads'].items() if v['status'] == 'closed'), key=order)[-limit:]
+    return '\n'.join(f'- {key}/ {data["threads"][key]["title"]}: {outcome(data["threads"][key], key)}' for key in ids)
 
 
 def listing(data, details=False, identifiers=None):
