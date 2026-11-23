@@ -464,7 +464,7 @@ class DialogueTest(unittest.TestCase):
         overview = self.run_cli('setup').stdout
         for prompt in ('1. Comms', '2. Style', '3. Signals'):
             self.assertIn(prompt, overview)
-        self.assertIn('Style ste adds 8 STE-derived guidelines', help_text)
+        self.assertIn('Style ste adds 7 STE-derived guidelines', help_text)
         for output in (help_text, overview, self.run_cli('guidelines', 'list').stdout):
             self.assertNotIn('\u2014', output)
         self.assertFalse(self.state()['settings']['enabled'])
