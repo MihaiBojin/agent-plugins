@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0 - 2026-11-23
+
+### Changed
+
+Dialogue no longer has the `define_terms` guideline, and drops a saved override for it. The pyramid, direct and efficient profiles no longer ask to define a term or spell out an acronym; the technical-writer plugin keeps the rule for documents.
+
 ## 0.12.0 - 2026-11-23
 
 ### Changed
