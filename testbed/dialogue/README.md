@@ -274,7 +274,9 @@ A configuration's name lists every setting in order: `comms.style.situation.sign
 `efficient.ste.auto.intent.focus-compact`. A guideline override adds `.+id` or `.-id`. A disabled plugin is `disabled`.
 
 The counts in `metrics.json` and `index.csv` come from patterns, not from reading: words, sentence length,
-contractions, numbered items, tables, em-dashes, the `### DECISIONS` heading, thread headings and options, the
+contractions, numbered items, tables, em-dashes, Latin abbreviations, acronyms with no expansion beside their first
+use, "this" or "that" followed by a verb, paragraphs over six sentences, lists with no lead-in colon, nested list
+items, the `### DECISIONS` heading, thread headings and options, the
 compact footer, intent and response markers, framework field labels, narration before tool calls, dialogue tool
 calls, and the threads and settings saved after the turn. They point at transcripts worth reading. `make report`
 recomputes them for a run after the metrics change.

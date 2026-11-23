@@ -20,7 +20,9 @@ import re
 import compliance
 
 COUNTS = ('words', 'sentences', 'long_sentences', 'bullets', 'numbered_items', 'tables', 'headings', 'em_dashes',
-          'contractions', 'thread_headings', 'option_lines', 'recommended', 'narration_blocks', 'tool_calls',
+          'contractions', 'latin_abbreviations', 'unexpanded_acronyms', 'bare_demonstratives', 'long_paragraphs',
+          'lists_without_lead_in', 'nested_items',
+          'thread_headings', 'option_lines', 'recommended', 'narration_blocks', 'tool_calls',
           'dialogue_calls')
 FLAGS = ('decisions_heading', 'footer')
 UNIT = re.compile(r'^(?P<ref>[^.]+)\.(?P<kind>[-~*])(?P<what>.+)$')
