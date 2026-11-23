@@ -6,6 +6,16 @@ from clients import command_of, dialogue_op, narration
 
 CONTRACTION = re.compile(r"\b\w+(?:n't|'s|'re|'ve|'ll|'d|'m)\b", re.IGNORECASE)
 SENTENCE_END = re.compile(r'(?<=[.!?])\s+')
+LATIN = re.compile(r'(?<![\w.])(?:e\.g\.|i\.e\.|etc\.|vs\.|cf\.|viz\.|et al\.)', re.IGNORECASE)
+ACRONYM = re.compile(r'(?<![\w`/-])([A-Z][A-Z0-9]{1,5})s?(?![\w`/-])')
+# Signal and response markers are the protocol's own words, not acronyms to define.
+NOT_ACRONYMS = {'FYI', 'REQUEST', 'DECISION', 'DECISIONS', 'PROPOSAL', 'CAUTION', 'WARNING', 'QUESTION', 'UPDATE',
+                'ACK', 'ACCEPTED', 'NEED', 'INFO', 'BLOCKED', 'DONE', 'CANCELLED', 'OK'}
+DEMONSTRATIVE = re.compile(r'\b(?:[Tt]his|[Tt]hese|[Tt]hose|That)\s+(?:is|was|are|were|means|meant|will|would|can|could|'
+                           r'should|does|did|has|had|keeps|lets|makes|breaks|fixes|works|happens|matters|leaves)\b')
+LIST_ITEM = re.compile(r'^\s*(?:[-*+]|\d+[.)])\s')
+NESTED_ITEM = re.compile(r'^(?:\s{2,}|\t)(?:[-*+]|\d+[.)])\s')
+FENCED = re.compile(r'```.*?```', re.DOTALL)
 
 
 def sentences(text):
@@ -15,6 +25,42 @@ def sentences(text):
              if line.strip() and not line.lstrip().startswith(('|', '#', '---'))]
     joined = ' '.join(re.sub(r'^\s*(?:[-*+]|\d+[.)])\s+', '', line) for line in lines)
     return [part for part in SENTENCE_END.split(joined) if re.search(r'\w', part)]
+
+
+def prose(text):
+    """The reply without fenced code or inline code spans."""
+    return re.sub(r'`[^`\n]*`', ' ', FENCED.sub(' ', text))
+
+
+def unexpanded_acronyms(text):
+    """Distinct acronyms whose first use has no parenthesis beside it, as in `time to live (TTL)` or `TTL (time to live)`."""
+    text = prose(text)
+    seen, count = set(), 0
+    for match in ACRONYM.finditer(text):
+        word = match.group(1)
+        if word in seen or word in NOT_ACRONYMS:
+            continue
+        seen.add(word)
+        count += not (text[:match.start()].rstrip()[-1:] == '(' or text[match.end():].lstrip()[:1] == '(')
+    return count
+
+
+def long_paragraphs(text):
+    """Prose paragraphs of more than six sentences."""
+    blocks = [block.splitlines() for block in re.split(r'\n\s*\n', FENCED.sub('', text)) if block.strip()]
+    return sum(len(sentences(' '.join(lines))) > 6 for lines in blocks
+               if not any(LIST_ITEM.match(line) or line.lstrip().startswith(('|', '#')) for line in lines))
+
+
+def lists_without_lead_in(text):
+    """Top-level lists whose line above does not end with a colon."""
+    count, previous = 0, ''
+    for line in FENCED.sub('', text).splitlines():
+        if LIST_ITEM.match(line) and not NESTED_ITEM.match(line) and not LIST_ITEM.match(previous):
+            count += not previous.rstrip().endswith(':')
+        if line.strip():
+            previous = line
+    return count
 
 
 def field_present(text, field):
@@ -55,6 +101,12 @@ def reply_metrics(text, terms):
         'code_blocks': text.count('```') // 2,
         'em_dashes': text.count('—'),
         'contractions': len(CONTRACTION.findall(text)),
+        'latin_abbreviations': len(LATIN.findall(prose(text))),
+        'unexpanded_acronyms': unexpanded_acronyms(text),
+        'bare_demonstratives': len(DEMONSTRATIVE.findall(prose(text))),
+        'long_paragraphs': long_paragraphs(text),
+        'lists_without_lead_in': lists_without_lead_in(text),
+        'nested_items': sum(bool(NESTED_ITEM.match(line)) for line in FENCED.sub('', text).splitlines()),
         'decisions_heading': '### DECISIONS' in text,
         'thread_headings': len(re.findall(r'(?m)^###\s+\d+/', text)),
         'option_lines': len(re.findall(r'(?m)^\s*\d+[a-z]+/\s', text)),

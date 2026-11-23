@@ -209,6 +209,21 @@ class MetricsTest(unittest.TestCase):
         self.assertEqual(values['markers'], 'WARNINGx1')
         self.assertEqual(values['framework'], 'sbar 2/4')
 
+    def test_document_rule_features(self):
+        reply = '\n'.join([
+            'Set the TTL, e.g. 60 seconds. This means the CDN (content delivery network) refetches. `API` is code.',
+            '- no lead-in', '  - nested', '',
+            'Steps:', '- one', '- two', '',
+            'One. Two. Three. Four. Five. Six. Seven.', '',
+            '```', 'This is code, i.e. ignored.', '- not a list', '```'])
+        values = metrics.reply_metrics(reply, self.TERMS)
+        self.assertEqual(values['latin_abbreviations'], 1)
+        self.assertEqual(values['unexpanded_acronyms'], 1)
+        self.assertEqual(values['bare_demonstratives'], 1)
+        self.assertEqual(values['long_paragraphs'], 1)
+        self.assertEqual(values['lists_without_lead_in'], 1)
+        self.assertEqual(values['nested_items'], 1)
+
 
 class ComplianceTest(unittest.TestCase):
     NAMES = {'plain_punctuation': 'No em-dashes', 'verdict': 'Verdict first'}

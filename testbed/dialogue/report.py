@@ -12,7 +12,10 @@ from metrics import turn_metrics
 
 SETTING_COLUMNS = ('comms', 'style', 'situation', 'signals', 'threads')
 METRIC_COLUMNS = ('words', 'sentences', 'mean_sentence_words', 'long_sentences', 'headings', 'bullets',
-                  'numbered_items', 'tables', 'em_dashes', 'contractions', 'decisions_heading',
+                  'numbered_items', 'tables', 'em_dashes', 'contractions',
+                  'latin_abbreviations', 'unexpanded_acronyms', 'bare_demonstratives', 'long_paragraphs',
+                  'lists_without_lead_in', 'nested_items',
+                  'decisions_heading',
                   'thread_headings', 'option_lines', 'recommended', 'footer', 'markers', 'framework',
                   'narration_blocks', 'tool_calls', 'failed_tool_calls', 'dialogue_calls', 'dialogue_ops',
                   'threads_open', 'threads_closed', 'options', 'enabled_after', 'comms_after',
