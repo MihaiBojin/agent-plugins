@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.1 - 2026-11-23
+
+### Fixed
+
+A procedure in a reply gets numbered steps: the thread protocol numbers a list only for steps that must run in order, and still never numbers decisions, findings or options.
+
 ## 0.11.0 - 2026-11-23
 
 ### Added
