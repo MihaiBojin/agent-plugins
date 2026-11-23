@@ -48,12 +48,13 @@ def groups():
 
 
 def units(plugin, kind):
-    """Configuration name to the line spans it removes. `off` runs without the plugin and `full` with all of it.
+    """Configuration name to the line spans it removes. `off` runs without the plugin, `full` with all of it,
+    and `unprompted` with all of it on a task that does not name the skill.
 
     kind `groups` removes one group of rules, or one section, per configuration, as `*NAME`; kind `rules` removes
     one rule, as `-ID`."""
     by_id = {rule['id']: (rule['start'], rule['end']) for rule in rules(plugin)}
-    result = {'off': None, 'full': []}
+    result = {'off': None, 'full': [], 'unprompted': []}
     if kind in ('groups', 'all'):
         for name, members in groups().items():
             result[f'*{name}'] = [by_id[member] for member in members]

@@ -240,8 +240,9 @@ def fired(items):
 
 
 def prompt_for(case):
-    """The task as sent: `off` gets it as written, every other configuration also names the skill."""
-    return case['task']['prompt'] if case['spans'] is None else INVOKE + case['task']['prompt']
+    """The task as sent: `off` and `unprompted` get it as written, every other configuration also names the skill."""
+    named = case['spans'] is not None and case.get('config') != 'unprompted'
+    return INVOKE + case['task']['prompt'] if named else case['task']['prompt']
 
 
 def new_out_dir():

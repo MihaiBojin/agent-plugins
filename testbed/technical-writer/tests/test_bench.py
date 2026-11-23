@@ -88,7 +88,11 @@ class SkillTest(unittest.TestCase):
         agents = [bench.matrix.parse_agent('claude:haiku')]
         selected = bench.cases(PLUGIN, agents, 'groups', 2, task_ids=['runbook'])
         configs = {case['config'] for case in selected}
-        self.assertEqual(configs, {'off', 'full', *(f'*{name}' for name in skill.groups()), '*dials'})
+        self.assertEqual(configs, {'off', 'full', 'unprompted', *(f'*{name}' for name in skill.groups()), '*dials'})
+        prompts = {case['config']: bench.prompt_for(case) for case in selected}
+        self.assertTrue(prompts['full'].startswith(bench.INVOKE))
+        self.assertFalse(prompts['unprompted'].startswith(bench.INVOKE))
+        self.assertEqual(prompts['unprompted'], prompts['off'])
         self.assertEqual(len(selected), 2 * len(configs))
 
 
