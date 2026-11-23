@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.1 - 2026-11-23
+
+### Fixed
+
+The release-note genre no longer carries its own rules. When the release
+plugin's `release:write` or `release:prepare` loads `write-technical-prose`,
+the genre applies the shared rules and `self_edit` to the entries that skill
+drafted, and keeps a declared note as written. Any other release-note request
+goes to `release:write` or `release:prepare`.
+
+### Choices
+
+The six rules and the layout from Google for a large release were a second
+copy of the release plugin's rules, and the layout contradicted its Keep a
+Changelog sections. One copy, kept in the plugin that decides what goes in an
+entry, cannot drift.
+
 ## 0.4.0 - 2026-11-22
 
 ### Changed
