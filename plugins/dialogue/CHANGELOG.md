@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 - 2026-11-23
+
+### Changed
+
+Dialogue no longer has the `formats` guideline, and drops a saved override for it. The pyramid and direct profiles no longer add the completion, review, blocker, decision and progress reply formats.
+
 ## 0.11.1 - 2026-11-23
 
 ### Fixed

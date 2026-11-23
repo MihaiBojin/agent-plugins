@@ -12,10 +12,10 @@ from communication import names, language_standards, catalog
 
 MISSING = object()
 
-# Guidelines the plugin had before 0.10.0, when removing them changed no measured reply.
+# Guidelines the plugin no longer has; a saved override for one of them is dropped when it is read.
 REMOVED_GUIDELINES = frozenset({
     'direct', 'epistemic', 'quantify', 'current_state', 'terminology', 'evidence', 'reasons', 'one_question',
-    'one_action', 'imperatives', 'conditions', 'notes_not_steps'})
+    'one_action', 'imperatives', 'conditions', 'notes_not_steps', 'formats'})
 
 SETTINGS = {
     'enabled': (False, 'Apply dialogue behavior in this session.'),

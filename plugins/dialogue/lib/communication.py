@@ -97,15 +97,6 @@ def render_profile(profile, overrides=None, style="plain", with_risk_levels=True
         lines.append(f'- {entry["name"]}: {entry["description"]}')
     if with_risk_levels and any(entry["id"] == "warnings" for entry in entries):
         lines.append(risk_levels())
-    if any(entry["id"] == "formats" for entry in entries):
-        lines.extend([
-            "Use completion: Result → Verification → Remaining issues.",
-            "Use review: Findings by severity → Evidence → Suggested fix.",
-            "Use blocker: Blocker → Cause, with the exact error and the violated constraint → Required action.",
-            "Use decision: Recommendation → Reason → Trade-off.",
-            "Use progress: Material change → Next action.",
-            "Omit empty sections."
-        ])
     lines.extend([
         "Honor specific user formatting requests.",
         "Keep threads and their metadata under the separate thread protocol."
