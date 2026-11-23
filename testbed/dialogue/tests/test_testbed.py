@@ -241,6 +241,15 @@ class ComplianceTest(unittest.TestCase):
                                  'situation sbar: its fields used': True})
         self.assertEqual(compliance.checks('', self.NAMES, 'escalation', 1, '', 'x', self.values()), [])
 
+    def test_numbered_steps_pass_in_a_procedure_only_where_the_protocol_allows_them(self):
+        ban = '## Thread protocol\nNever use a numbered list in a reply.\n'
+        steps = '## Thread protocol\nNumber a list only for steps that must run in order.\n'
+        numbered = self.values(numbered_items=3)
+        rules = lambda policy, scenario: [rule for rule, _ in compliance.checks(policy, {}, scenario, 1, '', 'x', numbered)]
+        self.assertIn('threads: no numbered list', rules(ban, 'procedure'))
+        self.assertNotIn('threads: no numbered list', rules(steps, 'procedure'))
+        self.assertIn('threads: no numbered list', rules(steps, 'decisions'))
+
     def test_verdict_first(self):
         policy = '- Verdict first: say it.'
         [(_, passed)] = compliance.checks(policy, self.NAMES, 'implemented', 1, '', '**Verdict:** No. It raises.',

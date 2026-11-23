@@ -30,7 +30,9 @@ def checks(policy, names, scenario, number, template, reply, values):
     threads = '## Thread protocol' in policy
     first = number == 1
     result = []
-    if threads:
+    # A protocol that allows numbered steps exempts the one scenario that asks for a procedure.
+    steps_allowed = scenario == 'procedure' and 'steps that must run in order' in policy
+    if threads and not steps_allowed:
         result.append(('threads: no numbered list', values['numbered_items'] == 0))
         if values['thread_headings']:
             result.append(('threads: decisions under ### DECISIONS', values['decisions_heading']))
