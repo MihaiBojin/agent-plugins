@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0 - 2026-11-23
+
+### Added
+
+A resumed or compacted session sees what was decided: the SessionStart hook lists the outcome of the last 10 closed threads, one line each, and `thread show` prints the chosen option under a closed thread.
+
 ## 0.10.1 - 2026-11-22
 
 ### Fixed
