@@ -15,7 +15,7 @@ to use all four skills.
 
 The prose skill selects a format for the reader and the task. It covers these kinds of writing:
 
-- Release notes, which the release plugin owns when it is installed
+- Release notes, worded for the release plugin, which decides what goes in them
 - Bug reports and problem statements
 - Postmortems and incident updates
 - Design docs, RFCs and decision records
@@ -75,6 +75,7 @@ can report findings.
   [release-tools marketplace](https://github.com/releasetools/agent-plugins),
   owns release notes and changelog entries. Its `release:write` skill writes
   one change's note; `release:prepare` drafts a release's changelog entry.
+  Both load `write-technical-prose` to word the entries they draft.
 - The docket plugin handles the lifecycle of design docs and decision records,
   and this skill supplies their body.
 

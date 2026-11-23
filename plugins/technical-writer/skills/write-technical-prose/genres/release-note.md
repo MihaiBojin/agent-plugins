@@ -2,31 +2,18 @@
 
 The
 [release plugin](https://github.com/releasetools/agent-plugins/tree/main/plugins/release#readme)
-owns this genre. When it is installed, use `release:write` for one change's
-note and `release:prepare` for a release's changelog entry. Both skills read
-the shared release-note rules internally. This file states those rules in
-brief for use when the plugin is absent.
+owns this genre: what goes in an entry, its category, its order and the
+changelog it lands in. Its
+[release-note rules](https://github.com/releasetools/agent-plugins/blob/main/plugins/release/references/release-notes.md)
+say how.
 
 Reader: somebody on the previous version, deciding whether this release
 affects them.
 
-## Rules
+When `release:write` or `release:prepare` loaded this skill, it holds the
+entries to word. Apply the shared rules and `self_edit` to them, then go back
+to that skill. Its entry shape wins where it and these rules disagree. A note
+that an author declared in a `release-note` block stays as written.
 
-A release note follows six rules:
-
-- Write an entry only for a change that a user can observe.
-- Say what changed and what the reader does about it.
-- A fix names the symptom, so that someone who hit it recognizes it.
-- Breaking changes go first, and each one says what to do instead.
-- Leave out pull request numbers, commit hashes and internal names.
-- Use the exact name of a flag (`terminology`), give numbers and limits
-  (`quantify`), and use plain words for readers outside the team
-  (`plain_words`).
-
-For a large release, Google's unit on LLMs suggests a layout: an introductory
-paragraph, a table of one-line summaries, then a subsection per item with the
-problem and any workaround.
-
-Sources: the release plugin's
-[release-note rules](https://github.com/releasetools/agent-plugins/blob/main/plugins/release/references/release-notes.md);
-TW2 Using LLMs.
+For any other request for a release note or a changelog entry, use
+`release:write` for one change and `release:prepare` for a release.
