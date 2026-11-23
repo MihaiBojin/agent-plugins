@@ -36,7 +36,7 @@ def mean(values):
 
 
 def order(config):
-    return ({'off': 0, 'full': 1}.get(config, 2), config)
+    return ({'off': 0, 'full': 1, 'unprompted': 2}.get(config, 3), config)
 
 
 def without(config_names, rule, groups):
@@ -94,7 +94,7 @@ def write(run_dir, rules):
                          f'{f"`{unit}`" if unit else "-"} |')
         by_task = {}
         for record, values in mine:
-            if record['config'] != 'off':
+            if record['config'] not in ('off', 'unprompted'):
                 by_task.setdefault(record['task'], []).append((record['config'], values))
         units = [config for config in configs if config[0] in '-*']
         if units:

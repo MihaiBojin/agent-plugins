@@ -24,16 +24,18 @@ make clean       # delete out/ and the scratch space
 
 ## Configurations
 
-| Name    | Runs                                                                                                                        |
-| ------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `off`   | the task without the plugin                                                                                                 |
-| `full`  | the plugin as it is                                                                                                         |
-| `*NAME` | the plugin with one group of rules removed, from [data/groups.json](data/groups.json), or `*dials`, without the dials table |
-| `-ID`   | the plugin with one rule removed, with `--units rules`                                                                      |
+| Name         | Runs                                                                                                                        |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `off`        | the task without the plugin                                                                                                 |
+| `full`       | the plugin as it is                                                                                                         |
+| `unprompted` | the plugin as it is, on the task as written                                                                                 |
+| `*NAME`      | the plugin with one group of rules removed, from [data/groups.json](data/groups.json), or `*dials`, without the dials table |
+| `-ID`        | the plugin with one rule removed, with `--units rules`                                                                      |
 
 A configuration without a rule deletes that rule's `### \`id\``section from a copy of`SKILL.md`, up to the next
 heading. Every configuration with the plugin starts its prompt with "Use the write-technical-prose skill.", so a short
-task cannot skip the skill and leave every rule untested; `off` gets the task as written.
+task cannot skip the skill and leave every rule untested; `off`gets the task as written.`unprompted` also gets it as
+written, so its skill-loaded rate is how often the skill fires for a document request that does not name it.
 
 ## Tasks
 
