@@ -15,7 +15,7 @@ MISSING = object()
 # Guidelines the plugin no longer has; a saved override for one of them is dropped when it is read.
 REMOVED_GUIDELINES = frozenset({
     'direct', 'epistemic', 'quantify', 'current_state', 'terminology', 'evidence', 'reasons', 'one_question',
-    'one_action', 'imperatives', 'conditions', 'notes_not_steps', 'noun_clusters', 'define_terms', 'formats'})
+    'one_action', 'imperatives', 'conditions', 'notes_not_steps', 'one_topic', 'noun_clusters', 'define_terms', 'formats'})
 
 SETTINGS = {
     'enabled': (False, 'Apply dialogue behavior in this session.'),
