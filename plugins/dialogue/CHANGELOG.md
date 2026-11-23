@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.0 - 2026-11-23
+
+### Changed
+
+Dialogue no longer has the `one_topic` guideline, and drops a saved override for it. Style `ste` adds one fewer rule; the technical-writer plugin keeps it for documents.
+
 ## 0.14.0 - 2026-11-23
 
 ### Changed
