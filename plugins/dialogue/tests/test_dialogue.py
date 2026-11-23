@@ -95,6 +95,25 @@ class DialogueTest(unittest.TestCase):
         self.run_cli('disable', client='codex')
         self.assertTrue(self.state(client='claude')['settings']['enabled'])
 
+    def test_a_resumed_session_sees_the_last_settled_decisions(self):
+        self.run_cli('enable')
+        self.run_cli('thread', 'open', 'Duplicates')
+        self.run_cli('thread', 'open', 'Blank rows')
+        self.run_cli('thread', 'option', '1', 'Keep the first', '--recommended')
+        self.run_cli('thread', 'choose', '1', 'a')
+        self.assertIn('Outcome: chose 1a/ Keep the first', self.run_cli('thread', 'show', '1').stdout)
+        self.assertNotIn('Outcome', self.run_cli('thread', 'show', '2').stdout)
+        context = self.hook_context({'session_id': 'a', 'source': 'resume'})
+        self.assertIn('- 1/ Duplicates: chose 1a/ Keep the first', context)
+        for number in range(3, 14):
+            self.run_cli('thread', 'open', f'Topic {number}')
+            self.run_cli('thread', 'close', str(number))
+        context = self.hook_context({'session_id': 'a', 'source': 'compact'})
+        self.assertIn('- 13/ Topic 13: no option chosen', context)
+        self.assertIn('- 4/ Topic 4', context)
+        self.assertNotIn('- 3/ Topic 3', context)
+        self.assertNotIn('- 1/ Duplicates', context)
+
     def test_installed_hook_is_silent_until_enabled(self):
         self.assertEqual(self.hook_context({'session_id': 'fresh', 'source': 'startup'}), '')
         self.run_cli('defaults', 'set', 'enabled', 'on')

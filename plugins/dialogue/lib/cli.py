@@ -83,6 +83,9 @@ def render_threads(data):
         suffix = threads.footer(data, ids)
         if suffix:
             lines.append(suffix)
+        decided = threads.settled(data)
+        if decided:
+            lines.append('Settled decisions, the last 10 by ID. Do not reopen one unless the user does.\n' + decided)
     else:
         lines.append('Thread tracking is off. Do not apply thread numbering, focus, compact display, or thread markers. '
                      'Existing records are retained.')
