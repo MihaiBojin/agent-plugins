@@ -10,6 +10,14 @@ Breaking: dialogue no longer has the `situations` command or the `situation prev
 
 The two plugins held the same SBAR, I-PASS and CUS fields, and no test compared them. The policy never mentioned the frameworks, so the listing was the only thing dialogue did with them. One copy, kept with the other document shapes, cannot drift.
 
+## 0.15.1 - 2026-11-24
+
+### Fixed
+
+The README gives both marketplace commands and a first run with its output, lists every setting with its values and default, and drops sections on a template library that does not exist, old setting names and the repository's tests.
+
+`/dialogue:guidelines` names the four groups the tool has, structure, brevity, risk and language, and no longer the precision, evidence and procedures groups that 0.10.0 removed.
+
 ## 0.15.0 - 2026-11-23
 
 ### Changed
