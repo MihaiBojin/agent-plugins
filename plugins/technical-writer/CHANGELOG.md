@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2 - 2026-11-24
+
+### Fixed
+
+The decision-request and status-update genres no longer name dialogue's
+decision and progress formats as sources, which dialogue 0.12.0 removed.
+
 ## 0.4.1 - 2026-11-23
 
 ### Fixed
