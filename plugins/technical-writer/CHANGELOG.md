@@ -1,11 +1,5 @@
 # Changelog
 
-## 0.4.4 - 2026-11-24
-
-### Fixed
-
-The handoff, incident-update and status-update genres name SBAR, I-PASS, CUS, CAN and M/ETHANE themselves as sources, rather than dialogue's situations, which dialogue 0.16.0 removed.
-
 ## 0.4.3 - 2026-11-24
 
 ### Fixed

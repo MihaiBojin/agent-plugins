@@ -34,5 +34,5 @@ official form. Its seven fields are:
 - Use the same incident name in every update (`terminology`).
 - Give the impact in numbers (`quantify`).
 
-Sources: the CAN and M/ETHANE reports of the emergency services; practice,
+Sources: the CAN and M/ETHANE situations in the dialogue plugin; practice,
 for the next-update line.

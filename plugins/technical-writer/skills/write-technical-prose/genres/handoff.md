@@ -42,5 +42,4 @@ A CUS message has three fields:
 Use CUS only for a WARNING-level risk that needs an explicit stop or
 escalation, never as a general severity label.
 
-Sources: SBAR, I-PASS and CUS as healthcare uses them; practice, for the
-engineering adaptation.
+Sources: the situations in the dialogue plugin.
