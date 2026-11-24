@@ -1,6 +1,6 @@
 {
   "name": "technical-writer",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Write technical prose, PR descriptions and project READMEs, and audit README claims against the repository",
   "author": {
     "name": "Mihai Bojin",

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.3 - 2026-11-24
+
+### Fixed
+
+The decision-record genre sends a choice made while coding to the decisions
+plugin's `.decisions/` log, in that plugin's format.
+
 ## 0.4.2 - 2026-11-24
 
 ### Fixed

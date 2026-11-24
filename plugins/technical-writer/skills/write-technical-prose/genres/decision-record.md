@@ -3,7 +3,9 @@
 Reader: a future engineer asking why the system is the way it is.
 
 When the docket plugin is installed, its `decision` profile handles the
-lifecycle. This file supplies the body.
+lifecycle. This file supplies the body. A choice made while coding goes in the
+`.decisions/` log of the decisions plugin, in that plugin's own format, rather
+than in this shape.
 
 ## Shape
 

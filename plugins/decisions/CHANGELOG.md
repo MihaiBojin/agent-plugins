@@ -2,6 +2,11 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.3.2 - 2026-11-24
+
+The README points a record that a team approves, and that nobody may edit
+afterward, to the docket plugin's `decision` profile.
+
 ## 0.3.1 - 2026-11-22
 
 The decisions Stop hook runs when the plugin's installation path contains spaces.

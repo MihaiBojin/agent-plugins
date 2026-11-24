@@ -2,6 +2,11 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.2.2
+
+The README says when a choice belongs in the `decision` profile and when it
+belongs in the decisions plugin's `.decisions/` log.
+
 ## 0.2.1
 
 The README says how to install the plugin, the way `decisions` and `readme`
