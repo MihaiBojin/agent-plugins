@@ -97,7 +97,7 @@ def parser():
     result.add_argument('--client', choices=('codex', 'claude'), required=True)
     result.add_argument('--session', help='Client session ID; defaults to CODEX_THREAD_ID for Codex or CLAUDE_SESSION_ID for Claude')
     sub = result.add_subparsers(dest='command', required=True)
-    for name in ('help', 'enable', 'disable', 'settings', 'state', 'render', 'profiles', 'situations', 'languages', 'signals'):
+    for name in ('help', 'enable', 'disable', 'settings', 'state', 'render', 'profiles', 'languages', 'signals'):
         sub.add_parser(name)
     hook = sub.add_parser('hook', help='Print one part of the policy as SessionStart hook output.')
     hook.add_argument('--part', choices=('core', 'threads'), default='core')
@@ -117,9 +117,6 @@ def parser():
     wizard.add_argument('--comms')
     wizard.add_argument('--style')
     wizard.add_argument('--signals')
-    situation_cmd = sub.add_parser('situation', help='Print the fields of a situational framework.')
-    situation_cmd.add_argument('operation', choices=('preview',))
-    situation_cmd.add_argument('name')
     setting = sub.add_parser('set')
     setting.add_argument('key', choices=(*USER_SETTINGS, 'comms', 'style', 'signals'))
     setting.add_argument('value')
@@ -243,9 +240,6 @@ def main(args):
             store.change_default(args.key, setting_value(args.key, args.value))
         print(table(store, store.read()))
         return
-    if args.command == 'situation':
-        print(communication.render_situation(args.name))
-        return
     if args.command in ('enable', 'disable', 'set'):
         key = args.key if args.command == 'set' else 'enabled'
         value = setting_value(key, args.value) if args.command == 'set' else args.command == 'enable'
@@ -295,8 +289,6 @@ def main(args):
                     active=data['settings']['enabled']))
             else:
                 print('Dialogue is disabled; no guidelines are active.')
-    elif args.command == 'situations':
-        print(communication.list_situations())
     elif args.command == 'languages':
         print(communication.list_language())
     elif args.command == 'signals':

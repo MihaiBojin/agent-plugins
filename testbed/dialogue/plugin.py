@@ -134,7 +134,9 @@ def terms(plugin):
     """Marker words and framework field names, for spotting them in replies."""
     policy = Path(plugin) / 'policy'
     signals = json.loads((policy / 'signals.json').read_text(encoding='utf-8'))
-    situations = json.loads((policy / 'situations.json').read_text(encoding='utf-8'))
+    # Dialogue 0.16.0 and later ship no situations.json.
+    path = policy / 'situations.json'
+    situations = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
     guidelines = json.loads((policy / 'guidelines.json').read_text(encoding='utf-8'))
     return {
         'guidelines': {entry['id']: entry['name'] for entry in guidelines},

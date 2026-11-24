@@ -123,6 +123,8 @@ def listing_coverage(plugin_path):
         help_text = plugin.tool(plugin_path, state, 'help')
         rows = []
         for command in LISTINGS:
+            if command == 'situations' and not (Path(plugin_path) / 'policy' / 'situations.json').exists():
+                continue  # Dialogue 0.16.0 and later have no situations command.
             text = plugin.tool(plugin_path, state, command)
             names = re.findall(r'(?m)^\| ([\w-]+) \|', text) + re.findall(r'(?m)^- ([\w-]+):', text)
             names = [name for name in names

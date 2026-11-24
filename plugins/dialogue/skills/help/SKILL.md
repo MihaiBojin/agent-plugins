@@ -20,6 +20,5 @@ Show the complete output. Then list the commands, as `/dialogue:NAME` in Claude 
 - `defaults show` and `defaults set <key> <value>` read and change the defaults for future sessions.
 - `profiles`, `languages` and `signals` list the options for `comms`, `style` and `signals`.
 - `guidelines` lists the rules; `guideline` overrides one rule or one group.
-- `situations` lists the situational frameworks, and `situations NAME` shows the fields of one.
 
 This is read-only: it writes nothing and does not enable dialogue.

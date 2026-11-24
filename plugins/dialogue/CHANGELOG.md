@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.16.0 - 2026-11-24
+
+### Changed
+
+Breaking: dialogue no longer has the `situations` command or the `situation preview` command. The technical-writer plugin's handoff genre carries SBAR, I-PASS and CUS, and its incident-update and status-update genres carry CAN and M/ETHANE.
+
+### Choices
+
+The two plugins held the same SBAR, I-PASS and CUS fields, and no test compared them. The policy never mentioned the frameworks, so the listing was the only thing dialogue did with them. One copy, kept with the other document shapes, cannot drift.
+
 ## 0.15.1 - 2026-11-24
 
 ### Fixed

@@ -52,7 +52,6 @@ In Claude Code, enable prints `Dialogue is enabled for claude session <id>.` and
 | `profiles`                             | List the communication profiles and the one in use                 |
 | `languages`                            | List the language styles                                           |
 | `signals`                              | List the intent and response-status markers                        |
-| `situations [name]`                    | List the situational frameworks, or show the fields of one         |
 | `guidelines`                           | List the guidelines and whether each applies                       |
 | `guideline`                            | Override one guideline or group, or restore it                     |
 
@@ -95,13 +94,13 @@ An override turns one rule or one group on or off, whatever the profile and the 
 
 `guidelines list` shows each rule as on or off and what set it: the profile, the style or an override. `guidelines group list risk` shows one group. `reset` restores the inherited value, and `--default` changes new sessions only. A disabled session applies no rules.
 
-## Situational frameworks
+## Escalation and handoff formats
 
-[situations.json](policy/situations.json) defines five reply structures: SBAR for an escalation, I-PASS for a handoff, CAN for an operational update, CUS for a safety concern, and an engineering version of M/ETHANE for the first report of a major incident. Ask for one by name in the request it applies to, and the agent writes that reply in its fields. `/dialogue:situations sbar` shows the fields.
+The technical-writer plugin's handoff genre carries SBAR, I-PASS and CUS, and its incident-update and status-update genres carry CAN and M/ETHANE.
 
 ## Signals
 
-`set signals intent` lets the agent mark a message that needs it with an intent such as FYI, REQUEST, DECISION or WARNING. `set signals full` adds response statuses such as ACK, BLOCKED and DONE. [signals.json](policy/signals.json) defines them all. WARNING marks irreversible harm and CAUTION recoverable harm; the `warnings` rule and the I-PASS, CUS and M/ETHANE fields print the same two definitions.
+`set signals intent` lets the agent mark a message that needs it with an intent such as FYI, REQUEST, DECISION or WARNING. `set signals full` adds response statuses such as ACK, BLOCKED and DONE. [signals.json](policy/signals.json) defines them all. WARNING marks irreversible harm and CAUTION recoverable harm; the `warnings` rule prints the same two definitions.
 
 ## Threads
 
