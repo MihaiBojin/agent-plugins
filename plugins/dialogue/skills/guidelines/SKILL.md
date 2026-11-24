@@ -17,4 +17,4 @@ dialogue guidelines group list
 dialogue guidelines group list "TYPE"
 ```
 
-With no arguments, `guidelines` lists the rules that apply in this session. `list` shows every rule with its status and what set it: the profile, the style or an override. `group list` counts the rules per group, and a group name lists that group's rules. The groups are structure, brevity, precision, evidence, risk, language and procedures. This is read-only: it writes nothing and does not enable dialogue.
+With no arguments, `guidelines` lists the rules that apply in this session. `list` shows every rule with its status and what set it: the profile, the style or an override. `group list` counts the rules per group, and a group name lists that group's rules. The groups are structure, brevity, risk and language. This is read-only: it writes nothing and does not enable dialogue.
