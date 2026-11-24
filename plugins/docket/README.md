@@ -67,6 +67,11 @@ decide whether to continue.
 | `rfc`      | draft, discussion, fcp, frozen - plus withdrawn, and superseded after the fact |
 | `decision` | draft, frozen                                                                  |
 
+The `decision` profile is for a record that a team approves and that nobody
+edits afterward. A choice made while coding goes in the `.decisions/` log of
+the [decisions plugin](../decisions/README.md). The technical-writer plugin's
+decision-record genre supplies the body of a docket decision.
+
 ## Backends
 
 Each collection chooses its drafting and discussion backend in `docket.toml`.

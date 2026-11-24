@@ -10,7 +10,7 @@
       "name": "docket",
       "source": "./plugins/docket",
       "description": "Take documents through numbered collections and collaborative review to a frozen, immutable archive",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"
@@ -33,7 +33,7 @@
       "name": "decisions",
       "source": "./plugins/decisions",
       "description": "A decision log in .decisions, written as the decisions are made, in the repositories that ask for one",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"
@@ -77,7 +77,7 @@
       "name": "technical-writer",
       "source": "./plugins/technical-writer",
       "description": "Write technical prose, PR descriptions and project READMEs, and audit README claims against the repository",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"

@@ -13,6 +13,9 @@ alt: git from $PATH on every call — 700ms of extra runtime
 alt: a configured path — one more thing to set per machine
 ```
 
+A record that a team approves and that nobody may edit afterward belongs in
+the `decision` profile of the [docket plugin](../docket/README.md) instead.
+
 ## Guided planning
 
 Ask for `decision-interview` when you want to work through a design one
