@@ -104,38 +104,12 @@ def render_profile(profile, overrides=None, style="plain", with_risk_levels=True
     return "\n".join(lines)
 
 
-def situations():
-    return json.loads((ROOT / "situations.json").read_text(encoding="utf-8"))
-
-
 def language_standards():
     return json.loads((ROOT / "language.json").read_text(encoding="utf-8"))
 
 
 def signals():
     return json.loads((ROOT / "signals.json").read_text(encoding="utf-8"))
-
-
-def list_situations():
-    lines = ["| Situation | Purpose |", "| --- | --- |"]
-    for name, item in situations().items():
-        lines.append(f'| {name} | {item["description"]} |')
-    return "\n".join(lines)
-
-
-def render_situation(name):
-    items = situations()
-    if name not in items:
-        raise ValueError("unknown situation: " + name)
-    item = items[name]
-    lines = [f'## Situational framework: {name}', item["description"]]
-    for title, meaning in item["fields"]:
-        lines.append(f'- {title}: {meaning}')
-    lines.append(item["guidance"])
-    if item.get("risk_levels"):
-        lines.append(risk_levels())
-    lines.append("Use the framework only where relevant; do not invent missing details. Ask only for essential unknowns.")
-    return "\n".join(lines)
 
 
 def render_language(name):
@@ -220,7 +194,7 @@ def full_help():
     lines = [
         "# Dialogue help",
         "Start: help (this overview), setup (guided three-question configuration), enable/disable.",
-        "Inspect: settings, profiles, guidelines, situations, languages, signals, state, render.",
+        "Inspect: settings, profiles, guidelines, languages, signals, state, render.",
         "Change: set comms VALUE | set style VALUE | set signals VALUE.",
         "Apply wizard: setup apply --comms VALUE --style VALUE --signals VALUE.",
         "Defaults: defaults show | defaults set KEY VALUE (future sessions only).",
@@ -232,9 +206,6 @@ def full_help():
     lines.append("Language styles:")
     for key, item in languages.items():
         lines.append(f'- {"ste" if key == "ste-inspired" else key}: {item["description"]}')
-    lines.append("Situational frameworks, for a reply that asks for one; situation preview NAME shows the fields:")
-    for key, item in situations().items():
-        lines.append(f'- {key}: {item["description"]}')
     lines.append("Signals: " + ", ".join(f"{key} ({meaning})" for key, meaning in SIGNAL_MODES.items()) + ".")
     lines.append("Other settings: threads on/off, focus on/off, compact on/off, enabled on/off.")
     lines.append("Guidelines: guidelines list (all rules and status); guidelines group list (categories); guidelines group list TYPE (category details).")

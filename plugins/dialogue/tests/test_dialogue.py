@@ -278,9 +278,6 @@ class DialogueTest(unittest.TestCase):
         meanings = {item['id']: item['meaning'] for item in signals['intents']}
         self.assertNotIn('RISK', meanings)
         levels = '\n'.join(['Risk levels:', f"- WARNING: {meanings['WARNING']}", f"- CAUTION: {meanings['CAUTION']}"])
-        for name in ('ipass', 'methane', 'cus'):
-            self.assertIn(levels, self.run_cli('situation', 'preview', name).stdout)
-        self.assertNotIn('Risk levels:', self.run_cli('situation', 'preview', 'sbar').stdout)
         self.run_cli('set', 'style', 'ste')
         self.assertIn(levels, self.run_cli('render').stdout)
         self.run_cli('set', 'style', 'plain')
@@ -453,8 +450,7 @@ class DialogueTest(unittest.TestCase):
 
     def test_help_and_setup_are_read_only_and_explain_all_options(self):
         help_text = self.run_cli('help').stdout
-        for word in ('efficient', 'ste', 'sbar', 'ipass', 'can', 'cus',
-                     'methane', 'intent', 'full', 'setup', 'threads'):
+        for word in ('efficient', 'ste', 'intent', 'full', 'setup', 'threads'):
             self.assertIn(word, help_text)
         # Direct CLI help/setup can run without any session ID.
         for command in ('help', 'setup'):
@@ -512,16 +508,13 @@ class DialogueTest(unittest.TestCase):
         self.assertEqual(self.state(session='new')['settings']['communication_profile'], 'direct')
         self.assertEqual(self.state(session='new')['settings']['language_standard'], 'ste-inspired')
 
-    def test_situations_preview_only_and_stay_out_of_the_policy(self):
+    def test_situations_are_gone(self):
         self.run_cli('enable')
-        self.assertIn('sbar', self.run_cli('situations').stdout)
-        preview = self.run_cli('situation', 'preview', 'sbar').stdout
-        self.assertIn('Situation:', preview)
-        self.run_cli('situation', 'preview', 'invalid', ok=False)
-        for refused in (('situation', 'use', 'ipass'), ('situation', 'clear'), ('set', 'situation', 'sbar'),
+        for refused in (('situations',), ('situation', 'preview', 'sbar'), ('set', 'situation', 'sbar'),
                         ('defaults', 'set', 'situation', 'auto')):
             self.run_cli(*refused, ok=False)
         self.assertNotIn('Situational', self.run_cli('render').stdout)
+        self.assertNotIn('sbar', self.run_cli('help').stdout)
 
     def test_language_and_signals(self):
         self.run_cli('enable')

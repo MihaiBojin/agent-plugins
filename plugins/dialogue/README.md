@@ -28,7 +28,6 @@ Installation does not enable response behavior; `enable` does. Each command is a
 | `profiles`                             | List the communication profiles and the one in use                     |
 | `languages`                            | List the language styles                                               |
 | `signals`                              | List the intent and response-status markers                            |
-| `situations [name]`                    | List the situational frameworks, or show the fields of one             |
 | `guidelines`                           | List the guidelines and whether each applies                           |
 | `guideline`                            | Override one guideline or group, or restore it                         |
 
@@ -39,7 +38,7 @@ Installation does not enable response behavior; `enable` does. Each command is a
 /dialogue:setup
 ```
 
-Help lists commands, profiles, language styles, situational frameworks, signaling modes, and thread controls. It does not require an active session or change state.
+Help lists commands, profiles, language styles, signaling modes, and thread controls. It does not require an active session or change state.
 
 Setup asks **three questions, one at a time**:
 
@@ -124,26 +123,15 @@ Each guideline belongs to one group: **structure**, **brevity**, **risk**, or **
 
 The `plain` profile starts with no guidelines enabled, for choosing rules one at a time.
 
-## Situational frameworks
-
-The [situational catalog](policy/situations.json) defines SBAR (escalation), I-PASS (handoff and responsibility transfer), CAN (operational updates), CUS (safety escalation), and an engineering adaptation of M/ETHANE (initial major-incident report). These are _optional response structures_, separate from the selected communication profile.
-
-```text
-/dialogue:situations
-/dialogue:situations sbar
-```
-
-Both are read-only. The policy does not mention the frameworks: a user asks for one by name in the request it applies to, and the agent writes that reply in its fields.
-
 ## Language and communication signals
 
 `languages` lists the language standards; `set style ste` applies a simplified, controlled technical-English style inspired by ASD-STE100. This is not official ASD-STE100 compliance or a vocabulary validator. `set style plain` removes it.
 
-`signals` lists the intent and response markers from [signals.json](policy/signals.json). `set signals intent` permits sender-intent markers such as FYI, REQUEST, DECISION and WARNING. `set signals full` also defines response statuses such as ACK, ACCEPTED, BLOCKED and DONE. WARNING and CAUTION are the two risk levels: `signals.json` defines them, and the `warnings` guideline and the I-PASS, CUS and M/ETHANE previews use the same two words and print the same definitions. `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
+`signals` lists the intent and response markers from [signals.json](policy/signals.json). `set signals intent` permits sender-intent markers such as FYI, REQUEST, DECISION and WARNING. `set signals full` also defines response statuses such as ACK, ACCEPTED, BLOCKED and DONE. WARNING and CAUTION are the two risk levels: `signals.json` defines them, and the `warnings` guideline uses the same two words and prints the same definitions. `off` is the default: no marker policy applies. The agent should not prepend a marker to every message.
 
 ## Templates and plugin boundaries
 
-Dialogue controls _how_ a response is communicated. Drafting reusable artifacts such as decision requests, status updates, handoffs, incident reports, project kickoffs, and PR descriptions can use these frameworks, but a future template library should own the actual document bodies and field schemas. Docket is for numbered, reviewed, immutable records, such as RFCs and decision records; it is not a natural owner of one-off status messages or PR templates.
+Dialogue controls _how_ a chat reply is communicated. The technical-writer plugin owns the shape of written artifacts: decision requests, status updates, handoffs in SBAR, I-PASS or CUS form, incident updates and PR descriptions. Docket is for numbered, reviewed, immutable records, such as RFCs and decision records.
 
 ## Session persistence
 

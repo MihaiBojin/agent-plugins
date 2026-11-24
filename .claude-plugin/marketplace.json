@@ -54,7 +54,7 @@
       "name": "dialogue",
       "source": "./plugins/dialogue",
       "description": "Opt-in response style and persistent conversation threads, with settings isolated by client session.",
-      "version": "0.15.0",
+      "version": "0.16.0",
       "author": {
         "name": "Mihai Bojin"
       },
@@ -77,7 +77,7 @@
       "name": "technical-writer",
       "source": "./plugins/technical-writer",
       "description": "Write technical prose, PR descriptions and project READMEs, and audit README claims against the repository",
-      "version": "0.4.3",
+      "version": "0.4.4",
       "author": {
         "name": "Mihai Bojin",
         "url": "https://github.com/MihaiBojin"

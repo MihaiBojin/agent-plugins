@@ -74,7 +74,7 @@ def migrate_settings(value):
         # custom gave the same policy as plain: both start with no guidelines.
         value = {**value, 'communication_profile': 'plain'}
     if isinstance(value, dict) and 'situation' in value:
-        # A saved situation is dropped: a framework applies only when the user asks for one.
+        # A saved situation is dropped: dialogue has no situation setting.
         value = {key: item for key, item in value.items() if key != 'situation'}
     if isinstance(value, dict) and isinstance(value.get('guideline_overrides'), dict):
         # An override for a guideline the plugin no longer has is dropped; any other unknown ID is still invalid.
