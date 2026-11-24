@@ -46,6 +46,10 @@ Then, from the archive repo's root, four writes and nothing else:
    collection's name for the `<collection>` placeholder in its examples.
 
 Say what was written, and that `AGENTS.md` states the rules the workflow will
-enforce on every pull request once committed. Commit only if the user asks. If
+enforce on every pull request once committed. Then say what makes the check
+binding, which this command does not set: the `immutability` job as a
+required status check, direct pushes to the default branch blocked, and a
+`CODEOWNERS` entry for `.github/scripts/docket.mjs` and
+`.github/workflows/docket-ci.yml`. Commit only if the user asks. If
 the directory is already a collection, or the workflow file already exists, say
 so and change nothing.

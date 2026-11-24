@@ -2,6 +2,19 @@
 
 Newest release first. Each says what changed, and the choices behind it.
 
+## 0.2.3
+
+`/docket:scaffold` ends by naming the three archive settings that make the
+immutability check binding: the `immutability` job as a required status
+check, direct pushes to the default branch blocked, and a `CODEOWNERS` entry
+for the copied helper and workflow. The reference says why each is needed.
+
+### Choices
+
+- Scaffold names the settings rather than applying them. Branch protection
+  and code owners belong to the archive's owner, and changing them takes
+  admin rights a session may not have.
+
 ## 0.2.2
 
 The README says when a choice belongs in the `decision` profile and when it

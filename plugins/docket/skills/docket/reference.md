@@ -110,6 +110,18 @@ the change may touch the frontmatter keys `status`, `superseded_by` and
 
 New files, drafts and non-docket files pass untouched.
 
+The check binds only through the archive repo's own settings, which docket
+does not change. The workflow runs on pull requests, so a direct push to the
+default branch skips it. A failing check that is not required can still merge.
+The check runs the copy of `.github/scripts/docket.mjs` in the pull request,
+so a pull request that edits that copy or the workflow passes its own check.
+Three settings close those gaps:
+
+- make the `immutability` job a required status check on the default branch;
+- block direct pushes to the default branch;
+- give `.github/scripts/docket.mjs` and `.github/workflows/docket-ci.yml` a
+  `CODEOWNERS` entry whose owners must approve a change to either.
+
 `/docket:scaffold` installs it into the archive repo: the helper is copied to
 `.github/scripts/docket.mjs` and the workflow template shipped in this plugin
 becomes `.github/workflows/docket-ci.yml`, which runs the check on every pull
