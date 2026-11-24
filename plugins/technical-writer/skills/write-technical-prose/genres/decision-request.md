@@ -18,4 +18,4 @@ A request has five parts, in under 200 words:
 - A choice written as a sentence is still a choice. "We could drop the flag or
   keep it behind a config key" is two options, so letter them.
 
-Sources: the decision format and the thread protocol in the dialogue plugin.
+Sources: the thread protocol in the dialogue plugin; practice.

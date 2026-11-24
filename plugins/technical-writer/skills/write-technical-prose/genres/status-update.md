@@ -21,5 +21,4 @@ An update has four parts, in about five lines:
 - A status color or symbol always carries its word: "At risk", not an amber
   dot alone (`no_visual_only`).
 
-Sources: the progress format and the CAN situation in the dialogue plugin;
-practice.
+Sources: the CAN situation in the dialogue plugin; practice.
